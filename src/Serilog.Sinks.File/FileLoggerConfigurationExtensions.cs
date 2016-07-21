@@ -44,6 +44,7 @@ namespace Serilog
         /// the default is "{Timestamp} [{Level}] {Message}{NewLine}{Exception}".</param>
         /// <param name="fileSizeLimitBytes">The maximum size, in bytes, to which a log file will be allowed to grow.
         /// For unrestricted growth, pass null. The default is 1 GB.</param>
+        /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8.</param>
         /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
         /// is false.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
@@ -56,6 +57,7 @@ namespace Serilog
             IFormatProvider formatProvider = null,
             long? fileSizeLimitBytes = DefaultFileSizeLimitBytes,
             LoggingLevelSwitch levelSwitch = null,
+            Encoding encoding = null,
             bool buffered = false)
         {
             if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
@@ -63,7 +65,7 @@ namespace Serilog
             if (outputTemplate == null) throw new ArgumentNullException(nameof(outputTemplate));
 
             var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
-            return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, levelSwitch, buffered);
+            return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, levelSwitch, encoding, buffered);
         }
 
         /// <summary>
@@ -82,6 +84,7 @@ namespace Serilog
         /// to be changed at runtime.</param>
         /// <param name="fileSizeLimitBytes">The maximum size, in bytes, to which a log file will be allowed to grow.
         /// For unrestricted growth, pass null. The default is 1 GB.</param>
+        /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8.</param>
         /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
         /// is false.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
@@ -93,6 +96,7 @@ namespace Serilog
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             long? fileSizeLimitBytes = DefaultFileSizeLimitBytes,
             LoggingLevelSwitch levelSwitch = null,
+            Encoding encoding = null,
             bool buffered = false)
         {
             if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
@@ -102,7 +106,7 @@ namespace Serilog
             FileSink sink;
             try
             {
-                sink = new FileSink(path, formatter, fileSizeLimitBytes, buffered: buffered);
+                sink = new FileSink(path, formatter, fileSizeLimitBytes, encoding: encoding, buffered: buffered);
             }
             catch (ArgumentException)
             {
