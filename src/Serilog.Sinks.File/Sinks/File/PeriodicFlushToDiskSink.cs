@@ -9,7 +9,7 @@ namespace Serilog.Sinks.File
     /// <summary>
     /// A sink wrapper that periodically flushes the wrapped sink to disk.
     /// </summary>
-    public class PeriodicFlushToDiskSink : ILogEventSink, IDisposable
+    public class PeriodicFlushToDiskSink : ILogEventSink, ISizeLimitedFileSink, IDisposable
     {
         readonly ILogEventSink _sink;
         readonly Timer _timer;
@@ -37,6 +37,20 @@ namespace Serilog.Sinks.File
             {
                 _timer = new Timer(_ => { }, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
                 SelfLog.WriteLine("{0} configured to flush {1}, but {2} not implemented", typeof(PeriodicFlushToDiskSink), sink, nameof(IFlushableFileSink));
+            }
+        }
+
+        /// <inheritdoc />
+        public bool SizeLimitReached
+        {
+            get
+            {
+                var sizeLimitedFileSink = _sink as ISizeLimitedFileSink;
+                if (sizeLimitedFileSink != null)
+                {
+                    return sizeLimitedFileSink.SizeLimitReached;
+                }
+                return false;
             }
         }
 
