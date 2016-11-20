@@ -27,7 +27,7 @@ namespace Serilog.Sinks.File
     /// <summary>
     /// Write log events to a disk file.
     /// </summary>
-    public sealed class SharedFileSink : ILogEventSink, IFlushableFileSink, IDisposable
+    public sealed class SharedFileSink : ILogEventSink, IFlushableFileSink, ISizeLimitedFileSink, IDisposable
     {
         readonly MemoryStream _writeBuffer;
         readonly string _path;
@@ -117,15 +117,7 @@ namespace Serilog.Sinks.File
                         oldOutput.Dispose();
                     }
 
-                    if (_fileSizeLimitBytes != null)
-                    {
-                        try
-                        {
-                            if (_fileOutput.Length >= _fileSizeLimitBytes.Value)
-                                return;
-                        }
-                        catch (FileNotFoundException) { } // Cheaper and more reliable than checking existence
-                    }
+                    if(SizeLimitReached) return;
 
                     _fileOutput.Write(bytes, 0, length);
                     _fileOutput.Flush();
@@ -144,6 +136,24 @@ namespace Serilog.Sinks.File
             }
         }
 
+
+        /// <inheritdoc />
+        public bool SizeLimitReached
+        {
+            get
+            {
+                if (_fileSizeLimitBytes != null)
+                {
+                    try
+                    {
+                        if (_fileOutput.Length >= _fileSizeLimitBytes.Value)
+                            return true;
+                    }
+                    catch (FileNotFoundException) { } // Cheaper and more reliable than checking existence
+                }
+                return false;
+            }
+        }
 
         /// <inheritdoc />
         public void Dispose()

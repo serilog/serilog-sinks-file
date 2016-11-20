@@ -24,7 +24,7 @@ namespace Serilog.Sinks.File
     /// <summary>
     /// Write log events to a disk file.
     /// </summary>
-    public sealed class FileSink : ILogEventSink, IFlushableFileSink, IDisposable
+    public sealed class FileSink : ILogEventSink, IFlushableFileSink, ISizeLimitedFileSink, IDisposable
     {
         readonly TextWriter _output;
         readonly FileStream _underlyingStream;
@@ -71,6 +71,16 @@ namespace Serilog.Sinks.File
             _output = new StreamWriter(outputStream, encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         }
 
+        /// <inheritdoc />
+        public bool SizeLimitReached
+        {
+            get
+            {
+                if (_fileSizeLimitBytes == null) return false;
+                return _countingStreamWrapper.CountedLength >= _fileSizeLimitBytes.Value;
+            }
+        }
+
         /// <summary>
         /// Emit the provided log event to the sink.
         /// </summary>
@@ -80,11 +90,7 @@ namespace Serilog.Sinks.File
             if (logEvent == null) throw new ArgumentNullException(nameof(logEvent));
             lock (_syncRoot)
             {
-                if (_fileSizeLimitBytes != null)
-                {
-                    if (_countingStreamWrapper.CountedLength >= _fileSizeLimitBytes.Value)
-                        return;
-                }
+                if (SizeLimitReached) return;
 
                 _textFormatter.Format(logEvent, _output);
                 if (!_buffered)
