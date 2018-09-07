@@ -144,7 +144,7 @@ namespace Serilog.Sinks.File
                 {
                     _currentFile = _shared ?
                         (IFileSink)new SharedFileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding) :
-                        new FileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding, _buffered);
+                        new FileSink(path, _textFormatter, _fileSizeLimitBytes, null, _encoding, _buffered);
                     _currentFileSequence = sequence;
                 }
                 catch (IOException ex)

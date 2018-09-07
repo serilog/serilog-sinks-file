@@ -50,6 +50,7 @@ namespace Serilog
         /// <param name="fileSizeLimitBytes">The approximate maximum size, in bytes, to which a log file will be allowed to grow.
         /// For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit
         /// will be written in full even if it exceeds the limit.</param>
+        /// <param name="trimFileSizeBytes">The size a log file will trimmed to after it reaches fileSizeLimitBytes</param>
         /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
         /// is false.</param>
         /// <param name="shared">Allow the log file to be shared by multiple processes. The default is false.</param>
@@ -64,13 +65,14 @@ namespace Serilog
             string outputTemplate,
             IFormatProvider formatProvider,
             long? fileSizeLimitBytes,
+            int? trimFileSizeBytes,
             LoggingLevelSwitch levelSwitch,
             bool buffered,
             bool shared,
             TimeSpan? flushToDiskInterval)
         {
             // ReSharper disable once RedundantArgumentDefaultValue
-            return File(sinkConfiguration, path, restrictedToMinimumLevel, outputTemplate, formatProvider, fileSizeLimitBytes,
+            return File(sinkConfiguration, path, restrictedToMinimumLevel, outputTemplate, formatProvider, fileSizeLimitBytes, trimFileSizeBytes,
                 levelSwitch, buffered, shared, flushToDiskInterval, RollingInterval.Infinite, false,
                 null, null);
         }
@@ -81,7 +83,7 @@ namespace Serilog
         /// <param name="sinkConfiguration">Logger sink configuration.</param>
         /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into
         /// text for the file. If control of regular text formatting is required, use the other
-        /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?)"/>
+        /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, int?, LoggingLevelSwitch, bool, bool, TimeSpan?)"/>
         /// and specify the outputTemplate parameter instead.
         /// </param>
         /// <param name="path">Path to the file.</param>
@@ -92,6 +94,7 @@ namespace Serilog
         /// <param name="fileSizeLimitBytes">The approximate maximum size, in bytes, to which a log file will be allowed to grow.
         /// For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit
         /// will be written in full even if it exceeds the limit.</param>
+        /// <param name="trimFileSizeBytes">The size a log file will trimmed to after it reaches fileSizeLimitBytes</param>
         /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
         /// is false.</param>
         /// <param name="shared">Allow the log file to be shared by multiple processes. The default is false.</param>
@@ -105,13 +108,14 @@ namespace Serilog
             string path,
             LogEventLevel restrictedToMinimumLevel,
             long? fileSizeLimitBytes,
+            int? trimFileSizeBytes,
             LoggingLevelSwitch levelSwitch,
             bool buffered,
             bool shared,
             TimeSpan? flushToDiskInterval)
         {
             // ReSharper disable once RedundantArgumentDefaultValue
-            return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, levelSwitch,
+            return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, trimFileSizeBytes, levelSwitch,
                 buffered, shared, flushToDiskInterval, RollingInterval.Infinite, false, null, null);
         }
 
@@ -130,6 +134,7 @@ namespace Serilog
         /// <param name="fileSizeLimitBytes">The approximate maximum size, in bytes, to which a log file will be allowed to grow.
         /// For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit
         /// will be written in full even if it exceeds the limit.</param>
+        /// <param name="trimFileSizeBytes">The size a log file will trimmed to after it reaches fileSizeLimitBytes</param>
         /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
         /// is false.</param>
         /// <param name="shared">Allow the log file to be shared by multiple processes. The default is false.</param>
@@ -149,6 +154,7 @@ namespace Serilog
             string outputTemplate = DefaultOutputTemplate,
             IFormatProvider formatProvider = null,
             long? fileSizeLimitBytes = DefaultFileSizeLimitBytes,
+            int? trimFileSizeBytes = null,
             LoggingLevelSwitch levelSwitch = null,
             bool buffered = false,
             bool shared = false,
@@ -163,7 +169,7 @@ namespace Serilog
             if (outputTemplate == null) throw new ArgumentNullException(nameof(outputTemplate));
 
             var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
-            return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes,
+            return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, trimFileSizeBytes,
                 levelSwitch, buffered, shared, flushToDiskInterval,
                 rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit, encoding);
         }
@@ -174,7 +180,7 @@ namespace Serilog
         /// <param name="sinkConfiguration">Logger sink configuration.</param>
         /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into
         /// text for the file. If control of regular text formatting is required, use the other
-        /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding)"/>
+        /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, int?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding)"/>
         /// and specify the outputTemplate parameter instead.
         /// </param>
         /// <param name="path">Path to the file.</param>
@@ -185,6 +191,7 @@ namespace Serilog
         /// <param name="fileSizeLimitBytes">The approximate maximum size, in bytes, to which a log file will be allowed to grow.
         /// For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit
         /// will be written in full even if it exceeds the limit.</param>
+        /// <param name="trimFileSizeBytes">The size a log file will trimmed to after it reaches fileSizeLimitBytes</param>
         /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
         /// is false.</param>
         /// <param name="shared">Allow the log file to be shared by multiple processes. The default is false.</param>
@@ -203,6 +210,7 @@ namespace Serilog
             string path,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             long? fileSizeLimitBytes = DefaultFileSizeLimitBytes,
+            int? trimFileSizeBytes = null,
             LoggingLevelSwitch levelSwitch = null,
             bool buffered = false,
             bool shared = false,
@@ -212,7 +220,7 @@ namespace Serilog
             int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
             Encoding encoding = null)
         {
-            return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, levelSwitch,
+            return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, trimFileSizeBytes, levelSwitch,
                 buffered, false, shared, flushToDiskInterval, encoding, rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit);
         }
 
@@ -269,7 +277,7 @@ namespace Serilog
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             LoggingLevelSwitch levelSwitch = null)
         {
-            return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, null, levelSwitch, false, true,
+            return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, null, null, levelSwitch, false, true,
                 false, null, null, RollingInterval.Infinite, false, null);
         }
 
@@ -279,6 +287,7 @@ namespace Serilog
             string path,
             LogEventLevel restrictedToMinimumLevel,
             long? fileSizeLimitBytes,
+            int? trimFileSizeBytes,
             LoggingLevelSwitch levelSwitch,
             bool buffered,
             bool propagateExceptions,
@@ -293,6 +302,7 @@ namespace Serilog
             if (formatter == null) throw new ArgumentNullException(nameof(formatter));
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0) throw new ArgumentException("Negative value provided; file size limit must be non-negative.", nameof(fileSizeLimitBytes));
+            if (trimFileSizeBytes.HasValue && trimFileSizeBytes < 0) throw new ArgumentException("Negative value provided; trim file size must be non-negative.", nameof(trimFileSizeBytes));
             if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("At least one file must be retained.", nameof(retainedFileCountLimit));
             if (shared && buffered) throw new ArgumentException("Buffered writes are not available when file sharing is enabled.", nameof(buffered));
 
@@ -313,7 +323,7 @@ namespace Serilog
                     }
                     else
                     {
-                        sink = new FileSink(path, formatter, fileSizeLimitBytes, buffered: buffered);
+                        sink = new FileSink(path, formatter, fileSizeLimitBytes, trimFileSizeBytes, buffered: buffered);
                     }
 #pragma warning restore 618
                 }
