@@ -1,0 +1,11 @@
+language: csharp
+
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+      sudo: required
+      dotnet: 2.0.0
+      group: edge
+script:
+  - ./build.sh
