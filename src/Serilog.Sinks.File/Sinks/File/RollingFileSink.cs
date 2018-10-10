@@ -222,6 +222,8 @@ namespace Serilog.Sinks.File
             _nextCheckpoint = null;
         }
 
+        // After File created and closed, then compress before flushing to disk?
+
         public void FlushToDisk()
         {
             lock (_syncRoot)
