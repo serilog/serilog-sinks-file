@@ -57,6 +57,8 @@ namespace Serilog.Sinks.File
             if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("Zero or negative value provided; retained file count limit must be at least 1");
 
             _roller = new PathRoller(path, rollingInterval);
+            // need function such as: ?
+            // _compression = new Compressor(compression type);
             _textFormatter = textFormatter;
             _fileSizeLimitBytes = fileSizeLimitBytes;
             _retainedFileCountLimit = retainedFileCountLimit;
