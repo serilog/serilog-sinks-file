@@ -2,6 +2,8 @@
 using System.IO;
 using Serilog;
 using Serilog.Debugging;
+using Serilog.Sinks.File;
+//using Serilog.Sinks.Console;
 
 namespace Sample
 {
@@ -14,10 +16,12 @@ namespace Sample
             var sw = System.Diagnostics.Stopwatch.StartNew();
 
             Log.Logger = new LoggerConfiguration()
-                .WriteTo.File("log.txt")
-                .CreateLogger();
+              //.WriteTo.Console()
+              .WriteTo.File("log-.txt", rollingInterval: RollingInterval.Minute)
+              .CreateLogger();
 
-            for (var i = 0; i < 1000000; ++i)
+            var endTime = DateTime.Now.AddMinutes(3);
+            while(DateTime.Now < endTime)
             {
                 Log.Information("Hello, file logger!");
             }
