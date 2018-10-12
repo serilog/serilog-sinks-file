@@ -142,6 +142,7 @@ namespace Serilog
         /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
         /// <remarks>The file will be written using the UTF-8 character set.</remarks>
+        /// TEST COMMENT 
         public static LoggerConfiguration File(
             this LoggerSinkConfiguration sinkConfiguration,
             string path,
