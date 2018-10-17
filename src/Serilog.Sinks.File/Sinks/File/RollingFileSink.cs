@@ -109,12 +109,24 @@ namespace Serilog.Sinks.File
                 //      then CompressPrev()
                 //
                 // *** read data from currentFile, compress it and write to new file, then delete old file
-                // need to read into a compressed version then delete current file and male compressed the new current file?
+                // need to read into a compressed version then delete current file and make compressed the new current file?
 
-                
+                // *** Do Files use pointers or path vars?
+
+                // get last file added
+                var test = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
+                                         .Select(Path.GetFileName).LastOrDefault();
+                // get directory of log files
+                var directoryTest = _roller.LogFileDirectory;          
 
                 // previous file closed in CloseFile()
-                CloseFile();        
+                CloseFile();
+
+                // create new file as compressed version of previous
+                System.IO.File.Create($"{directoryTest}\\TEST.txt");
+
+                // delete previous, non compressed
+                System.IO.File.Delete($"{directoryTest}\\{test}");
 
                 // new file created in OpenFile()
                 OpenFile(now, minSequence);
