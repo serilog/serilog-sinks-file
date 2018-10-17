@@ -57,8 +57,9 @@ namespace Serilog.Sinks.File
             if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("Zero or negative value provided; retained file count limit must be at least 1");
 
             _roller = new PathRoller(path, rollingInterval);
-            // need function such as: ?
-            // _compression = new Compressor(compression type);
+            // need function such as:
+            // _compression = bool
+            // _compressionType = enum
             _textFormatter = textFormatter;
             _fileSizeLimitBytes = fileSizeLimitBytes;
             _retainedFileCountLimit = retainedFileCountLimit;
@@ -103,12 +104,17 @@ namespace Serilog.Sinks.File
                         minSequence = _currentFileSequence.Value + 1;
                 }
 
-                // previous file closed in CloseFile()
-                CloseFile();
-
                 // get previous file
                 // if _compress == true
                 //      then CompressPrev()
+                //
+                // *** read data from currentFile, compress it and write to new file, then delete old file
+                // need to read into a compressed version then delete current file and male compressed the new current file?
+
+                
+
+                // previous file closed in CloseFile()
+                CloseFile();        
 
                 // new file created in OpenFile()
                 OpenFile(now, minSequence);
