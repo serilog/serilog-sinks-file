@@ -35,12 +35,22 @@ namespace Serilog.Sinks.File
         readonly bool _buffered;
         readonly bool _shared;
         readonly bool _rollOnFileSizeLimit;
+        // added params for if compression and what type
+        readonly bool _compression;
+        readonly CompressionType _compressionType;
+
+        // enum to choose compression type
+        public enum CompressionType
+        {
+            Zip,
+            GZip,
+        };
 
         readonly object _syncRoot = new object();
         bool _isDisposed;
         DateTime? _nextCheckpoint;
         IFileSink _currentFile;
-        int? _currentFileSequence;
+        int? _currentFileSequence;     
 
         public RollingFileSink(string path,
                               ITextFormatter textFormatter,
@@ -50,16 +60,20 @@ namespace Serilog.Sinks.File
                               bool buffered,
                               bool shared,
                               RollingInterval rollingInterval,
-                              bool rollOnFileSizeLimit)
+                              bool rollOnFileSizeLimit,
+                              // add compression params for Zip or GZip
+                              bool compression,
+                              CompressionType compressionType
+                              )
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0) throw new ArgumentException("Negative value provided; file size limit must be non-negative");
             if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("Zero or negative value provided; retained file count limit must be at least 1");
 
             _roller = new PathRoller(path, rollingInterval);
-            // need function such as:
-            // _compression = bool
-            // _compressionType = enum
+            // added params
+            _compression = compression;
+            _compressionType = compressionType;
             _textFormatter = textFormatter;
             _fileSizeLimitBytes = fileSizeLimitBytes;
             _retainedFileCountLimit = retainedFileCountLimit;
@@ -67,6 +81,34 @@ namespace Serilog.Sinks.File
             _buffered = buffered;
             _shared = shared;
             _rollOnFileSizeLimit = rollOnFileSizeLimit;
+        }
+
+        // compression function
+        public void Compress(string prevLog, string logDirectory, CompressionType compressionType)
+        {
+            // create new directory          
+            System.IO.Directory.CreateDirectory($"{logDirectory}\\new_dir");
+
+            // move prev file to folder to be zipped
+            System.IO.File.Move($"{logDirectory}\\{prevLog}", $"{logDirectory}\\new_dir\\{prevLog}");
+
+            // Zip compression
+            if (compressionType == CompressionType.Zip)
+            {
+                /*
+                From my understanding this CreateFromDirectory() takes a folder at start path
+                and makes a zipped file at the zip_path address. zip_path cannot already exist.
+                */
+                // zipName removes '.txt' from log file name
+                var zipName = prevLog.Remove(prevLog.Length - 4);
+                var zip_path = $"{logDirectory}\\{zipName}.zip";
+                var start_path = $"{logDirectory}\\new_dir";
+                System.IO.Compression.ZipFile.CreateFromDirectory(start_path, zip_path);
+
+                // delete previous, non compressed file in it's stored folder
+                System.IO.Directory.Delete($"{logDirectory}\\new_dir", true);
+            }
+
         }
 
         public void Emit(LogEvent logEvent)
@@ -111,7 +153,7 @@ namespace Serilog.Sinks.File
                 // *** read data from currentFile, compress it and write to new file, then delete old file
                 // need to read into a compressed version then delete current file and make compressed the new current file?
 
-                // *** Do Files use pointers or path vars?
+                // need to put following code into a method
 
                 // get last file added, prev log before CloseFile()
                 var prevLog = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
@@ -122,24 +164,11 @@ namespace Serilog.Sinks.File
                 // previous file closed in CloseFile()
                 CloseFile();
 
-                // create new directory          
-                System.IO.Directory.CreateDirectory($"{logDirectory}\\new_dir");
-
-                // move prev file to folder to be zipped
-                System.IO.File.Move($"{logDirectory}\\{prevLog}", $"{logDirectory}\\new_dir\\{prevLog}");
-
-                /*
-                From my understanding this CreateFromDirectory() takes a folder at start path
-                and makes a zipped file at the zip_path address. zip_path cannot already exist.
-                */
-                // zipName removes '.txt' from log file name
-                var zipName = prevLog.Remove(prevLog.Length - 4);
-                var zip_path = $"{logDirectory}\\{zipName}.zip";
-                var start_path = $"{logDirectory}\\new_dir";
-                System.IO.Compression.ZipFile.CreateFromDirectory(start_path, zip_path);
-
-                // delete previous, non compressed file in it's stored folder
-                System.IO.Directory.Delete($"{logDirectory}\\new_dir", true);
+                // call compression method
+                if (_compression)
+                {
+                    Compress(prevLog, logDirectory, _compressionType);
+                }
 
                 // new file created in OpenFile()
                 OpenFile(now, minSequence);
