@@ -80,38 +80,51 @@ namespace Serilog.Sinks.File
         public void Compress(string prevLog, string logDirectory, CompressionType compressionType)
         {
             // create new directory          
-            System.IO.Directory.CreateDirectory($"{logDirectory}\\new_dir");
-
+            Directory.CreateDirectory($"{logDirectory}\\new_dir");
             // move prev file to folder to be zipped
             System.IO.File.Move($"{logDirectory}\\{prevLog}", $"{logDirectory}\\new_dir\\{prevLog}");
 
-            // Zip compression
-            if (compressionType == CompressionType.Zip)
+            if (compressionType != CompressionType.None)
             {
-                /*
-                From my understanding this CreateFromDirectory() takes a folder at start path
-                and makes a zipped file at the zip_path address. zip_path cannot already exist.
-                */
-                // zipName removes '.txt' from log file name
-                var zipName = prevLog.Remove(prevLog.Length - 4);
-                var zip_path = $"{logDirectory}\\{zipName}.zip";
-                var start_path = $"{logDirectory}\\new_dir";
-                System.IO.Compression.ZipFile.CreateFromDirectory(start_path, zip_path);
+                var readDirectory = $"{logDirectory}\\new_dir";
 
-                // delete previous, non compressed file in it's stored folder
-                System.IO.Directory.Delete($"{logDirectory}\\new_dir", true);
-            }
-            // GZip compression
-            else if (compressionType == CompressionType.GZip)
-            {
+                // Zip compression
+                if (compressionType == CompressionType.Zip)
+                {
+                    /*
+                    From my understanding this CreateFromDirectory() takes a folder at start path
+                    and makes a zipped file at the zip_path address. zip_path cannot already exist.
+                    */
+                    // zipName removes '.txt' from log file name
+                    var zipName = prevLog.Remove(prevLog.Length - 4);
+                    var zip_path = $"{logDirectory}\\{zipName}.zip";                  
+                    System.IO.Compression.ZipFile.CreateFromDirectory(readDirectory, zip_path);
 
-                // TODO
+                    // delete previous, non compressed file in it's stored folder
+                    Directory.Delete($"{logDirectory}\\new_dir", true);
+                }
+                // GZip compression
+                else if (compressionType == CompressionType.GZip)
+                {
+                    var GzipName = prevLog.Remove(prevLog.Length - 4);
+                    var Gzip_path = $"{logDirectory}\\{GzipName}.gz";
+                    GZipCompress(readDirectory, Gzip_path);
 
+                    // delete previous, non compressed file in it's stored folder
+                    Directory.Delete($"{logDirectory}\\new_dir", true);
+                }
+                else
+                {
+                    throw new Exception("Compression type entered incorrectly or not supported.\n");
+                }
             }
-            else
-            {
-                throw new Exception("Compression type entered incorrectly or not supported.\n");
-            }
+
+        }
+
+        // method for GZip compression
+        // TODO
+        public void GZipCompress(string readDirectory, string writeDirectory)
+        {
 
         }
 
