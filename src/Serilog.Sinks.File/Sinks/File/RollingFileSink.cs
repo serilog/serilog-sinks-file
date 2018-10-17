@@ -113,20 +113,33 @@ namespace Serilog.Sinks.File
 
                 // *** Do Files use pointers or path vars?
 
-                // get last file added
-                var test = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
+                // get last file added, prev log before CloseFile()
+                var prevLog = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
                                          .Select(Path.GetFileName).LastOrDefault();
                 // get directory of log files
-                var directoryTest = _roller.LogFileDirectory;          
+                var logDirectory = _roller.LogFileDirectory;          
 
                 // previous file closed in CloseFile()
                 CloseFile();
 
-                // create new file as compressed version of previous
-                System.IO.File.Create($"{directoryTest}\\TEST.txt");
+                // create new directory          
+                System.IO.Directory.CreateDirectory($"{logDirectory}\\new_dir");
 
-                // delete previous, non compressed
-                System.IO.File.Delete($"{directoryTest}\\{test}");
+                // move prev file to folder to be zipped
+                System.IO.File.Move($"{logDirectory}\\{prevLog}", $"{logDirectory}\\new_dir\\{prevLog}");
+
+                /*
+                From my understanding this CreateFromDirectory() takes a folder at start path
+                and makes a zipped file at the zip_path address. zip_path cannot already exist.
+                */
+                // zipName removes '.txt' from log file name
+                var zipName = prevLog.Remove(prevLog.Length - 4);
+                var zip_path = $"{logDirectory}\\{zipName}.zip";
+                var start_path = $"{logDirectory}\\new_dir";
+                System.IO.Compression.ZipFile.CreateFromDirectory(start_path, zip_path);
+
+                // delete previous, non compressed file in it's stored folder
+                System.IO.Directory.Delete($"{logDirectory}\\new_dir", true);
 
                 // new file created in OpenFile()
                 OpenFile(now, minSequence);
