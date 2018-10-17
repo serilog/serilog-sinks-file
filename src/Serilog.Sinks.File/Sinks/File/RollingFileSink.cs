@@ -36,15 +36,8 @@ namespace Serilog.Sinks.File
         readonly bool _shared;
         readonly bool _rollOnFileSizeLimit;
         // added params for if compression and what type
-        readonly bool _compression;
-        readonly CompressionType _compressionType;
-
-        // enum to choose compression type
-        public enum CompressionType
-        {
-            Zip,
-            GZip,
-        };
+        readonly bool? _compression;
+        readonly CompressionType _compressionType;    
 
         readonly object _syncRoot = new object();
         bool _isDisposed;
@@ -62,7 +55,7 @@ namespace Serilog.Sinks.File
                               RollingInterval rollingInterval,
                               bool rollOnFileSizeLimit,
                               // add compression params for Zip or GZip
-                              bool compression,
+                              bool? compression,
                               CompressionType compressionType
                               )
         {
@@ -107,6 +100,17 @@ namespace Serilog.Sinks.File
 
                 // delete previous, non compressed file in it's stored folder
                 System.IO.Directory.Delete($"{logDirectory}\\new_dir", true);
+            }
+            // GZip compression
+            else if (compressionType == CompressionType.GZip)
+            {
+
+                // TODO
+
+            }
+            else
+            {
+                throw new Exception("Compression type entered incorrectly or not supported.\n");
             }
 
         }
@@ -165,7 +169,7 @@ namespace Serilog.Sinks.File
                 CloseFile();
 
                 // call compression method
-                if (_compression)
+                if (_compression == true)
                 {
                     Compress(prevLog, logDirectory, _compressionType);
                 }
