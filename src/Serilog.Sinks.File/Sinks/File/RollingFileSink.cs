@@ -125,7 +125,20 @@ namespace Serilog.Sinks.File
         // TODO
         public void GZipCompress(string readDirectory, string writeDirectory)
         {
+            // convert input string to file stream
+            // readdirectory is the directory that has the origal file to be compressed.
+            using (Stream originalFileStream)
+            {
+                using (FileStream compressedFileStream = System.IO.File.Create(writeDirectory))
+                {
+                    using (System.IO.Compression.GZipStream compressionStream = new System.IO.Compression.GZipStream(compressedFileStream,
+                       System.IO.Compression.CompressionMode.Compress))
+                    {
+                        readDirectory.CopyTo(writeDirectory);
 
+                    }
+                }
+            }
         }
 
         public void Emit(LogEvent logEvent)
