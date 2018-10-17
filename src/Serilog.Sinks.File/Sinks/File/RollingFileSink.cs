@@ -103,7 +103,14 @@ namespace Serilog.Sinks.File
                         minSequence = _currentFileSequence.Value + 1;
                 }
 
+                // previous file closed in CloseFile()
                 CloseFile();
+
+                // get previous file
+                // if _compress == true
+                //      then CompressPrev()
+
+                // new file created in OpenFile()
                 OpenFile(now, minSequence);
             }
         }
@@ -144,6 +151,7 @@ namespace Serilog.Sinks.File
 
                 try
                 {
+                    // new file made
                     _currentFile = _shared ?
                         (IFileSink)new SharedFileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding) :
                         new FileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding, _buffered);
@@ -215,6 +223,8 @@ namespace Serilog.Sinks.File
 
         void CloseFile()
         {
+            
+
             if (_currentFile != null)
             {
                 (_currentFile as IDisposable)?.Dispose();
