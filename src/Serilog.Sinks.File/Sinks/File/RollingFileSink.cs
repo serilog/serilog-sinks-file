@@ -108,17 +108,9 @@ namespace Serilog.Sinks.File
                 // GZip compression
                 else if (compressionType == CompressionType.GZip)
                 {
-                    //var GzipName = prevLog.Remove(prevLog.Length - 4);
-                    //GzipName = GzipName + ".gz";
-
-                   
-                    //var Gzip_path = $"{logDirectory}\\{GzipName}.gz";
                     GZipCompress(prevLog, logDirectory);
 
-                    // delete previous, non compressed file in it's stored folder
-                    //Directory.Delete($"{logDirectory}\\new_dir", true);
-                   
-                    
+                    System.IO.File.Delete($"{logDirectory}\\{prevLog}");
                 }
                 else
                 {
@@ -142,17 +134,16 @@ namespace Serilog.Sinks.File
             }
 
             // name new GZip file and get file path
-            var timeName = prevLog.Remove(prevLog.Length - 4);
-            var GZipPath = $"{logDirectory}\\{timeName}_GZip.gz";
+            var logName = prevLog.Remove(prevLog.Length - 4);
+            var GZipPath = $"{logDirectory}\\{logName}.gz";
 
             using (FileStream outFile = new FileStream(GZipPath, FileMode.Create))
             using (System.IO.Compression.GZipStream gzipStream = new System.IO.Compression.GZipStream(outFile, System.IO.Compression.CompressionMode.Compress, false))
             {
                 // compress byteArray which is all bytes in the file using GZip compression
+                // Write to outfile in same directory as prevLog
                 gzipStream.Write(byteArray, 0, byteArray.Length);
 
-                // write compressed file text to path
-                System.IO.File.WriteAllText(GZipPath, gzipStream.ToString());
             }
 
         }
