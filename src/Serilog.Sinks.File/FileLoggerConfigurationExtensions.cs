@@ -86,7 +86,7 @@ namespace Serilog
         /// <param name="formatter">
         /// A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into text for
         /// the file. If control of regular text formatting is required, use the other overload of
-        /// <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, bool?, CompressionType)"/>
+        /// <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, CompressionType)"/>
         /// and specify the outputTemplate parameter instead.
         /// </param>
         /// <param name="path">Path to the file.</param>
@@ -220,7 +220,7 @@ namespace Serilog
         /// <param name="formatter">
         /// A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into text for
         /// the file. If control of regular text formatting is required, use the other overload of
-        /// <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, bool?, CompressionType)"/>
+        /// <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, CompressionType)"/>
         /// and specify the outputTemplate parameter instead.
         /// </param>
         /// <param name="path">Path to the file.</param>
