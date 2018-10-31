@@ -58,7 +58,6 @@ namespace Serilog
         /// If provided, a full disk flush will be performed periodically at the specified interval.
         /// Compression parameters TODO need to update this documentation eventually
         /// </param>
-        /// <param name="compression"></param>
         /// <param name="compressionType"></param>
         /// <returns>Configuration object allowing method chaining.</returns>
         /// <remarks>The file will be written using the UTF-8 character set.</remarks>
@@ -75,13 +74,11 @@ namespace Serilog
             bool shared,
             TimeSpan? flushToDiskInterval,
             // compression params
-            bool? compression,
             CompressionType compressionType)
         {
             // ReSharper disable once RedundantArgumentDefaultValue
             return File(sinkConfiguration, path, restrictedToMinimumLevel, outputTemplate, formatProvider, fileSizeLimitBytes,
-                levelSwitch, buffered, shared, flushToDiskInterval, RollingInterval.Infinite, false,
-                null, null);
+                levelSwitch, buffered, shared, flushToDiskInterval, RollingInterval.Infinite, false, null);
         }
 
         /// <summary>Write log events to the specified file.</summary>
@@ -185,7 +182,6 @@ namespace Serilog
         /// Character encoding used to write the text file. The default is UTF-8 without BOM.
         /// Parameters for compression or not and string of compression type
         /// </param>
-        /// <param name="compression"></param>
         /// <param name="compressionType"></param>
         /// <returns>Configuration object allowing method chaining.</returns>
         /// <remarks>The file will be written using the UTF-8 character set.</remarks>
@@ -207,7 +203,6 @@ namespace Serilog
             int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
             Encoding encoding = null,
             // compression params
-            bool? compression = null,
             CompressionType compressionType = CompressionType.None)
         {
             if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
@@ -217,7 +212,7 @@ namespace Serilog
             var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
             return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes,
                 levelSwitch, buffered, shared, flushToDiskInterval,
-                rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit, encoding, compression, compressionType);
+                rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit, encoding, compressionType);
         }
 
         /// <summary>Write log events to the specified file.</summary>
@@ -272,7 +267,6 @@ namespace Serilog
         /// <param name="encoding">
         /// Character encoding used to write the text file. The default is UTF-8 without BOM.
         /// </param>
-        /// <param name="compression"></param>
         /// <param name="compressionType"></param>
         /// <returns>Configuration object allowing method chaining.</returns>
         /// <remarks>The file will be written using the UTF-8 character set.</remarks>
@@ -292,11 +286,10 @@ namespace Serilog
             int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
             Encoding encoding = null,
             // compression params
-            bool? compression = null,
             CompressionType compressionType = CompressionType.None)
         {
             return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, levelSwitch,
-                buffered, false, shared, flushToDiskInterval, encoding, rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit, compression, compressionType);
+                buffered, false, shared, flushToDiskInterval, encoding, rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit, compressionType);
         }
 
         /// <summary>Write log events to the specified file.</summary>
@@ -358,7 +351,7 @@ namespace Serilog
             LoggingLevelSwitch levelSwitch = null)
         {
             return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, null, levelSwitch, false, true,
-                false, null, null, RollingInterval.Infinite, false, null, null, CompressionType.None);
+                false, null, null, RollingInterval.Infinite, false, null, CompressionType.None);
         }
 
         // This overload for rolling params and compression
@@ -375,12 +368,10 @@ namespace Serilog
             TimeSpan? flushToDiskInterval,
             Encoding encoding,
             RollingInterval rollingInterval,
-            // have parameter for 'bool compression' and 'compression type'?
+            // have parameter for 'compression type'?
             bool rollOnFileSizeLimit,
             int? retainedFileCountLimit,
             // compression params
-            // compression params
-            bool? compression,
             CompressionType compressionType
             )
         {
@@ -395,7 +386,7 @@ namespace Serilog
 
             if (rollOnFileSizeLimit || rollingInterval != RollingInterval.Infinite)
             {
-                sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, compression, compressionType);
+                sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, compressionType);
             }
             else
             {
