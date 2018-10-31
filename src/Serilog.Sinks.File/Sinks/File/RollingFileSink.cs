@@ -77,7 +77,7 @@ namespace Serilog.Sinks.File
         }
 
         // compression function
-        public void Compress(string prevLog, string logDirectory, CompressionType compressionType)
+        public void Compress(string logFile, string logDirectory, CompressionType compressionType)
         {
             
 
@@ -91,15 +91,15 @@ namespace Serilog.Sinks.File
                     // create new directory          
                     Directory.CreateDirectory($"{logDirectory}\\new_dir");
                     // move prev file to folder to be zipped
-                    System.IO.File.Move($"{logDirectory}\\{prevLog}", $"{logDirectory}\\new_dir\\{prevLog}");
+                    System.IO.File.Move($"{logDirectory}\\{logFile}", $"{logDirectory}\\new_dir\\{logFile}");
 
                     /*
                     From my understanding this CreateFromDirectory() takes a folder at start path
                     and makes a zipped file at the zip_path address. zip_path cannot already exist.
                     */
                     // zipName removes '.txt' from log file name
-                    var zipName = prevLog.Remove(prevLog.Length - 4);
-                    var zip_path = $"{logDirectory}\\{zipName}.zip";                  
+                    var zipName = logFile.Remove(logFile.Length - 4);
+                    var zip_path = $"{logDirectory}\\{zipName}-Zip.zip";                  
                     System.IO.Compression.ZipFile.CreateFromDirectory(readDirectory, zip_path);
 
                     // delete previous, non compressed file in it's stored folder
@@ -108,9 +108,9 @@ namespace Serilog.Sinks.File
                 // GZip compression
                 else if (compressionType == CompressionType.GZip)
                 {
-                    GZipCompress(prevLog, logDirectory);
+                    GZipCompress(logFile, logDirectory);
 
-                    System.IO.File.Delete($"{logDirectory}\\{prevLog}");
+                    System.IO.File.Delete($"{logDirectory}\\{logFile}");
                 }
                 else
                 {
@@ -135,7 +135,7 @@ namespace Serilog.Sinks.File
 
             // name new GZip file and get file path
             var logName = prevLog.Remove(prevLog.Length - 4);
-            var GZipPath = $"{logDirectory}\\{logName}.gz";
+            var GZipPath = $"{logDirectory}\\{logName}-GZip.gz";
 
             using (FileStream outFile = new FileStream(GZipPath, FileMode.Create))
             using (System.IO.Compression.GZipStream gzipStream = new System.IO.Compression.GZipStream(outFile, System.IO.Compression.CompressionMode.Compress, false))
@@ -205,6 +205,22 @@ namespace Serilog.Sinks.File
                 if (_compression == true)
                 {
                     Compress(prevLog, logDirectory, _compressionType);
+
+                    // get full list of files in directory
+                    // *** Zip directories excluded because string[] is only files
+                    var directoryFiles = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern);
+
+                    // iterate over files and compress .txt, uncompressed
+                    foreach (var directoryFile in directoryFiles)
+                    {
+                        var directoryFileName = Path.GetFileName(directoryFile);
+
+                        if (!(directoryFileName.Contains("-GZip")))
+                        {
+                            Compress(directoryFileName, logDirectory, _compressionType);
+                        }
+                    }
+
                 }
 
                 // new file created in OpenFile()
