@@ -79,10 +79,7 @@ namespace Serilog.Sinks.File
         // compression function
         public void Compress(string prevLog, string logDirectory, CompressionType compressionType)
         {
-            // create new directory          
-            Directory.CreateDirectory($"{logDirectory}\\new_dir");
-            // move prev file to folder to be zipped
-            System.IO.File.Move($"{logDirectory}\\{prevLog}", $"{logDirectory}\\new_dir\\{prevLog}");
+            
 
             if (compressionType != CompressionType.None)
             {
@@ -91,6 +88,11 @@ namespace Serilog.Sinks.File
                 // Zip compression
                 if (compressionType == CompressionType.Zip)
                 {
+                    // create new directory          
+                    Directory.CreateDirectory($"{logDirectory}\\new_dir");
+                    // move prev file to folder to be zipped
+                    System.IO.File.Move($"{logDirectory}\\{prevLog}", $"{logDirectory}\\new_dir\\{prevLog}");
+
                     /*
                     From my understanding this CreateFromDirectory() takes a folder at start path
                     and makes a zipped file at the zip_path address. zip_path cannot already exist.
@@ -106,12 +108,17 @@ namespace Serilog.Sinks.File
                 // GZip compression
                 else if (compressionType == CompressionType.GZip)
                 {
-                    var GzipName = prevLog.Remove(prevLog.Length - 4);
-                    var Gzip_path = $"{logDirectory}\\{GzipName}.gz";
-                    GZipCompress(readDirectory, Gzip_path);
+                    //var GzipName = prevLog.Remove(prevLog.Length - 4);
+                    //GzipName = GzipName + ".gz";
+
+                   
+                    //var Gzip_path = $"{logDirectory}\\{GzipName}.gz";
+                    GZipCompress(prevLog, logDirectory);
 
                     // delete previous, non compressed file in it's stored folder
-                    Directory.Delete($"{logDirectory}\\new_dir", true);
+                    //Directory.Delete($"{logDirectory}\\new_dir", true);
+                   
+                    
                 }
                 else
                 {
@@ -123,22 +130,31 @@ namespace Serilog.Sinks.File
 
         // method for GZip compression
         // TODO
-        public void GZipCompress(string readDirectory, string writeDirectory)
+        public void GZipCompress(string prevLog, string logDirectory)
         {
             // convert input string to file stream
             // readdirectory is the directory that has the origal file to be compressed.
-            using (Stream originalFileStream)
+            byte[] byteArray;
+            using (FileStream prevLogStream = new FileStream(prevLog, FileMode.Open))
             {
-                using (FileStream compressedFileStream = System.IO.File.Create(writeDirectory))
-                {
-                    using (System.IO.Compression.GZipStream compressionStream = new System.IO.Compression.GZipStream(compressedFileStream,
-                       System.IO.Compression.CompressionMode.Compress))
-                    {
-                        readDirectory.CopyTo(writeDirectory);
-
-                    }
-                }
+                byteArray = new byte[prevLogStream.Length];
+                prevLogStream.Read(byteArray, 0, (int)prevLogStream.Length);
             }
+
+            // name new GZip file and get file path
+            var timeName = prevLog.Remove(prevLog.Length - 4);
+            var GZipPath = $"{logDirectory}\\{timeName}_GZip.gz";
+
+            using (FileStream outFile = new FileStream(GZipPath, FileMode.Create))
+            using (System.IO.Compression.GZipStream gzipStream = new System.IO.Compression.GZipStream(outFile, System.IO.Compression.CompressionMode.Compress, false))
+            {
+                // compress byteArray which is all bytes in the file using GZip compression
+                gzipStream.Write(byteArray, 0, byteArray.Length);
+
+                // write compressed file text to path
+                System.IO.File.WriteAllText(GZipPath, gzipStream.ToString());
+            }
+
         }
 
         public void Emit(LogEvent logEvent)
