@@ -119,8 +119,9 @@ namespace Serilog.Sinks.File
         {
             // convert input string to file stream
             // readdirectory is the directory that has the origal file to be compressed.
+            var logPath = $"{logDirectory}\\" + prevLog;
             byte[] byteArray;
-            using (FileStream prevLogStream = new FileStream(prevLog, FileMode.Open))
+            using (FileStream prevLogStream = new FileStream(logPath, FileMode.Open))
             {
                 byteArray = new byte[prevLogStream.Length];
                 prevLogStream.Read(byteArray, 0, (int)prevLogStream.Length);

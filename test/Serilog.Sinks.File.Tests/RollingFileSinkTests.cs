@@ -105,7 +105,7 @@ namespace Serilog.Sinks.File.Tests
             var pathFormat = Path.Combine(folder, fileName);
 
             ILogger log = null;
-
+             
             try
             {
                 log = new LoggerConfiguration()
@@ -129,6 +129,95 @@ namespace Serilog.Sinks.File.Tests
         {
             var assembly = typeof(FileLoggerConfigurationExtensions).GetTypeInfo().Assembly;
             Assert.Equal("2.0.0.0", assembly.GetName().Version.ToString(4));
+        }
+
+        [Fact]
+        public void GZipCompressionCorrect()
+        {
+            // Zip compress a file and check it's magic byte at the start
+
+
+            // use try-finally to delete the folder that is created and filled in try
+            // log files into a directory, check each file in directory is gzip zip
+
+            var fileName = Some.String() + "log.txt";
+            var temp = Some.TempFolderPath();
+            var pathFormat = Path.Combine(temp, fileName);
+
+            ILogger log = null;
+
+
+            log = new LoggerConfiguration()
+                   .WriteTo.File(pathFormat,
+                   rollOnFileSizeLimit: true, fileSizeLimitBytes: 4,
+                   compressionType: CompressionType.GZip)
+                   .CreateLogger();
+
+            while (Directory.GetFiles(temp).Length < 2)
+            {
+                log.Information("test if compresses on roll.");
+            }
+
+            Log.CloseAndFlush();
+
+            var compressedFile =
+                Directory.EnumerateFiles(temp)
+                .Where(name => name.Contains("-GZip")).First();
+
+            using (FileStream compressedStream = new FileStream(compressedFile, FileMode.Open))
+            {
+
+                byte[] compressedBytes = new byte[2];
+
+                compressedStream.Read(compressedBytes, 0, compressedBytes.Length);
+
+                Assert.Equal(compressedBytes[0], 0x1f);
+
+                Assert.Equal(compressedBytes[1], 0x8b);
+
+            }
+
+        }
+
+        [Fact]
+        public void ZipCompressionCorrect()
+        {
+
+            var fileName = Some.String() + "log.txt";
+            var temp = Some.TempFolderPath();
+            var pathFormat = Path.Combine(temp, fileName);           
+
+            using(ILogger log = null;)
+                {
+                log = new LoggerConfiguration()
+                       .WriteTo.File(pathFormat,
+                       rollOnFileSizeLimit: true, fileSizeLimitBytes: 1,
+                       compressionType: CompressionType.Zip)
+                       .CreateLogger();
+
+
+                log.Information("test");
+                log.Information("test");
+
+                string compressedFile = Directory.EnumerateFiles(temp).Where(name => name.Contains("-Zip")).First();
+
+                using (FileStream compressedStream = new FileStream(compressedFile, FileMode.Open))
+                {
+
+                    byte[] compressedBytes = new byte[2];
+
+                    compressedStream.Read(compressedBytes, 0, compressedBytes.Length);
+
+                    Assert.Equal(compressedBytes[0], 0x50);
+                    Assert.Equal(compressedBytes[1], 0x4B);
+                }
+
+                foreach (var loggedFile in Directory.GetFiles(temp))
+                {
+                    System.IO.File.Delete(loggedFile);
+                }
+                Directory.Delete(temp);
+            }
         }
 
         static void TestRollingEventSequence(params LogEvent[] events)
