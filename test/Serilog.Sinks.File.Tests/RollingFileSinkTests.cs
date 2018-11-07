@@ -185,16 +185,16 @@ namespace Serilog.Sinks.File.Tests
 
             var fileName = Some.String() + "log.txt";
             var temp = Some.TempFolderPath();
-            var pathFormat = Path.Combine(temp, fileName);           
+            var pathFormat = Path.Combine(temp, fileName);
 
-            using(ILogger log = null;)
-                {
-                log = new LoggerConfiguration()
+           // ILogger log = null;
+
+            using (var log = new LoggerConfiguration()
                        .WriteTo.File(pathFormat,
                        rollOnFileSizeLimit: true, fileSizeLimitBytes: 1,
                        compressionType: CompressionType.Zip)
-                       .CreateLogger();
-
+                       .CreateLogger())
+                {
 
                 log.Information("test");
                 log.Information("test");
