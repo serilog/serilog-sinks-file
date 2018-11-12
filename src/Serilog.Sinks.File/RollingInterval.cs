@@ -49,23 +49,4 @@ namespace Serilog
         /// </summary>
         Minute
     }
-
-    /// <summary>
-    /// Specifies the compression type
-    /// </summary>
-    public enum CompressionType
-    {
-        /// <summary>
-        /// Zip compression
-        /// </summary>
-        Zip,
-        /// <summary>
-        /// RGZip compression
-        /// </summary>
-        GZip,
-        /// <summary>
-        /// No compression
-        /// </summary>
-        None,
-    };
 }
