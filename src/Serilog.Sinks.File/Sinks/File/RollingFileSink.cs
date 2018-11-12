@@ -71,37 +71,39 @@ namespace Serilog.Sinks.File
         }
 
         public void Compress(string logFile, string logDirectory, CompressionType compressionType)
+        {     
+            var readDirectory = Path.Combine(logDirectory, "new_dir");
+
+            switch (compressionType)
+            {
+                case CompressionType.Zip:
+                    ZipCompress(logFile, logDirectory, readDirectory);
+                    break;
+                case CompressionType.GZip:
+                    GZipCompress(logFile, logDirectory);
+                    break;
+                case CompressionType.None:
+                    throw new Exception("Compression type entered incorrectly or not supported.\n");
+            }
+        }
+
+        public void ZipCompress(string prevLog, string logDirectory, string readDirectory)
         {
-            
-            var readDirectory = $"{logDirectory}\\new_dir";
+            Directory.CreateDirectory(readDirectory);
+            System.IO.File.Move(
+                Path.Combine(logDirectory, prevLog), Path.Combine(readDirectory, prevLog)
+                );
 
-            if (compressionType == CompressionType.Zip)
-            {
-                Directory.CreateDirectory($"{logDirectory}\\new_dir");
-                System.IO.File.Move($"{logDirectory}\\{logFile}", $"{logDirectory}\\new_dir\\{logFile}");
+            var zipName = prevLog.Remove(prevLog.Length - 4);
+            var zip_path = Path.Combine(logDirectory, $"{zipName}-Zip.zip");
+            System.IO.Compression.ZipFile.CreateFromDirectory(readDirectory, zip_path);
 
-                var zipName = logFile.Remove(logFile.Length - 4);
-                var zip_path = $"{logDirectory}\\{zipName}-Zip.zip";
-                System.IO.Compression.ZipFile.CreateFromDirectory(readDirectory, zip_path);
-
-                Directory.Delete($"{logDirectory}\\new_dir", true);
-            }
-            else if (compressionType == CompressionType.GZip)
-            {
-                GZipCompress(logFile, logDirectory);
-
-                System.IO.File.Delete($"{logDirectory}\\{logFile}");
-            }
-            else
-            {
-                throw new Exception("Compression type entered incorrectly or not supported.\n");
-            }
-
+            Directory.Delete(readDirectory, true);
         }
 
         public void GZipCompress(string prevLog, string logDirectory)
         {
-            var logPath = $"{logDirectory}\\" + prevLog;
+            var logPath = Path.Combine(logDirectory, prevLog);
             byte[] byteArray;
             using (FileStream prevLogStream = new FileStream(logPath, FileMode.Open))
             {
@@ -110,7 +112,7 @@ namespace Serilog.Sinks.File
             }
 
             var logName = prevLog.Remove(prevLog.Length - 4);
-            var GZipPath = $"{logDirectory}\\{logName}-GZip.gz";
+            var GZipPath = Path.Combine(logDirectory, $"{logName}-GZip.gz");
 
             using (FileStream outFile = new FileStream(GZipPath, FileMode.Create))
             using (System.IO.Compression.GZipStream gzipStream = new System.IO.Compression.GZipStream(outFile, System.IO.Compression.CompressionMode.Compress, false))
@@ -118,6 +120,7 @@ namespace Serilog.Sinks.File
                 gzipStream.Write(byteArray, 0, byteArray.Length);
             }
 
+            System.IO.File.Delete(logPath);
         }
 
         public void Emit(LogEvent logEvent)
