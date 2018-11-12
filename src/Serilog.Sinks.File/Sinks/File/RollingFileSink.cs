@@ -35,12 +35,14 @@ namespace Serilog.Sinks.File
         readonly bool _buffered;
         readonly bool _shared;
         readonly bool _rollOnFileSizeLimit;
+        // added params for if compression and what type
+        readonly CompressionType _compressionType;    
 
         readonly object _syncRoot = new object();
         bool _isDisposed;
         DateTime? _nextCheckpoint;
         IFileSink _currentFile;
-        int? _currentFileSequence;
+        int? _currentFileSequence;     
 
         public RollingFileSink(string path,
                               ITextFormatter textFormatter,
@@ -50,13 +52,18 @@ namespace Serilog.Sinks.File
                               bool buffered,
                               bool shared,
                               RollingInterval rollingInterval,
-                              bool rollOnFileSizeLimit)
+                              bool rollOnFileSizeLimit,
+                              // add compression params for Zip or GZip
+                              CompressionType compressionType
+                              )
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0) throw new ArgumentException("Negative value provided; file size limit must be non-negative");
             if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("Zero or negative value provided; retained file count limit must be at least 1");
 
             _roller = new PathRoller(path, rollingInterval);
+            // added params
+            _compressionType = compressionType;
             _textFormatter = textFormatter;
             _fileSizeLimitBytes = fileSizeLimitBytes;
             _retainedFileCountLimit = retainedFileCountLimit;
@@ -64,6 +71,75 @@ namespace Serilog.Sinks.File
             _buffered = buffered;
             _shared = shared;
             _rollOnFileSizeLimit = rollOnFileSizeLimit;
+        }
+
+        // compression function
+        public void Compress(string logFile, string logDirectory, CompressionType compressionType)
+        {
+            
+            var readDirectory = $"{logDirectory}\\new_dir";
+
+            // Zip compression
+            if (compressionType == CompressionType.Zip)
+            {
+                // create new directory          
+                Directory.CreateDirectory($"{logDirectory}\\new_dir");
+                // move prev file to folder to be zipped
+                System.IO.File.Move($"{logDirectory}\\{logFile}", $"{logDirectory}\\new_dir\\{logFile}");
+
+                /*
+                From my understanding this CreateFromDirectory() takes a folder at start path
+                and makes a zipped file at the zip_path address. zip_path cannot already exist.
+                */
+                // zipName removes '.txt' from log file name
+                var zipName = logFile.Remove(logFile.Length - 4);
+                var zip_path = $"{logDirectory}\\{zipName}-Zip.zip";
+                System.IO.Compression.ZipFile.CreateFromDirectory(readDirectory, zip_path);
+
+                // delete previous, non compressed file in it's stored folder
+                Directory.Delete($"{logDirectory}\\new_dir", true);
+            }
+            // GZip compression
+            else if (compressionType == CompressionType.GZip)
+            {
+                GZipCompress(logFile, logDirectory);
+
+                System.IO.File.Delete($"{logDirectory}\\{logFile}");
+            }
+            else
+            {
+                throw new Exception("Compression type entered incorrectly or not supported.\n");
+            }
+
+        }
+
+        // method for GZip compression
+        // TODO
+        public void GZipCompress(string prevLog, string logDirectory)
+        {
+            // convert input string to file stream
+            // readdirectory is the directory that has the origal file to be compressed.
+            var logPath = $"{logDirectory}\\" + prevLog;
+            byte[] byteArray;
+            using (FileStream prevLogStream = new FileStream(logPath, FileMode.Open))
+            {
+                byteArray = new byte[prevLogStream.Length];
+                prevLogStream.Read(byteArray, 0, (int)prevLogStream.Length);
+            }
+
+            // name new GZip file and get file path
+            var logName = prevLog.Remove(prevLog.Length - 4);
+            var GZipPath = $"{logDirectory}\\{logName}-GZip.gz";
+
+            using (FileStream outFile = new FileStream(GZipPath, FileMode.Create))
+            using (System.IO.Compression.GZipStream gzipStream = new System.IO.Compression.GZipStream(outFile, System.IO.Compression.CompressionMode.Compress, false))
+            {
+                // compress byteArray which is all bytes in the file using GZip compression
+                // Write to outfile in same directory as prevLog
+                gzipStream.Write(byteArray, 0, byteArray.Length);
+
+            }
+
         }
 
         public void Emit(LogEvent logEvent)
@@ -101,7 +177,47 @@ namespace Serilog.Sinks.File
                         minSequence = _currentFileSequence.Value + 1;
                 }
 
+                // get previous file
+                // if _compress == true
+                //      then CompressPrev()
+                //
+                // *** read data from currentFile, compress it and write to new file, then delete old file
+                // need to read into a compressed version then delete current file and make compressed the new current file?
+
+                // need to put following code into a method
+
+                // get last file added, prev log before CloseFile()
+                var prevLog = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
+                                         .Select(Path.GetFileName).LastOrDefault();
+                // get directory of log files
+                var logDirectory = _roller.LogFileDirectory;          
+
+                // previous file closed in CloseFile()
                 CloseFile();
+
+                // call compression method
+                if (_compressionType != CompressionType.None)
+                {
+                    Compress(prevLog, logDirectory, _compressionType);
+
+                    // get full list of files in directory
+                    // *** Zip directories excluded because string[] is only files
+                    var directoryFiles = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern);
+
+                    // iterate over files and compress .txt, uncompressed
+                    foreach (var directoryFile in directoryFiles)
+                    {
+                        var directoryFileName = Path.GetFileName(directoryFile);
+
+                        if (!(directoryFileName.Contains("-GZip")))
+                        {
+                            Compress(directoryFileName, logDirectory, _compressionType);
+                        }
+                    }
+
+                }
+
+                // new file created in OpenFile()
                 OpenFile(now, minSequence);
             }
         }
@@ -142,6 +258,7 @@ namespace Serilog.Sinks.File
 
                 try
                 {
+                    // new file made
                     _currentFile = _shared ?
                         (IFileSink)new SharedFileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding) :
                         new FileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding, _buffered);
@@ -213,6 +330,8 @@ namespace Serilog.Sinks.File
 
         void CloseFile()
         {
+            
+
             if (_currentFile != null)
             {
                 (_currentFile as IDisposable)?.Dispose();
@@ -221,6 +340,8 @@ namespace Serilog.Sinks.File
 
             _nextCheckpoint = null;
         }
+
+        // After File created and closed, then compress before flushing to disk?
 
         public void FlushToDisk()
         {

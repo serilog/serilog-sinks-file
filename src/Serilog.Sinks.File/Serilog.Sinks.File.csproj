@@ -53,4 +53,15 @@
     <PackageReference Include="System.Runtime.InteropServices" Version="4.1.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
+    <PackageReference Include="System.IO.Compression.ZipFile">
+      <Version>4.0.1</Version>
+    </PackageReference>
+  </ItemGroup>
+
 </Project>
