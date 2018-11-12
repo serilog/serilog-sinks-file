@@ -24,17 +24,22 @@ namespace Serilog.Sinks.File.Tests
                 log.Information("test");
                 log.Information("test");
 
-                string compressedFile = Directory.EnumerateFiles(temp).Where(name => name.Contains("-GZip")).First();
+                string[] compressedFiles = Directory.EnumerateFiles(temp).Where(name => name.Contains("-GZip")).ToArray();
 
-                using (FileStream compressedStream = new FileStream(compressedFile, FileMode.Open))
-                {
+                foreach(var compressedFile in compressedFiles)
+                    {
+                    using (FileStream compressedStream = new FileStream(compressedFile, FileMode.Open))
+                    {
+                        byte[] compressedBytes = new byte[2];
 
-                    byte[] compressedBytes = new byte[2];
+                        compressedStream.Read(compressedBytes, 0, compressedBytes.Length);
 
-                    compressedStream.Read(compressedBytes, 0, compressedBytes.Length);
-
-                    Assert.Equal(compressedBytes[0], 0x1f);
-                    Assert.Equal(compressedBytes[1], 0x8b);
+                        // Magic Bytes for Zip
+                        Assert.Equal(compressedBytes[0], 0x1f);
+                        Assert.Equal(compressedBytes[1], 0x8b);
+                        // fileName is original .txt file name
+                        Assert.False(compressedFiles.Contains(fileName));
+                    }
                 }
 
                 log.Dispose();
@@ -66,17 +71,23 @@ namespace Serilog.Sinks.File.Tests
                 log.Information("test");
                 log.Information("test");
 
-                string compressedFile = Directory.EnumerateFiles(temp).Where(name => name.Contains("-Zip")).First();
+                string[] compressedFiles = Directory.EnumerateFiles(temp).Where(name => name.Contains("-Zip")).ToArray();
 
-                using (FileStream compressedStream = new FileStream(compressedFile, FileMode.Open))
+                foreach (var compressedFile in compressedFiles)
                 {
+                    using (FileStream compressedStream = new FileStream(compressedFile, FileMode.Open))
+                    {
 
-                    byte[] compressedBytes = new byte[2];
+                        byte[] compressedBytes = new byte[2];
 
-                    compressedStream.Read(compressedBytes, 0, compressedBytes.Length);
+                        compressedStream.Read(compressedBytes, 0, compressedBytes.Length);
 
-                    Assert.Equal(compressedBytes[0], 0x50);
-                    Assert.Equal(compressedBytes[1], 0x4B);
+                        // Magic Bytes for Zip
+                        Assert.Equal(compressedBytes[0], 0x50);
+                        Assert.Equal(compressedBytes[1], 0x4B);
+                        // fileName is original .txt file name
+                        Assert.False(compressedFiles.Contains(fileName));
+                    }
                 }
 
                 log.Dispose();
