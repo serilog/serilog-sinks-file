@@ -70,14 +70,18 @@ namespace Serilog.Sinks.File
             _rollOnFileSizeLimit = rollOnFileSizeLimit;
         }
 
+        /// <summary>
+        ///  Chooses which compression algorithm to run on the log file passed in within the given directory.
+        /// </summary>
+        /// <param name="logFile"> The log file to be compressed </param>
+        /// <param name="logDirectory"> The directory that holds logFile </param>
+        /// <param name="compressionType"> The compression algorithm to be used. Is of type CompressionType </param>
         public void Compress(string logFile, string logDirectory, CompressionType compressionType)
-        {     
-            var readDirectory = Path.Combine(logDirectory, "new_dir");
-
+        {              
             switch (compressionType)
             {
                 case CompressionType.Zip:
-                    ZipCompress(logFile, logDirectory, readDirectory);
+                    ZipCompress(logFile, logDirectory);
                     break;
                 case CompressionType.GZip:
                     GZipCompress(logFile, logDirectory);
@@ -87,38 +91,50 @@ namespace Serilog.Sinks.File
             }
         }
 
-        public void ZipCompress(string prevLog, string logDirectory, string readDirectory)
+        /// <summary>
+        /// Uses Zip compression to compress prevLog into a new, zipped directory.
+        /// The Zip algorithm is from System.IO.Compression
+        /// </summary>
+        /// <param name="logFile"> The log file to be compressed </param>
+        /// <param name="logDirectory"> The directory that holds logFile </param>
+        public void ZipCompress(string logFile, string logDirectory)
         {
+            var readDirectory = Path.Combine(logDirectory, "new_dir");
             Directory.CreateDirectory(readDirectory);
             System.IO.File.Move(
-                Path.Combine(logDirectory, prevLog), Path.Combine(readDirectory, prevLog)
+                Path.Combine(logDirectory, logFile), Path.Combine(readDirectory, logFile)
                 );
 
-            var zipName = prevLog.Remove(prevLog.Length - 4);
-            var zip_path = Path.Combine(logDirectory, $"{zipName}-Zip.zip");
+            var zipName = Path.GetFileNameWithoutExtension(logFile);
+            var zip_path = Path.Combine(logDirectory, $"{zipName}.zip");
             System.IO.Compression.ZipFile.CreateFromDirectory(readDirectory, zip_path);
 
             Directory.Delete(readDirectory, true);
         }
 
-        public void GZipCompress(string prevLog, string logDirectory)
+        /// <summary>
+        /// Uses GZip compression algorithm to compress logFile into a .gzip file
+        /// The GZip algorithm is from System.IO.Compression
+        /// </summary>
+        /// <param name="logFile"> The log file to be compressed </param>
+        /// <param name="logDirectory"> The directory that holds logFile </param>
+        public void GZipCompress(string logFile, string logDirectory)
         {
-            var logPath = Path.Combine(logDirectory, prevLog);
-            byte[] byteArray;
-            using (FileStream prevLogStream = new FileStream(logPath, FileMode.Open))
-            {
-                byteArray = new byte[prevLogStream.Length];
-                prevLogStream.Read(byteArray, 0, (int)prevLogStream.Length);
-            }
+            var logPath = Path.Combine(logDirectory, logFile);
+            byte[] byteArray = new byte[] { };
 
-            var logName = prevLog.Remove(prevLog.Length - 4);
-            var GZipPath = Path.Combine(logDirectory, $"{logName}-GZip.gz");
+            byteArray = System.IO.File.ReadAllBytes(logPath); 
+
+            var logName = Path.GetFileNameWithoutExtension(logFile);
+            var GZipPath = Path.Combine(logDirectory, $"{logName}.gz");
 
             using (FileStream outFile = new FileStream(GZipPath, FileMode.Create))
             using (System.IO.Compression.GZipStream gzipStream = new System.IO.Compression.GZipStream(outFile, System.IO.Compression.CompressionMode.Compress, false))
             {
                 gzipStream.Write(byteArray, 0, byteArray.Length);
             }
+
+            System.IO.File.WriteAllBytes(GZipPath, byteArray);
 
             System.IO.File.Delete(logPath);
         }
@@ -174,7 +190,8 @@ namespace Serilog.Sinks.File
                     {
                         var directoryFileName = Path.GetFileName(directoryFile);
 
-                        if (!(directoryFileName.Contains("-GZip")))
+                        // Not sure if we can assume log files will always be .txt?
+                        if (System.IO.Path.GetExtension(directoryFileName) == ".txt")
                         {
                             Compress(directoryFileName, logDirectory, _compressionType);
                         }
