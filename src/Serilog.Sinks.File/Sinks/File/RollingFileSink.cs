@@ -125,6 +125,7 @@ namespace Serilog.Sinks.File
             var logName = Path.GetFileNameWithoutExtension(logFile);
             var GZipPath = Path.Combine(logDirectory, $"{logName}.gz");
 
+            // I think this will have to be dynamic, but I was testing with a large enough size
             byte[] byteArray = new byte[100000000];
             int readOffset = 0;
             int readSize = 1000; // set to 1MB, make parameter for this
@@ -141,16 +142,16 @@ namespace Serilog.Sinks.File
                     // end of inFile stream reached
                     if (readBytes == 0) break;
 
-                    // possible error of overflowing the byte array?
-
+                    // possible error of overflowing the byte array as log files become large
                     gzipStream.Write(byteArray, readOffset, readBytes);
-                    outFile.CopyTo(gzipStream);
+                    
+                    // This currently throws a write permissions error for trying to copy gzipStream --> outFile
+                    // This will also duplicate the bytes already in gzipStream that have been written to outFile in previous loops
+                    gzipStream.CopyTo(outFile);
 
                     readOffset += readBytes;
                 }
             }
-
-            System.IO.File.WriteAllBytes(GZipPath, byteArray);
 
             System.IO.File.Delete(logPath);
         }
