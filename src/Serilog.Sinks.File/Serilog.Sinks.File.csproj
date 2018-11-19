@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Description>Write Serilog events to text files in plain or JSON format.</Description>
@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <PackageReference Include="Serilog" Version="2.5.0" />
+    <PackageReference Include="System.IO.Compression" Version="4.1.0" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
@@ -54,7 +55,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
+    <PackageReference Include="System.IO.Compression.ZipFile">
+      <Version>4.0.1</Version>
+    </PackageReference>
   </ItemGroup>
 
 </Project>

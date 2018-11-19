@@ -120,18 +120,34 @@ namespace Serilog.Sinks.File
         /// <param name="logDirectory"> The directory that holds logFile </param>
         public void GZipCompress(string logFile, string logDirectory)
         {
-            var logPath = Path.Combine(logDirectory, logFile);
-            byte[] byteArray = new byte[] { };
-
-            byteArray = System.IO.File.ReadAllBytes(logPath); 
+            var logPath = Path.Combine(logDirectory, logFile);                  
 
             var logName = Path.GetFileNameWithoutExtension(logFile);
             var GZipPath = Path.Combine(logDirectory, $"{logName}.gz");
 
-            using (FileStream outFile = new FileStream(GZipPath, FileMode.Create))
-            using (System.IO.Compression.GZipStream gzipStream = new System.IO.Compression.GZipStream(outFile, System.IO.Compression.CompressionMode.Compress, false))
+            byte[] byteArray = new byte[100000000];
+            int readOffset = 0;
+            int readSize = 1000; // set to 1MB, make parameter for this
+
+            using(FileStream inFile = new FileStream(logFile, FileMode.Open, FileAccess.Read))
+            using (FileStream outFile = System.IO.File.Create(GZipPath))
+            using (System.IO.Compression.GZipStream gzipStream =
+                new System.IO.Compression.GZipStream(outFile, System.IO.Compression.CompressionMode.Compress, true))
             {
-                gzipStream.Write(byteArray, 0, byteArray.Length);
+                while (readOffset < inFile.Length)
+                {
+                    int readBytes = inFile.Read(byteArray, readOffset, readSize);
+
+                    // end of inFile stream reached
+                    if (readBytes == 0) break;
+
+                    // possible error of overflowing the byte array?
+
+                    gzipStream.Write(byteArray, readOffset, readBytes);
+                    outFile.CopyTo(gzipStream);
+
+                    readOffset += readBytes;
+                }
             }
 
             System.IO.File.WriteAllBytes(GZipPath, byteArray);

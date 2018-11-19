@@ -2,6 +2,7 @@
 using System.IO;
 using Serilog;
 using Serilog.Debugging;
+using Serilog.Sinks.File;
 
 namespace Sample
 {
