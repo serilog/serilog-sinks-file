@@ -52,7 +52,7 @@ namespace Serilog.Sinks.File.Tests
             }
 
         }
-
+      
         [Fact]
         public void ZipCompressionCorrect()
         {

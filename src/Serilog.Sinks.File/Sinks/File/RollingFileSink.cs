@@ -120,40 +120,30 @@ namespace Serilog.Sinks.File
         /// <param name="logDirectory"> The directory that holds logFile </param>
         public void GZipCompress(string logFile, string logDirectory)
         {
-            var logPath = Path.Combine(logDirectory, logFile);                  
+
+            var inFile = Path.Combine(logDirectory, logFile);                  
 
             var logName = Path.GetFileNameWithoutExtension(logFile);
-            var GZipPath = Path.Combine(logDirectory, $"{logName}.gz");
+            var outFile = Path.Combine(logDirectory, $"{logName}.gz");
 
-            // I think this will have to be dynamic, but I was testing with a large enough size
-            byte[] byteArray = new byte[100000000];
-            int readOffset = 0;
-            int readSize = 1000; // set to 1MB, make parameter for this
-
-            using(FileStream inFile = new FileStream(logFile, FileMode.Open, FileAccess.Read))
-            using (FileStream outFile = System.IO.File.Create(GZipPath))
-            using (System.IO.Compression.GZipStream gzipStream =
-                new System.IO.Compression.GZipStream(outFile, System.IO.Compression.CompressionMode.Compress, true))
+            using (var outputStream = System.IO.File.Create(outFile))
             {
-                while (readOffset < inFile.Length)
+                using (var inputStream = System.IO.File.OpenRead(inFile))
                 {
-                    int readBytes = inFile.Read(byteArray, readOffset, readSize);
+                    using (var gzipStream = new System.IO.Compression.GZipStream(outputStream, System.IO.Compression.CompressionMode.Compress))
+                    {
+                        var buffer = new byte[1024];
+                        int bytesRead;
 
-                    // end of inFile stream reached
-                    if (readBytes == 0) break;
-
-                    // possible error of overflowing the byte array as log files become large
-                    gzipStream.Write(byteArray, readOffset, readBytes);
-                    
-                    // This currently throws a write permissions error for trying to copy gzipStream --> outFile
-                    // This will also duplicate the bytes already in gzipStream that have been written to outFile in previous loops
-                    gzipStream.CopyTo(outFile);
-
-                    readOffset += readBytes;
+                        while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            gzipStream.Write(buffer, 0, bytesRead);
+                        }
+                    }
                 }
-            }
+            }       
 
-            System.IO.File.Delete(logPath);
+            System.IO.File.Delete(inFile);
         }
 
         public void Emit(LogEvent logEvent)
