@@ -16,7 +16,7 @@ namespace Sample
 
             // create a log'name'.txt file every minute
             Log.Logger = new LoggerConfiguration()
-                .WriteTo.File("log.txt", rollingInterval: RollingInterval.Minute, compressionType: CompressionType.GZip)
+                .WriteTo.File("log.txt", rollingInterval: RollingInterval.Minute, compressionType: CompressionType.Zip)
                 .CreateLogger();
 
             // two minute loop to create two log files

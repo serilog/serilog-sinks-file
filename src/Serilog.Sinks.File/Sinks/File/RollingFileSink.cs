@@ -41,7 +41,7 @@ namespace Serilog.Sinks.File
         bool _isDisposed;
         DateTime? _nextCheckpoint;
         IFileSink _currentFile;
-        int? _currentFileSequence;     
+        int? _currentFileSequence;
 
         public RollingFileSink(string path,
                               ITextFormatter textFormatter,
@@ -52,7 +52,7 @@ namespace Serilog.Sinks.File
                               bool shared,
                               RollingInterval rollingInterval,
                               bool rollOnFileSizeLimit,
-                              CompressionType compressionType
+                              CompressionType compressionType = CompressionType.None
                               )
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
@@ -86,7 +86,7 @@ namespace Serilog.Sinks.File
                 case CompressionType.GZip:
                     GZipCompress(logFile, logDirectory);
                     break;
-                case CompressionType.None:
+                default:
                     throw new Exception("Compression type entered incorrectly or not supported.\n");
             }
         }
