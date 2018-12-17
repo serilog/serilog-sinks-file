@@ -132,13 +132,10 @@ namespace Serilog.Sinks.File
                 {
                     using (var gzipStream = new System.IO.Compression.GZipStream(outputStream, System.IO.Compression.CompressionMode.Compress))
                     {
-                        var buffer = new byte[1024];
-                        int bytesRead;
+                        int bufferSize = 1024;
+                        var buffer = new byte[bufferSize];
 
-                        while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0)
-                        {
-                            gzipStream.Write(buffer, 0, bytesRead);
-                        }
+                        inputStream.CopyTo(gzipStream, bufferSize);
                     }
                 }
             }       
