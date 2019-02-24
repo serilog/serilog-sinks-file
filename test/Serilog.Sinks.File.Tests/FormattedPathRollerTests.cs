@@ -81,24 +81,16 @@ namespace Serilog.Sinks.File.Tests
             AssertEqualAbsolute("log-2013-07-14", path);
         }
 
-        [Fact]
-        public void TheLogFileFormatCanIncludeFormattedSubdirectories()
+        [Theory]
+        [InlineData( null , @"yyyy-MM'\\Log-'yyyy-MM-dd'.log'"        , "2013-07\\Log-2013-07-14.log")]
+        [InlineData( "Log", @"'Month 'yyyy-MM'\\Log-'yyyy-MM-dd'.log'", "Log\\Month 2013-07\\Log-2013-07-14.log")]
+        public void TheLogFileFormatCanIncludeFormattedSubdirectories(string logDirectoryPath, string format, string expected)
         {
-            var roller = PathRoller.CreateForFormattedPath( logDirectoryPath: null, filePathFormat: @"yyyy-MM'\\Log-'yyyy-MM-dd'.log'", interval: RollingInterval.Day);
+            var roller = PathRoller.CreateForFormattedPath( logDirectoryPath: logDirectoryPath, filePathFormat: format, interval: RollingInterval.Day);
             var now = new DateTime(2013, 7, 14, 3, 24, 9, 980);
             string path;
             roller.GetLogFilePath(now, null, out path);
-            AssertEqualAbsolute("2013-07\\Log-2013-07-14.log", path);
-        }
-
-        [Fact]
-        public void TheLogFileFormatCanIncludeFormattedSubdirectories2()
-        {
-            var roller = PathRoller.CreateForFormattedPath( logDirectoryPath: "Log", filePathFormat: @"'Month 'yyyy-MM'\\Log-'yyyy-MM-dd'.log'", interval: RollingInterval.Day);
-            var now = new DateTime(2013, 7, 14, 3, 24, 9, 980);
-            string path;
-            roller.GetLogFilePath(now, null, out path);
-            AssertEqualAbsolute("Log\\Month 2013-07\\Log-2013-07-14.log", path);
+            AssertEqualAbsolute(expected, path);
         }
 
         [Fact]
@@ -112,25 +104,14 @@ namespace Serilog.Sinks.File.Tests
             Assert.Equal(0, matched.Count());
         }
 
-        [Fact]
-        public void TheDirectorySearchPatternUsesWildcardInPlaceOfDate()
+        [Theory]
+        [InlineData( null , "'log-'yyyy-MM-dd'.txt'", "log-*.txt" )]
+        [InlineData( "Log", "yyyy-MM-dd'.txt'"      , "*.txt"     )]
+        [InlineData( "Log", "yyyy-MM-dd"            , "*"         )]
+        public void TheDirectorySearchPatternUsesWildcardInPlaceOfDate(string logDirectoryPath, string format, string expected)
         {
-            var roller = PathRoller.CreateForFormattedPath("Logs", "'log-'yyyy-MM-dd'.txt'", RollingInterval.Day);
+            var roller = PathRoller.CreateForFormattedPath("Logs", , RollingInterval.Day);
             Assert.Equal("log-*.txt", roller.DirectorySearchPattern);
-        }
-
-        [Fact]
-        public void TheDirectorySearchPatternUsesWildcardInPlaceOfDate2()
-        {
-            var roller = PathRoller.CreateForFormattedPath("Logs", "yyyy-MM-dd'.txt'", RollingInterval.Day);
-            Assert.Equal("*.txt", roller.DirectorySearchPattern);
-        }
-
-        [Fact]
-        public void TheDirectorySearchPatternUsesWildcardInPlaceOfDate3()
-        {
-            var roller = PathRoller.CreateForFormattedPath("Logs", "yyyy-MM-dd", RollingInterval.Day);
-            Assert.Equal("*", roller.DirectorySearchPattern);
         }
 
         [Fact]
