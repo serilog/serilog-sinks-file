@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -7,6 +7,16 @@ namespace Serilog.Sinks.File.Tests
 {
     public class FormattedPathRollerTests
     {
+        [Fact]
+        public void TheLogFileFormatWorksWithInfiniteInterval()
+        {
+            var roller = PathRoller.CreateForFormattedPath( "Logs", "'log-'yyyy-MM-dd'.txt'", RollingInterval.Infinite);
+            var now = new DateTime(2013, 7, 14, 3, 24, 9, 980);
+            string path;
+            roller.GetLogFilePath(now, null, out path);
+            AssertEqualAbsolute(Path.Combine("Logs", "log-0001-01-01.txt"), path);
+        }
+
         [Fact]
         public void TheLogFileIncludesDateToken()
         {
@@ -72,6 +82,26 @@ namespace Serilog.Sinks.File.Tests
         }
 
         [Fact]
+        public void TheLogFileFormatCanIncludeFormattedSubdirectories()
+        {
+            var roller = PathRoller.CreateForFormattedPath( logDirectoryPath: null, filePathFormat: @"yyyy-MM'\\Log-'yyyy-MM-dd'.log'", interval: RollingInterval.Day);
+            var now = new DateTime(2013, 7, 14, 3, 24, 9, 980);
+            string path;
+            roller.GetLogFilePath(now, null, out path);
+            AssertEqualAbsolute("2013-07\\Log-2013-07-14.log", path);
+        }
+
+        [Fact]
+        public void TheLogFileFormatCanIncludeFormattedSubdirectories2()
+        {
+            var roller = PathRoller.CreateForFormattedPath( logDirectoryPath: "Log", filePathFormat: @"'Month 'yyyy-MM'\\Log-'yyyy-MM-dd'.log'", interval: RollingInterval.Day);
+            var now = new DateTime(2013, 7, 14, 3, 24, 9, 980);
+            string path;
+            roller.GetLogFilePath(now, null, out path);
+            AssertEqualAbsolute("Log\\Month 2013-07\\Log-2013-07-14.log", path);
+        }
+
+        [Fact]
         public void MatchingExcludesSimilarButNonmatchingFiles()
         {
             var roller = PathRoller.CreateForFormattedPath( "Logs", "'log-'yyyy-MM-dd'.txt'", RollingInterval.Day);
@@ -111,8 +141,8 @@ namespace Serilog.Sinks.File.Tests
         }
 
         [Theory]
-        [InlineData("'log-'yyyy-MM-dd'.txt'"   , "log-2013-12-10.txt"   , "log-2013-12-10_031.txt", RollingInterval.Day)]
-        [InlineData("'log-'yyyy-MM-dd_ss'.txt'", "log-2013-12-10_13.txt", "log-2013-12-10_13_031.txt", RollingInterval.Hour)]
+        [InlineData("'log-'yyyy-MM-dd'.txt'"   , "log-2013-12-10.txt"   , "log-2013-12-10_031.txt", RollingInterval.Day)] // "_031" is the sequence number, not a DateTime component.
+        [InlineData("'log-'yyyy-MM-dd_HH'.txt'", "log-2013-12-10_13.txt", "log-2013-12-10_13_031.txt", RollingInterval.Hour)]
         public void MatchingSelectsFiles(string template, string zeroth, string thirtyFirst, RollingInterval interval)
         {
             var roller = PathRoller.CreateForFormattedPath( Directory.GetCurrentDirectory(), template, interval );
@@ -123,8 +153,8 @@ namespace Serilog.Sinks.File.Tests
         }
 
         [Theory]
-        [InlineData("'log-'yyyy-MM-dd'.txt'", "log-2015-01-01.txt"  , "log-2014-12-31.txt", RollingInterval.Day)]
-        [InlineData("'log-'yyyy-MM-dd'.txt'", "log-2015-01-01-10.txt", "log-2015-01-01-09.txt", RollingInterval.Hour)]
+        [InlineData("'log-'yyyy-MM-dd'.txt'"   , "log-2015-01-01.txt"   , "log-2014-12-31.txt"   , RollingInterval.Day )]
+        [InlineData("'log-'yyyy-MM-dd-HH'.txt'", "log-2015-01-01-10.txt", "log-2015-01-01-09.txt", RollingInterval.Hour)]
         public void MatchingParsesSubstitutions(string template, string newer, string older, RollingInterval interval)
         {
             var roller = PathRoller.CreateForFormattedPath( Directory.GetCurrentDirectory(), template, interval );
@@ -142,6 +172,39 @@ namespace Serilog.Sinks.File.Tests
             };
 
             Assert.Equal( expected: expected, actual: actual );
+        }
+
+        [Theory]
+        [InlineData("'log-'MM-dd'.txt'", RollingInterval.Infinite )]
+        [InlineData("'log-'MM-dd'.txt'", RollingInterval.Year )]
+        [InlineData("'log-'MM-dd'.txt'", RollingInterval.Month )]
+        [InlineData("'log-'MM-dd'.txt'", RollingInterval.Day )]
+        [InlineData("'log-'MM-dd'.txt'", RollingInterval.Hour )]
+        [InlineData("'log-'MM-dd'.txt'", RollingInterval.Minute )]
+        public void ConstructorComplainsIfFormatLacksRequiredSpecifiers(string template, RollingInterval interval)
+        {
+            Assert.Throws( typeof(ArgumentException), () => {
+
+                var roller = PathRoller.CreateForFormattedPath( Directory.GetCurrentDirectory(), template, interval );
+
+                Assert.True( condition: false, userMessage: nameof(PathRoller.CreateForFormattedPath) + " should throw, so this assertion should never be encountered." );
+            } );
+        }
+
+        [Theory]
+        [InlineData( RollingInterval.Infinite )]
+        [InlineData( RollingInterval.Year )]
+        [InlineData( RollingInterval.Month )]
+        [InlineData( RollingInterval.Day )]
+        [InlineData( RollingInterval.Hour )]
+        [InlineData( RollingInterval.Minute )]
+        public void ConstructorAcceptsFormatsMorePreciseThanInterval(RollingInterval interval)
+        {
+            const string format = "'Log-'yyyy-MM-dd' time 'HH-mm-ss'.log'";
+
+            var roller = PathRoller.CreateForFormattedPath( Directory.GetCurrentDirectory(), format, interval );
+
+            // NOOP. If it doesn't throw, we're okay.
         }
     }
 }

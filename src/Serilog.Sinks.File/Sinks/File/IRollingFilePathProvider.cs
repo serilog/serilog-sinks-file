@@ -10,7 +10,7 @@ namespace Serilog.Sinks.File
         /// <summary>The configured interval period.</summary>
         RollingInterval Interval { get; }
 
-        /// <summary>Returns a Windows-compatible glob pattern for matching file-names in a directory. May return null if generated file-names will not match a glob pattern. Non-log files may match the glob pattern. If not returning null, it must return file-names without directory path names (so if the user wants files in a directory-per-interval, it would only match the expected filename WITHIN that interval directory).</summary>
+        /// <summary>Returns a Windows-compatible glob pattern for matching file-names in a directory. May return "*" if the implementation could not determine a more specific glob pattern. Non-log files may match the glob pattern. The value will not include any directory path names components (so if the user wants files in a directory-per-interval, it would only match the expected filename WITHIN that interval directory).</summary>
         string DirectorySearchPattern { get; }
 
         /// <summary>Gets a path to a file (either absolute, or relative to the current file log directory) for the specified interval and point-in-time.</summary>
@@ -28,6 +28,20 @@ namespace Serilog.Sinks.File
             if( String.IsNullOrEmpty( ext ) ) return filePath;
 
             return filePath.Substring( 0, filePath.Length - ext.Length );
+        }
+
+        public static string EnsureTrailingDirectorySeparator(string directoryPath)
+        {
+            if( String.IsNullOrWhiteSpace( directoryPath ) ) throw new ArgumentNullException(nameof(directoryPath));
+
+            directoryPath = directoryPath.Trim();
+            Char last = directoryPath[ directoryPath.Length - 1 ];
+
+            if( last == Path.DirectorySeparatorChar || last == Path.AltDirectorySeparatorChar ) return directoryPath;
+
+            directoryPath = directoryPath + Path.DirectorySeparatorChar;
+
+            return directoryPath;
         }
 
         public static bool CaseInsensitiveFileSystem => true; // HACK TODO: This is surprisingly difficult.
