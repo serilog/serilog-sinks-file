@@ -15,6 +15,7 @@
 #pragma warning disable 618
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -114,15 +115,16 @@ namespace Serilog.Sinks.File
             // to open log files REALLY slow an app down.
             _nextCheckpoint = _roller.GetNextCheckpoint(now) ?? now.AddMinutes(30);
 
-            var existingFiles = Enumerable.Empty<string>();
+            IEnumerable<FileInfo> existingFiles = Enumerable.Empty<FileInfo>();
             try
             {
-                existingFiles = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
-                                         .Select(Path.GetFileName);
+                existingFiles = new DirectoryInfo( _roller.LogFileDirectory )
+                    .GetFiles( _roller.DirectorySearchPattern );
+                                       
             }
             catch (DirectoryNotFoundException) { }
 
-            var latestForThisCheckpoint = _roller
+            RollingLogFile latestForThisCheckpoint = _roller
                 .SelectMatches(existingFiles)
                 .Where(m => m.DateTime == currentCheckpoint)
                 .OrderByDescending(m => m.SequenceNumber)
@@ -168,35 +170,34 @@ namespace Serilog.Sinks.File
         {
             if (_retainedFileCountLimit == null) return;
 
-            var currentFileName = Path.GetFileName(currentFilePath);
+            FileInfo currentFileName = new FileInfo( Path.GetFileName( currentFilePath ) );
 
             // We consider the current file to exist, even if nothing's been written yet,
             // because files are only opened on response to an event being processed.
-            var potentialMatches = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
-                .Select(Path.GetFileName)
+            IEnumerable<FileInfo> potentialMatches = new DirectoryInfo( _roller.LogFileDirectory )
+                .GetFiles(_roller.DirectorySearchPattern)
                 .Union(new [] { currentFileName });
 
-            var newestFirst = _roller
+            IEnumerable<FileInfo> newestFirst = _roller
                 .SelectMatches(potentialMatches)
                 .OrderByDescending(m => m.DateTime)
                 .ThenByDescending(m => m.SequenceNumber)
-                .Select(m => m.Filename);
+                .Select(m => m.File);
 
-            var toRemove = newestFirst
-                .Where(n => StringComparer.OrdinalIgnoreCase.Compare(currentFileName, n) != 0)
+            IEnumerable<FileInfo> toRemove = newestFirst
+                .Where(n => StringComparer.OrdinalIgnoreCase.Compare(currentFileName.FullName, n.FullName) != 0)
                 .Skip(_retainedFileCountLimit.Value - 1)
                 .ToList();
 
-            foreach (var obsolete in toRemove)
+            foreach (FileInfo obsoleteLogFile in toRemove)
             {
-                var fullPath = Path.Combine(_roller.LogFileDirectory, obsolete);
                 try
                 {
-                    System.IO.File.Delete(fullPath);
+                   obsoleteLogFile.Delete();
                 }
                 catch (Exception ex)
                 {
-                    SelfLog.WriteLine("Error {0} while removing obsolete log file {1}", ex, fullPath);
+                    SelfLog.WriteLine("Error {0} while removing obsolete log file {1}", ex, obsoleteLogFile.FullName);
                 }
             }
         }

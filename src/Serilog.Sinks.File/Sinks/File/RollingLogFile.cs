@@ -13,19 +13,20 @@
 // limitations under the License.
  
 using System;
+using System.IO;
 
 namespace Serilog.Sinks.File
 {
     class RollingLogFile
     {
-        public RollingLogFile(string filename, DateTime? dateTime, int? sequenceNumber)
+        public RollingLogFile(FileInfo file, DateTime? dateTime, int? sequenceNumber)
         {
-            Filename = filename;
+            File = file;
             DateTime = dateTime;
             SequenceNumber = sequenceNumber;
         }
 
-        public string Filename { get; }
+        public FileInfo File { get; }
 
         public DateTime? DateTime { get; }
 
