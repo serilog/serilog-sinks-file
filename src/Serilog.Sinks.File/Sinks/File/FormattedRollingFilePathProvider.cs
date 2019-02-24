@@ -6,19 +6,19 @@ using System.Text.RegularExpressions;
 namespace Serilog.Sinks.File
 {
     /// <summary>Implements <see cref="IRollingFilePathProvider"/> around a Custom .NET DateTime format string which should (but is not required to) contain the file-name extension as an enquoted literal. Any sequence numbers are inserted before the file-name extension with a leading underscore '_' character.</summary>
-    class SimpleRollingFilePathProvider : IRollingFilePathProvider
+    class FormattedRollingFilePathProvider : IRollingFilePathProvider
     {
         readonly string filePathFormat;
 
         static readonly Regex _sequenceSuffixRegex = new Regex( @"_([0-9]{3,})$", RegexOptions.Compiled ); // Matches "_000", "_001", "_999", "_1000", "_999999", but not "_", "_0", "_a", "_99", etc. Requiring 3 digits avoids matching "_dd", "_mm" in a file-name.
 
-        public SimpleRollingFilePathProvider( RollingInterval interval, string filePathFormat )
+        public FormattedRollingFilePathProvider( RollingInterval interval, string filePathFormat )
         {
             const string DefaultMessage = "The rolling file name format is invalid. ";
 
             this.Interval = interval;
 
-            this.filePathFormat = this.filePathFormat ?? throw new ArgumentNullException( nameof( SimpleRollingFilePathProvider.filePathFormat) );
+            this.filePathFormat = this.filePathFormat ?? throw new ArgumentNullException( nameof( FormattedRollingFilePathProvider.filePathFormat) );
 
             if( !Path.IsPathRooted( filePathFormat ) ) throw new ArgumentException( message: "Path format must be absolute.", paramName: nameof(filePathFormat) );
 

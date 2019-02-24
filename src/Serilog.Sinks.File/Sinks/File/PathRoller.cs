@@ -22,14 +22,14 @@ namespace Serilog.Sinks.File
     {
         readonly IRollingFilePathProvider pathProvider;
 
-        public static PathRoller CreateForFormatStringPath( string path, RollingInterval interval )
+        public static PathRoller CreateForFormattedPath( string path, RollingInterval interval )
         {
-            IRollingFilePathProvider pathProvider = new SimpleRollingFilePathProvider( interval, Path.GetFullPath( path ) );
+            IRollingFilePathProvider pathProvider = new FormattedRollingFilePathProvider( interval, Path.GetFullPath( path ) );
 
             return new PathRoller( path, pathProvider );
         }
 
-        public static PathRoller CreateForLegacyStringPath( string path, RollingInterval interval )
+        public static PathRoller CreateForLegacyPath( string path, RollingInterval interval )
         {
             IRollingFilePathProvider pathProvider = new DefaultRollingFilePathProvider( interval, Path.GetFullPath( path ) );
 

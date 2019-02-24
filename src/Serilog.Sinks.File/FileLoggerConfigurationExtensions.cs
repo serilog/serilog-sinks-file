@@ -440,7 +440,7 @@ namespace Serilog
 
             if (rollOnFileSizeLimit || rollingInterval != RollingInterval.Infinite)
             {
-                PathRoller pathRoller = pathIsFormatString ? PathRoller.CreateForFormatStringPath( path, rollingInterval ) : PathRoller.CreateForLegacyStringPath( path, rollingInterval );
+                PathRoller pathRoller = pathIsFormatString ? PathRoller.CreateForFormattedPath( path, rollingInterval ) : PathRoller.CreateForLegacyPath( path, rollingInterval );
 
                 sink = new RollingFileSink(pathRoller, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollOnFileSizeLimit);
             }
