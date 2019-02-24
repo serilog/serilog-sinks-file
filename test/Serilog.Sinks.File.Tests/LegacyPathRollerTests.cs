@@ -72,7 +72,7 @@ namespace Serilog.Sinks.File.Tests
         }
 
         [Fact]
-        public void TheDirectorSearchPatternUsesWildcardInPlaceOfDate()
+        public void TheDirectorySearchPatternUsesWildcardInPlaceOfDate()
         {
             var roller = PathRoller.CreateForLegacyPath(Path.Combine("Logs", "log-.txt"), RollingInterval.Day);
             Assert.Equal("log-*.txt", roller.DirectorySearchPattern);
