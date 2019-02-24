@@ -22,30 +22,33 @@ namespace Serilog.Sinks.File
     {
         readonly IRollingFilePathProvider pathProvider;
 
-        public static PathRoller CreateForFormattedPath( string path, RollingInterval interval )
+        public static PathRoller CreateForFormattedPath( string logDirectoryPath, string filePathFormat, RollingInterval interval )
         {
-            IRollingFilePathProvider pathProvider = new FormattedRollingFilePathProvider( interval, Path.GetFullPath( path ) );
+            string logDirectoryAbsolutePath = String.IsNullOrEmpty( logDirectoryPath ) ? Directory.GetCurrentDirectory() : Path.GetFullPath( logDirectoryPath );
 
-            return new PathRoller( path, pathProvider );
+            IRollingFilePathProvider pathProvider = new FormattedRollingFilePathProvider( logDirectoryAbsolutePath, interval, filePathFormat );
+
+            return new PathRoller( logDirectoryAbsolutePath, pathProvider );
         }
 
         public static PathRoller CreateForLegacyPath( string path, RollingInterval interval )
         {
             IRollingFilePathProvider pathProvider = new DefaultRollingFilePathProvider( interval, Path.GetFullPath( path ) );
 
-            return new PathRoller( path, pathProvider );
+            string logFileDirectory = Path.GetDirectoryName(path);
+            if( string.IsNullOrEmpty( logFileDirectory ) ) logFileDirectory = Directory.GetCurrentDirectory();
+            logFileDirectory = Path.GetFullPath(logFileDirectory);
+
+            return new PathRoller( logFileDirectory, pathProvider );
         }
 
-        private PathRoller(string path, IRollingFilePathProvider pathProvider)
+        private PathRoller(string logDirectoryAbsolutePath, IRollingFilePathProvider pathProvider)
         {
-            if (path == null) throw new ArgumentNullException(nameof(path));
+            if (logDirectoryAbsolutePath == null) throw new ArgumentNullException(nameof(logDirectoryAbsolutePath));
 
             this.pathProvider = pathProvider ?? throw new ArgumentNullException(nameof(pathProvider));
 
-            string logFileDirectory = Path.GetDirectoryName(path);
-            if( string.IsNullOrEmpty( logFileDirectory ) ) logFileDirectory = Directory.GetCurrentDirectory();
-
-            this.LogFileDirectory = Path.GetFullPath(logFileDirectory);
+            this.LogFileDirectory = logDirectoryAbsolutePath;
         }
 
         public string LogFileDirectory { get; }
