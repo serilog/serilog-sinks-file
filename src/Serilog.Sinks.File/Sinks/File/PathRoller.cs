@@ -53,6 +53,8 @@ namespace Serilog.Sinks.File
 
         public string LogFileDirectory { get; }
 
+        public bool SupportsSubdirectories => this.pathProvider.SupportsSubdirectories;
+
         public string DirectorySearchPattern => this.pathProvider.DirectorySearchPattern;
 
         public void GetLogFilePath(DateTime date, int? sequenceNumber, out string path)

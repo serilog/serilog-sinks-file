@@ -10,6 +10,9 @@ namespace Serilog.Sinks.File
         /// <summary>The configured interval period.</summary>
         RollingInterval Interval { get; }
 
+        /// <summary>Returns <c>true</c> if this implementation will produce file names that exist in subdirectories of the log directory.</summary>
+        bool SupportsSubdirectories { get; }
+
         /// <summary>Returns a Windows-compatible glob pattern for matching file-names in a directory. May return "*" if the implementation could not determine a more specific glob pattern. Non-log files may match the glob pattern. The value will not include any directory path names components (so if the user wants files in a directory-per-interval, it would only match the expected filename WITHIN that interval directory).</summary>
         string DirectorySearchPattern { get; }
 

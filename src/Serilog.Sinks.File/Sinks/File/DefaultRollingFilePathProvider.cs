@@ -64,6 +64,8 @@ namespace Serilog.Sinks.File
 
         public RollingInterval Interval { get; }
 
+        public bool SupportsSubdirectories => false;
+
         public string DirectorySearchPattern { get; }
 
         public String GetRollingLogFilePath( DateTime instant, Int32? sequenceNumber )

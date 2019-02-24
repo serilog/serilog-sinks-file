@@ -7,6 +7,20 @@ namespace Serilog.Sinks.File.Tests
 {
     public class FormattedPathRollerTests
     {
+        static string ConvertToCurrentPlatform(string path)
+        {
+            if( path == null ) return path;
+
+            return path.Replace( '\\', Path.DirectorySeparatorChar );
+        }
+
+        static void AssertEqualAbsolute(string path1, string path2)
+        {
+            var abs1 = Path.GetFullPath(path1);
+            var abs2 = Path.GetFullPath(path2);
+            Assert.Equal(abs1, abs2);
+        }
+
         [Fact]
         public void TheLogFileFormatWorksWithInfiniteInterval()
         {
@@ -47,13 +61,6 @@ namespace Serilog.Sinks.File.Tests
             AssertEqualAbsolute(Path.Combine("Logs", "log-2013-07-14_012.txt"), path);
         }
 
-        static void AssertEqualAbsolute(string path1, string path2)
-        {
-            var abs1 = Path.GetFullPath(path1);
-            var abs2 = Path.GetFullPath(path2);
-            Assert.Equal(abs1, abs2);
-        }
-
         [Fact]
         public void TheRollerReturnsTheLogFileDirectory()
         {
@@ -86,6 +93,10 @@ namespace Serilog.Sinks.File.Tests
         [InlineData( "Log", @"'Month 'yyyy-MM'\\Log-'yyyy-MM-dd'.log'", "Log\\Month 2013-07\\Log-2013-07-14.log")]
         public void TheLogFileFormatCanIncludeFormattedSubdirectories(string logDirectoryPath, string format, string expected)
         {
+            logDirectoryPath = ConvertToCurrentPlatform( logDirectoryPath );
+            format           = ConvertToCurrentPlatform( format );
+            expected         = ConvertToCurrentPlatform( expected );
+
             var roller = PathRoller.CreateForFormattedPath( logDirectoryPath: logDirectoryPath, filePathFormat: format, interval: RollingInterval.Day);
             var now = new DateTime(2013, 7, 14, 3, 24, 9, 980);
             string path;

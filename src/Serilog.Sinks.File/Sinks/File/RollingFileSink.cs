@@ -118,8 +118,7 @@ namespace Serilog.Sinks.File
             try
             {
                 existingFiles = new DirectoryInfo( _roller.LogFileDirectory )
-                    .GetFiles( _roller.DirectorySearchPattern );
-                                       
+                    .GetFiles( _roller.DirectorySearchPattern, this._roller.SupportsSubdirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly );
             }
             catch (DirectoryNotFoundException) { }
 
@@ -178,7 +177,7 @@ namespace Serilog.Sinks.File
             // 1. Get files in the directory (and subdirectories) that match the current DirectorySearchPattern (which would select a superset of actual log files), also add `currentFilePath` too:
             // e.g. "\logs\log-20190222.log" and "\logs\log-2019-not-a-logfile-0222.log"
             IEnumerable<FileInfo> potentialMatches = new DirectoryInfo( _roller.LogFileDirectory )
-                .GetFiles(_roller.DirectorySearchPattern, SearchOption.AllDirectories)
+                .GetFiles(_roller.DirectorySearchPattern, this._roller.SupportsSubdirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly )
                 .Union(new [] { currentFile }, comparer: FileInfoComparer.Instance);
 
             // 2. For each matched file, filter out to files that exactly match the current IRollingFilePathProvider's format, then put in descending chronological order.
