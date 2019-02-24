@@ -97,22 +97,19 @@ namespace Serilog.Sinks.File.Tests
         {
             var roller = new PathRoller(template, interval);
 
-            FileInfo olderFile = new FileInfo( older );
-            FileInfo newerFile = new FileInfo( newer );
-
             string[] actual = roller
-                .SelectMatches(new[] { olderFile, newerFile })
+                .SelectMatches(new[] { new FileInfo( older ), new FileInfo( newer ) })
                 .OrderByDescending(m => m.DateTime)
-                .Select(m => m.File.FullName)
+                .Select(m => m.File.Name)
                 .ToArray();
 
             string[] expected = new[]
             {
-                newerFile.Name,
-                olderFile.Name
+                newer,
+                older
             };
 
-            Assert.Equal( expected, actual );
+            Assert.Equal( expected: expected, actual: actual );
         }
     }
 }

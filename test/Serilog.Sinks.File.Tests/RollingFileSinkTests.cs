@@ -64,9 +64,9 @@ namespace Serilog.Sinks.File.Tests
                 files =>
                 {
                     Assert.Equal(3, files.Count);
-                    Assert.True(!System.IO.File.Exists(files[0]));
-                    Assert.True(System.IO.File.Exists(files[1]));
-                    Assert.True(System.IO.File.Exists(files[2]));
+                    Assert.True(!System.IO.File.Exists(files[0]), files[0] + " was deleted");
+                    Assert.True(System.IO.File.Exists(files[1]), files[1] + " exists");
+                    Assert.True(System.IO.File.Exists(files[2]), files[2] + " exists");
                 });
         }
 
