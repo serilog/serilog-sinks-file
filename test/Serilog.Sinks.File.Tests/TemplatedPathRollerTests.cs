@@ -67,7 +67,7 @@ namespace Serilog.Sinks.File.Tests
             var roller = new PathRoller("log-.txt", RollingInterval.Day);
             const string similar1 = "log-0.txt";
             const string similar2 = "log-helloyou.txt";
-            var matched = roller.SelectMatches(new[] { similar1, similar2 });
+            var matched = roller.SelectMatches(new[] { new FileInfo( similar1 ), new FileInfo( similar2 ) });
             Assert.Equal(0, matched.Count());
         }
 
@@ -84,7 +84,7 @@ namespace Serilog.Sinks.File.Tests
         public void MatchingSelectsFiles(string template, string zeroth, string thirtyFirst, RollingInterval interval)
         {
             var roller = new PathRoller(template, interval);
-            var matched = roller.SelectMatches(new[] { zeroth, thirtyFirst }).ToArray();
+            var matched = roller.SelectMatches(new[] { new FileInfo( zeroth ), new FileInfo( thirtyFirst ) }).ToArray();
             Assert.Equal(2, matched.Length);
             Assert.Equal(null, matched[0].SequenceNumber);
             Assert.Equal(31, matched[1].SequenceNumber);
@@ -96,8 +96,23 @@ namespace Serilog.Sinks.File.Tests
         public void MatchingParsesSubstitutions(string template, string newer, string older, RollingInterval interval)
         {
             var roller = new PathRoller(template, interval);
-            var matched = roller.SelectMatches(new[] { older, newer }).OrderByDescending(m => m.DateTime).Select(m => m.Filename).ToArray();
-            Assert.Equal(new[] { newer, older }, matched);
+
+            FileInfo olderFile = new FileInfo( older );
+            FileInfo newerFile = new FileInfo( newer );
+
+            string[] actual = roller
+                .SelectMatches(new[] { olderFile, newerFile })
+                .OrderByDescending(m => m.DateTime)
+                .Select(m => m.File.FullName)
+                .ToArray();
+
+            string[] expected = new[]
+            {
+                newerFile.Name,
+                olderFile.Name
+            };
+
+            Assert.Equal( expected, actual );
         }
     }
 }

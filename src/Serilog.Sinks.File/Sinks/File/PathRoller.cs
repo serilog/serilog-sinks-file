@@ -22,95 +22,49 @@ namespace Serilog.Sinks.File
 {
     class PathRoller
     {
-        const string PeriodMatchGroup = "period";
-        const string SequenceNumberMatchGroup = "sequence";
+        readonly IRollingFilePathProvider _pathProvider;
 
-        readonly string _directory;
-        readonly string _filenamePrefix;
-        readonly string _filenameSuffix;
-        readonly Regex _filenameMatcher;
-
-        readonly RollingInterval _interval;
-        readonly string _periodFormat;
-
+        /// <summary>Constructor for legacy consumers.</summary>
         public PathRoller(string path, RollingInterval interval)
+            : this( path, new DefaultRollingFilePathProvider( interval, path ) )
+        {
+        }
+
+        public PathRoller(string path, IRollingFilePathProvider pathProvider)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
-            _interval = interval;
-            _periodFormat = interval.GetFormat();
 
-            var pathDirectory = Path.GetDirectoryName(path);
+            _pathProvider = pathProvider ?? throw new ArgumentNullException(nameof(pathProvider));
+
+            string pathDirectory = Path.GetDirectoryName(path);
             if (string.IsNullOrEmpty(pathDirectory))
                 pathDirectory = Directory.GetCurrentDirectory();
 
-            _directory = Path.GetFullPath(pathDirectory);
-            _filenamePrefix = Path.GetFileNameWithoutExtension(path);
-            _filenameSuffix = Path.GetExtension(path);
-            _filenameMatcher = new Regex(
-                "^" +
-                Regex.Escape(_filenamePrefix) +
-                "(?<" + PeriodMatchGroup + ">\\d{" + _periodFormat.Length + "})" +
-                "(?<" + SequenceNumberMatchGroup + ">_[0-9]{3,}){0,1}" +
-                Regex.Escape(_filenameSuffix) +
-                "$");
-
-            DirectorySearchPattern = $"{_filenamePrefix}*{_filenameSuffix}";
+            this.LogFileDirectory = Path.GetFullPath(pathDirectory);
         }
 
-        public string LogFileDirectory => _directory;
+        public string LogFileDirectory { get; }
 
-        public string DirectorySearchPattern { get; }
+        public string DirectorySearchPattern => this._pathProvider.DirectorySearchPattern;
 
         public void GetLogFilePath(DateTime date, int? sequenceNumber, out string path)
         {
-            var currentCheckpoint = GetCurrentCheckpoint(date);
-
-            var tok = currentCheckpoint?.ToString(_periodFormat, CultureInfo.InvariantCulture) ?? "";
-
-            if (sequenceNumber != null)
-                tok += "_" + sequenceNumber.Value.ToString("000", CultureInfo.InvariantCulture);
-
-            path = Path.Combine(_directory, _filenamePrefix + tok + _filenameSuffix);
+            path = this._pathProvider.GetRollingLogFilePath( date, sequenceNumber );
         }
 
-        public IEnumerable<RollingLogFile> SelectMatches(IEnumerable<string> filenames)
+        public IEnumerable<RollingLogFile> SelectMatches(IEnumerable<FileInfo> files)
         {
-            foreach (var filename in filenames)
+            foreach (FileInfo file in files)
             {
-                var match = _filenameMatcher.Match(filename);
-                if (!match.Success)
-                    continue;
-
-                int? inc = null;
-                var incGroup = match.Groups[SequenceNumberMatchGroup];
-                if (incGroup.Captures.Count != 0)
+                if( this._pathProvider.MatchRollingLogFilePath( file, out DateTime? periodStart, out Int32? sequenceNumber ) )
                 {
-                    var incPart = incGroup.Captures[0].Value.Substring(1);
-                    inc = int.Parse(incPart, CultureInfo.InvariantCulture);
+                    yield return new RollingLogFile( file, periodStart, sequenceNumber );
                 }
-
-                DateTime? period = null;
-                var periodGroup = match.Groups[PeriodMatchGroup];
-                if (periodGroup.Captures.Count != 0)
-                {
-                    var dateTimePart = periodGroup.Captures[0].Value;
-                    if (DateTime.TryParseExact(
-                        dateTimePart,
-                        _periodFormat,
-                        CultureInfo.InvariantCulture,
-                        DateTimeStyles.None,
-                        out var dateTime))
-                    {
-                        period = dateTime;
-                    }
-                }
-
-                yield return new RollingLogFile(filename, period, inc);
             }
         }
 
-        public DateTime? GetCurrentCheckpoint(DateTime instant) => _interval.GetCurrentCheckpoint(instant);
+        public DateTime? GetCurrentCheckpoint(DateTime instant) => this._pathProvider.Interval.GetCurrentCheckpoint(instant);
 
-        public DateTime? GetNextCheckpoint(DateTime instant) => _interval.GetNextCheckpoint(instant);
+        public DateTime? GetNextCheckpoint   (DateTime instant) => this._pathProvider.Interval.GetNextCheckpoint(instant);
     }
 }
