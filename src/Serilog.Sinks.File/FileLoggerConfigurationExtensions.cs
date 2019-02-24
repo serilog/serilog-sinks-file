@@ -35,6 +35,8 @@ namespace Serilog
         const long DefaultFileSizeLimitBytes = 1L * 1024 * 1024 * 1024;
         const string DefaultOutputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
 
+        #region Obsolete
+
         /// <summary>
         /// Write log events to the specified file.
         /// </summary>
@@ -115,48 +117,41 @@ namespace Serilog
                 buffered, shared, flushToDiskInterval, RollingInterval.Infinite, false, null, null);
         }
 
-        /// <summary>
-        /// Write log events to the specified file.
-        /// </summary>
+        #endregion
+
+        /// <summary>Write log events to the specified file.</summary>
         /// <param name="sinkConfiguration">Logger sink configuration.</param>
         /// <param name="path">Path to the file.</param>
-        /// <param name="restrictedToMinimumLevel">The minimum level for
-        /// events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
-        /// <param name="levelSwitch">A switch allowing the pass-through minimum level
-        /// to be changed at runtime.</param>
+        /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
+        /// <param name="levelSwitch">A switch allowing the pass-through minimum level to be changed at runtime.</param>
         /// <param name="formatProvider">Supplies culture-specific formatting information, or null.</param>
-        /// <param name="outputTemplate">A message template describing the format used to write to the sink.
-        /// the default is "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}".</param>
-        /// <param name="fileSizeLimitBytes">The approximate maximum size, in bytes, to which a log file will be allowed to grow.
-        /// For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit
-        /// will be written in full even if it exceeds the limit.</param>
-        /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
-        /// is false.</param>
+        /// <param name="outputTemplate">A message template describing the format used to write to the sink. The default is "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}".</param>
+        /// <param name="fileSizeLimitBytes">The approximate maximum size, in bytes, to which a log file will be allowed to grow. For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit will be written in full even if it exceeds the limit.</param>
+        /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default is false.</param>
         /// <param name="shared">Allow the log file to be shared by multiple processes. The default is false.</param>
         /// <param name="flushToDiskInterval">If provided, a full disk flush will be performed periodically at the specified interval.</param>
         /// <param name="rollingInterval">The interval at which logging will roll over to a new file.</param>
-        /// <param name="rollOnFileSizeLimit">If <code>true</code>, a new file will be created when the file size limit is reached. Filenames 
-        /// will have a number appended in the format <code>_NNN</code>, with the first filename given no number.</param>
-        /// <param name="retainedFileCountLimit">The maximum number of log files that will be retained,
-        /// including the current log file. For unlimited retention, pass null. The default is 31.</param>
+        /// <param name="rollOnFileSizeLimit">If <code>true</code>, a new file will be created when the file size limit is reached. Filenames will have a number appended in the format <code>_NNN</code>, with the first filename given no number.</param>
+        /// <param name="retainedFileCountLimit">The maximum number of log files that will be retained, including the current log file. For unlimited retention, pass null. The default is 31.</param>
         /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
         /// <remarks>The file will be written using the UTF-8 character set.</remarks>
         public static LoggerConfiguration File(
             this LoggerSinkConfiguration sinkConfiguration,
-            string path,
-            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
-            string outputTemplate = DefaultOutputTemplate,
-            IFormatProvider formatProvider = null,
-            long? fileSizeLimitBytes = DefaultFileSizeLimitBytes,
-            LoggingLevelSwitch levelSwitch = null,
-            bool buffered = false,
-            bool shared = false,
-            TimeSpan? flushToDiskInterval = null,
-            RollingInterval rollingInterval = RollingInterval.Infinite,
-            bool rollOnFileSizeLimit = false,
-            int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
-            Encoding encoding = null)
+            string                       path,
+            LogEventLevel                restrictedToMinimumLevel = LevelAlias.Minimum,
+            string                       outputTemplate           = DefaultOutputTemplate,
+            IFormatProvider              formatProvider           = null,
+            long?                        fileSizeLimitBytes       = DefaultFileSizeLimitBytes,
+            LoggingLevelSwitch           levelSwitch              = null,
+            bool                         buffered                 = false,
+            bool                         shared                   = false,
+            TimeSpan?                    flushToDiskInterval      = null,
+            RollingInterval              rollingInterval          = RollingInterval.Infinite,
+            bool                         rollOnFileSizeLimit      = false,
+            int?                         retainedFileCountLimit   = DefaultRetainedFileCountLimit,
+            Encoding                     encoding                 = null
+        )
         {
             if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
             if (path == null) throw new ArgumentNullException(nameof(path));
@@ -164,7 +159,82 @@ namespace Serilog
 
             ITextFormatter formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
 
-            return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes: fileSizeLimitBytes, levelSwitch: levelSwitch, buffered: buffered, shared: shared, flushToDiskInterval: flushToDiskInterval, rollingInterval: rollingInterval, rollOnFileSizeLimit: rollOnFileSizeLimit, retainedFileCountLimit: retainedFileCountLimit, encoding: encoding);
+            return File(
+                sinkConfiguration,
+                formatter,
+                path,
+                restrictedToMinimumLevel,
+                fileSizeLimitBytes    : fileSizeLimitBytes,
+                levelSwitch           : levelSwitch,
+                buffered              : buffered,
+                shared                : shared,
+                flushToDiskInterval   : flushToDiskInterval,
+                rollingInterval       : rollingInterval,
+                rollOnFileSizeLimit   : rollOnFileSizeLimit,
+                retainedFileCountLimit: retainedFileCountLimit,
+                encoding              : encoding
+            );
+        }
+
+        /// <summary>Write log events to the specified file.</summary>
+        /// <param name="sinkConfiguration">Logger sink configuration.</param>
+        /// <param name="logDirectoryPath">Path to the root log output directory.</param>
+        /// <param name="logFilePathFormat">Custom .NET Date Time format string. Used to generate the log file names. Use quote-delimited values to include file-name extensions, prefixes and directory names. For example, <c>&quot;yyyy-MM'\Log-'yyyy-MM-dd'.log'&quot;</c> to get output like <c>&quot;...\2019-02\Log-2019-02-22.log&quot;</c>.</param>
+        /// <param name="restrictedToMinimumLevel">The minimum level for events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
+        /// <param name="levelSwitch">A switch allowing the pass-through minimum level to be changed at runtime.</param>
+        /// <param name="formatProvider">Supplies culture-specific formatting information, or null.</param>
+        /// <param name="outputTemplate">A message template describing the format used to write to the sink. The default is "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}".</param>
+        /// <param name="fileSizeLimitBytes">The approximate maximum size, in bytes, to which a log file will be allowed to grow. For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit will be written in full even if it exceeds the limit.</param>
+        /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default is false.</param>
+        /// <param name="shared">Allow the log file to be shared by multiple processes. The default is false.</param>
+        /// <param name="flushToDiskInterval">If provided, a full disk flush will be performed periodically at the specified interval.</param>
+        /// <param name="rollingInterval">The interval at which logging will roll over to a new file.</param>
+        /// <param name="rollOnFileSizeLimit">If <code>true</code>, a new file will be created when the file size limit is reached. Filenames will have a number appended in the format <code>_NNN</code>, with the first filename given no number.</param>
+        /// <param name="retainedFileCountLimit">The maximum number of log files that will be retained, including the current log file. For unlimited retention, pass null. The default is 31.</param>
+        /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
+        /// <returns>Configuration object allowing method chaining.</returns>
+        /// <remarks>The file will be written using the UTF-8 character set.</remarks>
+        public static LoggerConfiguration File(
+            this LoggerSinkConfiguration sinkConfiguration,
+            string                       logDirectoryPath,
+            string                       logFilePathFormat,
+            LogEventLevel                restrictedToMinimumLevel = LevelAlias.Minimum,
+            string                       outputTemplate           = DefaultOutputTemplate,
+            IFormatProvider              formatProvider           = null,
+            long?                        fileSizeLimitBytes       = DefaultFileSizeLimitBytes,
+            LoggingLevelSwitch           levelSwitch              = null,
+            bool                         buffered                 = false,
+            bool                         shared                   = false,
+            TimeSpan?                    flushToDiskInterval      = null,
+            RollingInterval              rollingInterval          = RollingInterval.Infinite,
+            bool                         rollOnFileSizeLimit      = false,
+            int?                         retainedFileCountLimit   = DefaultRetainedFileCountLimit,
+            Encoding                     encoding                 = null
+        )
+        {
+            if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
+            if (logDirectoryPath == null) throw new ArgumentNullException(nameof(logDirectoryPath));
+            if (logFilePathFormat == null) throw new ArgumentNullException(nameof(logFilePathFormat));
+            if (outputTemplate == null) throw new ArgumentNullException(nameof(outputTemplate));
+
+            ITextFormatter formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
+
+            return File(
+                sinkConfiguration,
+                formatter,
+                logDirectoryPath        : logDirectoryPath,
+                logFilePathFormat       : logFilePathFormat,
+                restrictedToMinimumLevel: restrictedToMinimumLevel,
+                fileSizeLimitBytes      : fileSizeLimitBytes,
+                levelSwitch             : levelSwitch,
+                buffered                : buffered,
+                shared                  : shared,
+                flushToDiskInterval     : flushToDiskInterval,
+                rollingInterval         : rollingInterval,
+                rollOnFileSizeLimit     : rollOnFileSizeLimit,
+                retainedFileCountLimit  : retainedFileCountLimit,
+                encoding                : encoding
+            );
         }
 
         /// <summary>
@@ -198,29 +268,156 @@ namespace Serilog
         /// <remarks>The file will be written using the UTF-8 character set.</remarks>
         public static LoggerConfiguration File(
             this LoggerSinkConfiguration sinkConfiguration,
-            ITextFormatter formatter,
-            string path,
-            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
-            long? fileSizeLimitBytes = DefaultFileSizeLimitBytes,
-            LoggingLevelSwitch levelSwitch = null,
-            bool buffered = false,
-            bool shared = false,
-            TimeSpan? flushToDiskInterval = null,
-            RollingInterval rollingInterval = RollingInterval.Infinite,
-            bool rollOnFileSizeLimit = false,
-            int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
-            Encoding encoding = null)
+            ITextFormatter               formatter,
+            string                       path,
+            LogEventLevel                restrictedToMinimumLevel = LevelAlias.Minimum,
+            long?                        fileSizeLimitBytes       = DefaultFileSizeLimitBytes,
+            LoggingLevelSwitch           levelSwitch              = null,
+            bool                         buffered                 = false,
+            bool                         shared                   = false,
+            TimeSpan?                    flushToDiskInterval      = null,
+            RollingInterval              rollingInterval          = RollingInterval.Infinite,
+            bool                         rollOnFileSizeLimit      = false,
+            int?                         retainedFileCountLimit   = DefaultRetainedFileCountLimit,
+            Encoding                     encoding                 = null
+        )
         {
-            ILogEventSink fileSink = CreateFileSink( path, logFilePathFormat: null, rollingInterval: rollingInterval, formatter: formatter, fileSizeLimitBytes: fileSizeLimitBytes, retainedFileCountLimit: retainedFileCountLimit, encoding: encoding, buffered: buffered, shared: shared, rollOnFileSizeLimit: rollOnFileSizeLimit, propagateExceptions: false );
+            ILogEventSink fileSink = CreateFileSink(
+                path,
+                logFilePathFormat     : null,
+                rollingInterval       : rollingInterval,
+                formatter             : formatter,
+                fileSizeLimitBytes    : fileSizeLimitBytes,
+                retainedFileCountLimit: retainedFileCountLimit,
+                encoding              : encoding,
+                buffered              : buffered,
+                shared                : shared,
+                rollOnFileSizeLimit   : rollOnFileSizeLimit,
+                propagateExceptions   : false
+            );
 
-            return ConfigureFile( addSink: sinkConfiguration.Sink, sink: fileSink, restrictedToMinimumLevel: restrictedToMinimumLevel, levelSwitch: levelSwitch, flushToDiskInterval: flushToDiskInterval );
+            return ConfigureFile(
+                addSink                 : sinkConfiguration.Sink,
+                sink                    : fileSink,
+                restrictedToMinimumLevel: restrictedToMinimumLevel,
+                levelSwitch             : levelSwitch,
+                flushToDiskInterval     : flushToDiskInterval
+            );
         }
 
         /// <summary>
         /// Write log events to the specified file.
         /// </summary>
         /// <param name="sinkConfiguration">Logger sink configuration.</param>
-        /// <param name="path">Path to the file.</param>
+        /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into
+        /// text for the file. If control of regular text formatting is required, use the other
+        /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding)"/>
+        /// and specify the outputTemplate parameter instead.
+        /// </param>
+        /// <param name="logDirectoryPath">Path to the root log output directory.</param>
+        /// <param name="logFilePathFormat">Custom .NET Date Time format string. Used to generate the log file names. Use quote-delimited values to include file-name extensions, prefixes and directory names. For example, <c>&quot;yyyy-MM'\Log-'yyyy-MM-dd'.log'&quot;</c> to get output like <c>&quot;...\2019-02\Log-2019-02-22.log&quot;</c>.</param>
+        /// <param name="restrictedToMinimumLevel">The minimum level for
+        /// events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
+        /// <param name="levelSwitch">A switch allowing the pass-through minimum level
+        /// to be changed at runtime.</param>
+        /// <param name="fileSizeLimitBytes">The approximate maximum size, in bytes, to which a log file will be allowed to grow.
+        /// For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit
+        /// will be written in full even if it exceeds the limit.</param>
+        /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
+        /// is false.</param>
+        /// <param name="shared">Allow the log file to be shared by multiple processes. The default is false.</param>
+        /// <param name="flushToDiskInterval">If provided, a full disk flush will be performed periodically at the specified interval.</param>
+        /// <param name="rollingInterval">The interval at which logging will roll over to a new file.</param>
+        /// <param name="rollOnFileSizeLimit">If <code>true</code>, a new file will be created when the file size limit is reached. Filenames 
+        /// will have a number appended in the format <code>_NNN</code>, with the first filename given no number.</param>
+        /// <param name="retainedFileCountLimit">The maximum number of log files that will be retained,
+        /// including the current log file. For unlimited retention, pass null. The default is 31.</param>
+        /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
+        /// <returns>Configuration object allowing method chaining.</returns>
+        /// <remarks>The file will be written using the UTF-8 character set.</remarks>
+        public static LoggerConfiguration File(
+            this LoggerSinkConfiguration sinkConfiguration,
+            ITextFormatter               formatter,
+            string                       logDirectoryPath,
+            string                       logFilePathFormat,
+            LogEventLevel                restrictedToMinimumLevel = LevelAlias.Minimum,
+            long?                        fileSizeLimitBytes       = DefaultFileSizeLimitBytes,
+            LoggingLevelSwitch           levelSwitch              = null,
+            bool                         buffered                 = false,
+            bool                         shared                   = false,
+            TimeSpan?                    flushToDiskInterval      = null,
+            RollingInterval              rollingInterval          = RollingInterval.Infinite,
+            bool                         rollOnFileSizeLimit      = false,
+            int?                         retainedFileCountLimit   = DefaultRetainedFileCountLimit,
+            Encoding                     encoding                 = null
+        )
+        {
+            ILogEventSink fileSink = CreateFileSink(
+                logDirectoryPath      : logDirectoryPath,
+                logFilePathFormat     : logFilePathFormat,
+                rollingInterval       : rollingInterval,
+                formatter             : formatter,
+                fileSizeLimitBytes    : fileSizeLimitBytes,
+                retainedFileCountLimit: retainedFileCountLimit,
+                encoding              : encoding,
+                buffered              : buffered,
+                shared                : shared,
+                rollOnFileSizeLimit   : rollOnFileSizeLimit,
+                propagateExceptions   : false
+            );
+
+            return ConfigureFile(
+                addSink                 : sinkConfiguration.Sink,
+                sink                    : fileSink,
+                restrictedToMinimumLevel: restrictedToMinimumLevel,
+                levelSwitch             : levelSwitch,
+                flushToDiskInterval     : flushToDiskInterval
+            );
+        }
+
+        /// <summary>
+        /// Write log events to the specified file.
+        /// </summary>
+        /// <param name                                                 ="sinkConfiguration">Logger sink configuration.</param>
+        /// <param name                                                 ="path">Path to the file.</param>
+        /// <param name                                                 ="restrictedToMinimumLevel">The minimum level for
+        /// events passed through the sink. Ignored when <paramref name ="levelSwitch"/> is specified.</param>
+        /// <param name                                                 ="levelSwitch">A switch allowing the pass-through minimum level
+        /// to be changed at runtime.</param>
+        /// <param name                                                 ="formatProvider">Supplies culture-specific formatting information, or null.</param>
+        /// <param name                                                 ="outputTemplate">A message template describing the format used to write to the sink.
+        /// the default is "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}".</param>
+        /// <returns>Configuration object allowing method chaining.</returns>
+        /// <remarks>The file will be written using the UTF-8 character set.</remarks>
+        public static LoggerConfiguration File(
+            this LoggerAuditSinkConfiguration sinkConfiguration,
+            string                            path,
+            LogEventLevel                     restrictedToMinimumLevel  = LevelAlias.Minimum,
+            string                            outputTemplate            = DefaultOutputTemplate,
+            IFormatProvider                   formatProvider            = null,
+            LoggingLevelSwitch                levelSwitch               = null
+        )
+        {
+            if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
+            if (path == null) throw new ArgumentNullException(nameof(path));
+            if (outputTemplate == null) throw new ArgumentNullException(nameof(outputTemplate));
+
+            var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
+            return File(
+                sinkConfiguration       : sinkConfiguration,
+                formatter               : formatter,
+                path                    : path,
+                restrictedToMinimumLevel: restrictedToMinimumLevel,
+                levelSwitch             : levelSwitch
+            );
+        }
+
+        /// <summary>
+        /// Write log events to the specified file.
+        /// </summary>
+        /// <param name="sinkConfiguration">Logger sink configuration.</param>
+        /// <param name="logDirectoryPath">Path to the root log output directory.</param>
+        /// <param name="logFilePathFormat">Custom .NET Date Time format string. Used to generate the log file names. Use quote-delimited values to include file-name extensions, prefixes and directory names. For example, <c>&quot;yyyy-MM'\Log-'yyyy-MM-dd'.log'&quot;</c> to get output like <c>&quot;...\2019-02\Log-2019-02-22.log&quot;</c>.</param>
         /// <param name="restrictedToMinimumLevel">The minimum level for
         /// events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
         /// <param name="levelSwitch">A switch allowing the pass-through minimum level
@@ -232,18 +429,20 @@ namespace Serilog
         /// <remarks>The file will be written using the UTF-8 character set.</remarks>
         public static LoggerConfiguration File(
             this LoggerAuditSinkConfiguration sinkConfiguration,
-            string path,
-            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
-            string outputTemplate = DefaultOutputTemplate,
-            IFormatProvider formatProvider = null,
-            LoggingLevelSwitch levelSwitch = null)
+            string                            logDirectoryPath,
+            string                            logFilePathFormat,
+            LogEventLevel                     restrictedToMinimumLevel = LevelAlias.Minimum,
+            string                            outputTemplate           = DefaultOutputTemplate,
+            IFormatProvider                   formatProvider           = null,
+            LoggingLevelSwitch                levelSwitch              = null
+        )
         {
             if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
-            if (path == null) throw new ArgumentNullException(nameof(path));
+            if (logDirectoryPath == null) throw new ArgumentNullException(nameof(logDirectoryPath));
             if (outputTemplate == null) throw new ArgumentNullException(nameof(outputTemplate));
 
             var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
-            return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, levelSwitch);
+            return File( sinkConfiguration, formatter, logDirectoryPath: logDirectoryPath, logFilePathFormat: logFilePathFormat, restrictedToMinimumLevel: restrictedToMinimumLevel, levelSwitch: levelSwitch );
         }
 
         /// <summary>
@@ -264,15 +463,85 @@ namespace Serilog
         /// <remarks>The file will be written using the UTF-8 character set.</remarks>
         public static LoggerConfiguration File(
             this LoggerAuditSinkConfiguration sinkConfiguration,
-            ITextFormatter formatter,
-            string path,
-            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
-            LoggingLevelSwitch levelSwitch = null)
+            ITextFormatter                    formatter,
+            string                            path,
+            LogEventLevel                     restrictedToMinimumLevel = LevelAlias.Minimum,
+            LoggingLevelSwitch                levelSwitch              = null
+        )
         {
-            ILogEventSink fileSink = CreateFileSink( path, logFilePathFormat: null, rollingInterval: RollingInterval.Infinite, formatter: formatter, fileSizeLimitBytes: null, retainedFileCountLimit: null, encoding: null, buffered: false, shared: false, rollOnFileSizeLimit: false, propagateExceptions: true );
+            ILogEventSink fileSink = CreateFileSink(
+                logDirectoryPath      : path,
+                logFilePathFormat     : null,
+                rollingInterval       : RollingInterval.Infinite,
+                formatter             : formatter,
+                fileSizeLimitBytes    : null,
+                retainedFileCountLimit: null,
+                encoding              : null,
+                buffered              : false,
+                shared                : false,
+                rollOnFileSizeLimit   : false,
+                propagateExceptions   : true
+            );
 
-            return ConfigureFile( addSink: sinkConfiguration.Sink, sink: fileSink, restrictedToMinimumLevel: restrictedToMinimumLevel, levelSwitch: levelSwitch, flushToDiskInterval: null );
+            return ConfigureFile(
+                addSink                 : sinkConfiguration.Sink,
+                sink                    : fileSink,
+                restrictedToMinimumLevel: restrictedToMinimumLevel,
+                levelSwitch             : levelSwitch,
+                flushToDiskInterval     : null
+            );
         }
+
+        /// <summary>
+        /// Write log events to the specified file.
+        /// </summary>
+        /// <param name="sinkConfiguration">Logger sink configuration.</param>
+        /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into
+        /// text for the file. If control of regular text formatting is required, use the other
+        /// overload of <see cref="File(LoggerAuditSinkConfiguration, string, LogEventLevel, string, IFormatProvider, LoggingLevelSwitch)"/>
+        /// and specify the outputTemplate parameter instead.
+        /// </param>
+        /// <param name="logDirectoryPath">Path to the root log output directory.</param>
+        /// <param name="logFilePathFormat">Custom .NET Date Time format string. Used to generate the log file names. Use quote-delimited values to include file-name extensions, prefixes and directory names. For example, <c>&quot;yyyy-MM'\Log-'yyyy-MM-dd'.log'&quot;</c> to get output like <c>&quot;...\2019-02\Log-2019-02-22.log&quot;</c></param>
+        /// <param name="restrictedToMinimumLevel">The minimum level for
+        /// events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
+        /// <param name="levelSwitch">A switch allowing the pass-through minimum level
+        /// to be changed at runtime.</param>
+        /// <returns>Configuration object allowing method chaining.</returns>
+        /// <remarks>The file will be written using the UTF-8 character set.</remarks>
+        public static LoggerConfiguration File(
+            this LoggerAuditSinkConfiguration sinkConfiguration,
+            ITextFormatter                    formatter,
+            string                            logDirectoryPath,
+            string                            logFilePathFormat,
+            LogEventLevel                     restrictedToMinimumLevel = LevelAlias.Minimum,
+            LoggingLevelSwitch                levelSwitch              = null
+        )
+        {
+            ILogEventSink fileSink = CreateFileSink(
+                logDirectoryPath      : logDirectoryPath,
+                logFilePathFormat     : logFilePathFormat,
+                rollingInterval       : RollingInterval.Infinite,
+                formatter             : formatter,
+                fileSizeLimitBytes    : null,
+                retainedFileCountLimit: null,
+                encoding              : null,
+                buffered              : false,
+                shared                : false,
+                rollOnFileSizeLimit   : false,
+                propagateExceptions   : true
+            );
+
+            return ConfigureFile(
+                addSink                 : sinkConfiguration.Sink,
+                sink                    : fileSink,
+                restrictedToMinimumLevel: restrictedToMinimumLevel,
+                levelSwitch             : levelSwitch,
+                flushToDiskInterval     : null
+            );
+        }
+
+        #region Private
 
         static ILogEventSink CreateFileSink( string logDirectoryPath, string logFilePathFormat, RollingInterval rollingInterval, ITextFormatter formatter, long? fileSizeLimitBytes, int? retainedFileCountLimit, Encoding encoding, bool buffered, bool shared, bool rollOnFileSizeLimit, bool propagateExceptions )
         {
@@ -360,5 +629,7 @@ namespace Serilog
                 return addSink(sink, restrictedToMinimumLevel, levelSwitch);
             }
         }
+
+        #endregion
     }
 }
