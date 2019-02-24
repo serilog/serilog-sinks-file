@@ -20,19 +20,27 @@ namespace Serilog.Sinks.File
 {
     class PathRoller
     {
-        readonly IRollingFilePathProvider _pathProvider;
+        readonly IRollingFilePathProvider pathProvider;
 
-        /// <summary>Constructor for legacy consumers.</summary>
-        public PathRoller(string path, RollingInterval interval)
-            : this( path, new DefaultRollingFilePathProvider( interval, Path.GetFullPath( path ) ) )
+        public static PathRoller CreateForFormatStringPath( string path, RollingInterval interval )
         {
+            IRollingFilePathProvider pathProvider = new SimpleRollingFilePathProvider( interval, Path.GetFullPath( path ) );
+
+            return new PathRoller( path, pathProvider );
         }
 
-        public PathRoller(string path, IRollingFilePathProvider pathProvider)
+        public static PathRoller CreateForLegacyStringPath( string path, RollingInterval interval )
+        {
+            IRollingFilePathProvider pathProvider = new DefaultRollingFilePathProvider( interval, Path.GetFullPath( path ) );
+
+            return new PathRoller( path, pathProvider );
+        }
+
+        private PathRoller(string path, IRollingFilePathProvider pathProvider)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
-            this._pathProvider = pathProvider ?? throw new ArgumentNullException(nameof(pathProvider));
+            this.pathProvider = pathProvider ?? throw new ArgumentNullException(nameof(pathProvider));
 
             string logFileDirectory = Path.GetDirectoryName(path);
             if( string.IsNullOrEmpty( logFileDirectory ) ) logFileDirectory = Directory.GetCurrentDirectory();
@@ -42,11 +50,12 @@ namespace Serilog.Sinks.File
 
         public string LogFileDirectory { get; }
 
-        public string DirectorySearchPattern => this._pathProvider.DirectorySearchPattern;
+        public string DirectorySearchPattern => this.pathProvider.DirectorySearchPattern;
 
         public void GetLogFilePath(DateTime date, int? sequenceNumber, out string path)
         {
-            path = this._pathProvider.GetRollingLogFilePath( date, sequenceNumber );
+            // The IRollingFilePathProvider will include the log directory path in the output file-name, so this method doesn't need to prefix `this.LogFileDirectory`.
+            path = this.pathProvider.GetRollingLogFilePath( date, sequenceNumber );
         }
 
         /// <summary>Filters <paramref name="files"/> to only those files that match the current log file name format, then converts them into <see cref="RollingLogFile"/> instances.</summary>
@@ -54,15 +63,15 @@ namespace Serilog.Sinks.File
         {
             foreach (FileInfo file in files)
             {
-                if( this._pathProvider.MatchRollingLogFilePath( file, out DateTime? periodStart, out Int32? sequenceNumber ) )
+                if( this.pathProvider.MatchRollingLogFilePath( file, out DateTime? periodStart, out Int32? sequenceNumber ) )
                 {
                     yield return new RollingLogFile( file, periodStart, sequenceNumber );
                 }
             }
         }
 
-        public DateTime? GetCurrentCheckpoint(DateTime instant) => this._pathProvider.Interval.GetCurrentCheckpoint(instant);
+        public DateTime? GetCurrentCheckpoint(DateTime instant) => this.pathProvider.Interval.GetCurrentCheckpoint(instant);
 
-        public DateTime? GetNextCheckpoint   (DateTime instant) => this._pathProvider.Interval.GetNextCheckpoint(instant);
+        public DateTime? GetNextCheckpoint   (DateTime instant) => this.pathProvider.Interval.GetNextCheckpoint(instant);
     }
 }

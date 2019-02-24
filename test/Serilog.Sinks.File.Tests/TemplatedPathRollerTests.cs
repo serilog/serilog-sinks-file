@@ -10,7 +10,7 @@ namespace Serilog.Sinks.File.Tests
         [Fact]
         public void TheLogFileIncludesDateToken()
         {
-            var roller = new PathRoller(Path.Combine("Logs", "log-.txt"), RollingInterval.Day);
+            var roller = PathRoller.CreateForLegacyStringPath(Path.Combine("Logs", "log-.txt"), RollingInterval.Day);
             var now = new DateTime(2013, 7, 14, 3, 24, 9, 980);
             string path;
             roller.GetLogFilePath(now, null, out path);
@@ -20,7 +20,7 @@ namespace Serilog.Sinks.File.Tests
         [Fact]
         public void ANonZeroIncrementIsIncludedAndPadded()
         {
-            var roller = new PathRoller(Path.Combine("Logs", "log-.txt"), RollingInterval.Day);
+            var roller = PathRoller.CreateForLegacyStringPath(Path.Combine("Logs", "log-.txt"), RollingInterval.Day);
             var now = new DateTime(2013, 7, 14, 3, 24, 9, 980);
             string path;
             roller.GetLogFilePath(now, 12, out path);
@@ -37,14 +37,14 @@ namespace Serilog.Sinks.File.Tests
         [Fact]
         public void TheRollerReturnsTheLogFileDirectory()
         {
-            var roller = new PathRoller(Path.Combine("Logs", "log-.txt"), RollingInterval.Day);
+            var roller = PathRoller.CreateForLegacyStringPath(Path.Combine("Logs", "log-.txt"), RollingInterval.Day);
             AssertEqualAbsolute("Logs", roller.LogFileDirectory);
         }
 
         [Fact]
         public void TheLogFileIsNotRequiredToIncludeAnExtension()
         {
-            var roller = new PathRoller(Path.Combine("Logs", "log-"), RollingInterval.Day);
+            var roller = PathRoller.CreateForLegacyStringPath(Path.Combine("Logs", "log-"), RollingInterval.Day);
             var now = new DateTime(2013, 7, 14, 3, 24, 9, 980);
             string path;
             roller.GetLogFilePath(now, null, out path);
@@ -54,7 +54,7 @@ namespace Serilog.Sinks.File.Tests
         [Fact]
         public void TheLogFileIsNotRequiredToIncludeADirectory()
         {
-            var roller = new PathRoller("log-", RollingInterval.Day);
+            var roller = PathRoller.CreateForLegacyStringPath("log-", RollingInterval.Day);
             var now = new DateTime(2013, 7, 14, 3, 24, 9, 980);
             string path;
             roller.GetLogFilePath(now, null, out path);
@@ -64,7 +64,7 @@ namespace Serilog.Sinks.File.Tests
         [Fact]
         public void MatchingExcludesSimilarButNonmatchingFiles()
         {
-            var roller = new PathRoller("log-.txt", RollingInterval.Day);
+            var roller = PathRoller.CreateForLegacyStringPath("log-.txt", RollingInterval.Day);
             const string similar1 = "log-0.txt";
             const string similar2 = "log-helloyou.txt";
             var matched = roller.SelectMatches(new[] { new FileInfo( similar1 ), new FileInfo( similar2 ) });
@@ -74,7 +74,7 @@ namespace Serilog.Sinks.File.Tests
         [Fact]
         public void TheDirectorSearchPatternUsesWildcardInPlaceOfDate()
         {
-            var roller = new PathRoller(Path.Combine("Logs", "log-.txt"), RollingInterval.Day);
+            var roller = PathRoller.CreateForLegacyStringPath(Path.Combine("Logs", "log-.txt"), RollingInterval.Day);
             Assert.Equal("log-*.txt", roller.DirectorySearchPattern);
         }
 
@@ -83,7 +83,7 @@ namespace Serilog.Sinks.File.Tests
         [InlineData("log-.txt", "log-2013121013.txt", "log-2013121013_031.txt", RollingInterval.Hour)]
         public void MatchingSelectsFiles(string template, string zeroth, string thirtyFirst, RollingInterval interval)
         {
-            var roller = new PathRoller(template, interval);
+            var roller = PathRoller.CreateForLegacyStringPath(template, interval);
             var matched = roller.SelectMatches(new[] { new FileInfo( zeroth ), new FileInfo( thirtyFirst ) }).ToArray();
             Assert.Equal(2, matched.Length);
             Assert.Equal(null, matched[0].SequenceNumber);
@@ -95,7 +95,7 @@ namespace Serilog.Sinks.File.Tests
         [InlineData("log-.txt", "log-2015010110.txt", "log-2015010109.txt", RollingInterval.Hour)]
         public void MatchingParsesSubstitutions(string template, string newer, string older, RollingInterval interval)
         {
-            var roller = new PathRoller(template, interval);
+            var roller = PathRoller.CreateForLegacyStringPath(template, interval);
 
             string[] actual = roller
                 .SelectMatches(new[] { new FileInfo( older ), new FileInfo( newer ) })

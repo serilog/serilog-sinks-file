@@ -43,21 +43,20 @@ namespace Serilog.Sinks.File
         IFileSink _currentFile;
         int? _currentFileSequence;
 
-        public RollingFileSink(string path,
+        public RollingFileSink(PathRoller roller,
                               ITextFormatter textFormatter,
                               long? fileSizeLimitBytes,
                               int? retainedFileCountLimit,
                               Encoding encoding,
                               bool buffered,
                               bool shared,
-                              RollingInterval rollingInterval,
                               bool rollOnFileSizeLimit)
         {
-            if (path == null) throw new ArgumentNullException(nameof(path));
+            if (roller == null) throw new ArgumentNullException(nameof(roller));
             if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0) throw new ArgumentException("Negative value provided; file size limit must be non-negative");
             if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("Zero or negative value provided; retained file count limit must be at least 1");
 
-            _roller = new PathRoller(path, rollingInterval);
+            _roller = roller;
             _textFormatter = textFormatter;
             _fileSizeLimitBytes = fileSizeLimitBytes;
             _retainedFileCountLimit = retainedFileCountLimit;
@@ -140,13 +139,14 @@ namespace Serilog.Sinks.File
             const int maxAttempts = 3;
             for (var attempt = 0; attempt < maxAttempts; attempt++)
             {
-                _roller.GetLogFilePath(now, sequence, out var path);
+                _roller.GetLogFilePath(now, sequence, out string path);
 
                 try
                 {
                     _currentFile = _shared ?
                         (IFileSink)new SharedFileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding) :
-                        new FileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding, _buffered);
+                                   new FileSink      (path, _textFormatter, _fileSizeLimitBytes, _encoding, _buffered);
+
                     _currentFileSequence = sequence;
                 }
                 catch (IOException ex)
