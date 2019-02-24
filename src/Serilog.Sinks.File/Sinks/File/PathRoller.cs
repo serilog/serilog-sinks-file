@@ -14,9 +14,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
-using System.Text.RegularExpressions;
 
 namespace Serilog.Sinks.File
 {
@@ -26,7 +24,7 @@ namespace Serilog.Sinks.File
 
         /// <summary>Constructor for legacy consumers.</summary>
         public PathRoller(string path, RollingInterval interval)
-            : this( path, new DefaultRollingFilePathProvider( interval, path ) )
+            : this( path, new DefaultRollingFilePathProvider( interval, Path.GetFullPath( path ) ) )
         {
         }
 
@@ -34,13 +32,12 @@ namespace Serilog.Sinks.File
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
-            _pathProvider = pathProvider ?? throw new ArgumentNullException(nameof(pathProvider));
+            this._pathProvider = pathProvider ?? throw new ArgumentNullException(nameof(pathProvider));
 
-            string pathDirectory = Path.GetDirectoryName(path);
-            if (string.IsNullOrEmpty(pathDirectory))
-                pathDirectory = Directory.GetCurrentDirectory();
+            string logFileDirectory = Path.GetDirectoryName(path);
+            if( string.IsNullOrEmpty( logFileDirectory ) ) logFileDirectory = Directory.GetCurrentDirectory();
 
-            this.LogFileDirectory = Path.GetFullPath(pathDirectory);
+            this.LogFileDirectory = Path.GetFullPath(logFileDirectory);
         }
 
         public string LogFileDirectory { get; }
@@ -52,6 +49,7 @@ namespace Serilog.Sinks.File
             path = this._pathProvider.GetRollingLogFilePath( date, sequenceNumber );
         }
 
+        /// <summary>Filters <paramref name="files"/> to only those files that match the current log file name format, then converts them into <see cref="RollingLogFile"/> instances.</summary>
         public IEnumerable<RollingLogFile> SelectMatches(IEnumerable<FileInfo> files)
         {
             foreach (FileInfo file in files)

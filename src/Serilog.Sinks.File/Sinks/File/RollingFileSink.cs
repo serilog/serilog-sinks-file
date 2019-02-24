@@ -170,22 +170,28 @@ namespace Serilog.Sinks.File
         {
             if (_retainedFileCountLimit == null) return;
 
-            FileInfo currentFileName = new FileInfo( Path.GetFileName( currentFilePath ) );
+            FileInfo currentFile = new FileInfo( currentFilePath );
 
             // We consider the current file to exist, even if nothing's been written yet,
             // because files are only opened on response to an event being processed.
-            IEnumerable<FileInfo> potentialMatches = new DirectoryInfo( _roller.LogFileDirectory )
-                .GetFiles(_roller.DirectorySearchPattern)
-                .Union(new [] { currentFileName });
 
+            // 1. Get files in the directory (and subdirectories) that match the current DirectorySearchPattern (which would select a superset of actual log files), also add `currentFilePath` too:
+            // e.g. "\logs\log-20190222.log" and "\logs\log-2019-not-a-logfile-0222.log"
+            IEnumerable<FileInfo> potentialMatches = new DirectoryInfo( _roller.LogFileDirectory )
+                .GetFiles(_roller.DirectorySearchPattern, SearchOption.AllDirectories)
+                .Union(new [] { currentFile }, comparer: FileInfoComparer.Instance);
+
+            // 2. For each matched file, filter out to files that exactly match the current IRollingFilePathProvider's format, then put in descending chronological order.
+            // e.g. "\logs\log-20190222.log"
             IEnumerable<FileInfo> newestFirst = _roller
                 .SelectMatches(potentialMatches)
                 .OrderByDescending(m => m.DateTime)
                 .ThenByDescending(m => m.SequenceNumber)
                 .Select(m => m.File);
 
+            // 3. Delete all files after the retained file limit, *excluding* the file for `currentFile`.
             IEnumerable<FileInfo> toRemove = newestFirst
-                .Where(n => StringComparer.OrdinalIgnoreCase.Compare(currentFileName.FullName, n.FullName) != 0)
+                .Where(n => !FileInfoComparer.Instance.Equals(currentFile, n))
                 .Skip(_retainedFileCountLimit.Value - 1)
                 .ToList();
 

@@ -11,21 +11,23 @@ namespace Serilog.Sinks.File
         const string PeriodMatchGroup         = "period";
         const string SequenceNumberMatchGroup = "sequence";
 
-        readonly string fileNamePrefix; // todo: rename filePathPrefix
-        readonly string fileNameSuffix;
+        readonly string filePathPrefix; // An absolute path that MAY contain a file-name or start of a file-name: e.g. "C:\logfiles\log-" or "C:\logfiles\".
+        readonly string filePathSuffix;
         readonly string periodFormat;
         readonly Regex  fileNameRegex;
 
         readonly string filePathFormat;
 
-        /// <param name="logFilePath">Path to the log file. The RollingInterval and sequence number (if applicable) will be inserted before the file-name extension.</param>
+        /// <param name="logFilePathTemplate">Path to the log file. The RollingInterval and sequence number (if applicable) will be inserted before the file-name extension.</param>
         /// <param name="interval">Interval from which to generate file names.</param>
-        public DefaultRollingFilePathProvider(RollingInterval interval, string logFilePath)
+        public DefaultRollingFilePathProvider(RollingInterval interval, string logFilePathTemplate)
         {
+            if( !Path.IsPathRooted( logFilePathTemplate ) ) throw new ArgumentException( message: "Path format must be absolute.", paramName: nameof(logFilePathTemplate) );
+
             this.Interval       = interval;
 
-            this.fileNamePrefix = PathUtility.GetFilePathWithoutExtension( logFilePath );
-            this.fileNameSuffix = Path.GetExtension( logFilePath );
+            this.filePathPrefix = PathUtility.GetFilePathWithoutExtension( logFilePathTemplate );
+            this.filePathSuffix = Path.GetExtension( logFilePathTemplate );
             this.periodFormat   = RollingIntervalExtensions.GetFormat( interval );
 
             // NOTE: This technique using Regex only works reliably if periodFormat will always generate output of the same length as periodFormat itself.
@@ -35,13 +37,29 @@ namespace Serilog.Sinks.File
             // TODO: Consider validating `periodFormat` by throwing ArgumentException or FormatException if it contains any variable-length DateTime specifiers?
 
             // e.g. "^fileNamePrefix(?<period>\d{8})(?<sequence>_([0-9]){3,}){0,1}fileNameSuffix$" would match "filename20190222_001fileNameSuffix"
-            String pattern = "^" + Regex.Escape( fileNamePrefix ) + "(?<" + PeriodMatchGroup + ">\\d{" + periodFormat.Length + "})" + "(?<" + SequenceNumberMatchGroup + ">_[0-9]{3,}){0,1}" +  Regex.Escape( fileNameSuffix ) + "$";
+            string pattern = "^" + Regex.Escape( this.filePathPrefix ) + "(?<" + PeriodMatchGroup + ">\\d{" + this.periodFormat.Length + "})" + "(?<" + SequenceNumberMatchGroup + ">_[0-9]{3,}){0,1}" +  Regex.Escape( this.filePathSuffix ) + "$";
 
-            this.fileNameRegex = new Regex( pattern, RegexOptions.Compiled );
+            this.fileNameRegex = new Regex( pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase ); // IgnoreCase to ensure that incorrect casing in configuration will still work.
 
-            this.filePathFormat = "{0}{1:" + periodFormat + "}{2:'_'000}{3}"; // e.g. "{0}{1:yyyyMMdd}{2:'_'000}{3}" to render as "C:\logs\File20190222_001.log".
+            this.filePathFormat = "{0}{1:" + this.periodFormat + "}{2:'_'000}{3}"; // e.g. "{0}{1:yyyyMMdd}{2:'_'000}{3}" to render as "C:\logs\File20190222_001.log".
 
-            this.DirectorySearchPattern = this.fileNamePrefix + "*" + this.fileNameSuffix;
+            string inDirectoryPrefix;
+            {
+                Char c = this.filePathPrefix[this.filePathPrefix.Length - 1];
+                if( c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar )
+                {
+                    inDirectoryPrefix = "";
+                }
+                else
+                {
+                    Int32 lastDirIdx = this.filePathPrefix.LastIndexOfAny( new[] { '\\', '/' }, startIndex: this.filePathPrefix.Length - 2 );
+                    if( lastDirIdx == -1 ) throw new ArgumentException( message: "Cannot determine file-name characters from directory-path characters.", paramName: nameof(logFilePathTemplate) ); // This should never happen, btw.
+
+                    inDirectoryPrefix = this.filePathPrefix.Substring( lastDirIdx + 1 );
+                }
+            }
+
+            this.DirectorySearchPattern = inDirectoryPrefix + "*" + this.filePathSuffix;
         }
 
         public RollingInterval Interval { get; }
@@ -52,7 +70,7 @@ namespace Serilog.Sinks.File
         {
             DateTime? periodStart = this.Interval.GetCurrentCheckpoint( instant );
 
-            return String.Format( CultureInfo.InvariantCulture, this.filePathFormat, this.fileNamePrefix, periodStart, sequenceNumber, this.fileNameSuffix );
+            return String.Format( CultureInfo.InvariantCulture, this.filePathFormat, this.filePathPrefix, periodStart, sequenceNumber, this.filePathSuffix );
         }
 
         public Boolean MatchRollingLogFilePath( FileInfo file, out DateTime? periodStart, out Int32? sequenceNumber )

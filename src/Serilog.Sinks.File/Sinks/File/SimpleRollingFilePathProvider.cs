@@ -20,7 +20,7 @@ namespace Serilog.Sinks.File
 
             this.filePathFormat = this.filePathFormat ?? throw new ArgumentNullException( nameof( SimpleRollingFilePathProvider.filePathFormat) );
 
-            if( !Path.IsPathRooted( filePathFormat ) ) throw new ArgumentException( message: "Path format must be absolute.", paramName: nameof( SimpleRollingFilePathProvider.filePathFormat) );
+            if( !Path.IsPathRooted( filePathFormat ) ) throw new ArgumentException( message: "Path format must be absolute.", paramName: nameof(filePathFormat) );
 
             // Test the format before using it:
             // Also use the rendered string to get any prefix and file-name extensions for generating a glob pattern.

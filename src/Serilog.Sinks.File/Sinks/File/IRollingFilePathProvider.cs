@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Serilog.Sinks.File
 {
@@ -31,6 +28,33 @@ namespace Serilog.Sinks.File
             if( String.IsNullOrEmpty( ext ) ) return filePath;
 
             return filePath.Substring( 0, filePath.Length - ext.Length );
+        }
+
+        public static bool CaseInsensitiveFileSystem => true; // HACK TODO: This is surprisingly difficult.
+    }
+
+    internal class FileInfoComparer : IEqualityComparer<FileInfo>
+    {
+        public static FileInfoComparer Instance { get; } = new FileInfoComparer();
+
+        public Boolean Equals( FileInfo x, FileInfo y )
+        {
+            if( x == null && y == null ) return true;
+            if( x == null || y == null ) return false;
+
+            if( PathUtility.CaseInsensitiveFileSystem )
+            {
+                return String.Equals( x.FullName, y.FullName, StringComparison.OrdinalIgnoreCase );
+            }
+            else
+            {
+                return String.Equals( x.FullName, y.FullName, StringComparison.Ordinal );
+            }
+        }
+
+        public Int32 GetHashCode( FileInfo obj )
+        {
+            return obj.FullName.GetHashCode();
         }
     }
 }
