@@ -105,20 +105,14 @@ namespace Serilog.Sinks.File.Tests
         }
 
         [Theory]
-        [InlineData( null , "'log-'yyyy-MM-dd'.txt'", "log-*.txt" )]
-        [InlineData( "Log", "yyyy-MM-dd'.txt'"      , "*.txt"     )]
-        [InlineData( "Log", "yyyy-MM-dd"            , "*"         )]
+        [InlineData( null , "'log-'yyyy-MM-dd'.txt'"                   , "log-*.txt" )]
+        [InlineData( "Log", "yyyy-MM-dd'.txt'"                         , "*.txt"     )]
+        [InlineData( "Log", "yyyy-MM-dd"                               , "*"         )]
+        [InlineData( "Log", "'log-'yyyy-MM-dd' fnord 'yyyy-MM-dd'.txt'", "log-*.txt" )]
         public void TheDirectorySearchPatternUsesWildcardInPlaceOfDate(string logDirectoryPath, string format, string expected)
         {
-            var roller = PathRoller.CreateForFormattedPath("Logs", , RollingInterval.Day);
-            Assert.Equal("log-*.txt", roller.DirectorySearchPattern);
-        }
-
-        [Fact]
-        public void TheDirectorySearchPatternUsesWildcardInPlaceOfDate4()
-        {
-            var roller = PathRoller.CreateForFormattedPath("Logs", "'log-'yyyy-MM-dd' fnord 'yyyy-MM-dd'.txt'", RollingInterval.Day);
-            Assert.Equal("log-*.txt", roller.DirectorySearchPattern);
+            var roller = PathRoller.CreateForFormattedPath(logDirectoryPath, format, RollingInterval.Day);
+            Assert.Equal(expected, roller.DirectorySearchPattern);
         }
 
         [Theory]
