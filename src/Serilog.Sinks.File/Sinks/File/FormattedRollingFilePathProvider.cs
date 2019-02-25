@@ -59,8 +59,8 @@ namespace Serilog.Sinks.File
                 throw new ArgumentException( DefaultMessage + "The format does not round-trip DateTime values correctly. Does the file path format have sufficient specifiers for the selected interval? (e.g. did you specify " + nameof(RollingInterval) + "." + nameof(RollingInterval.Hour) + " but forget to include an 'HH' specifier in the file path format?)" );
             }
 
-            // Also do an early check for invalid file-name characters, e.g. ':' or '/', but do allow "\" in the case user wants to split logs between directories.
-            if( formatted.IndexOfAny( anyOf: new[] { ':', '/' } ) > -1 )
+            // Also do an early check for invalid file-name characters, e.g. ':'. Note that '/' and '\' are allowed - though if a user on Linux uses "'Log'-yyyy/MM/dd/'.log'" as a format string it might not be the effect they want...
+            if( formatted.IndexOfAny( Path.GetInvalidPathChars() ) > -1 || formatted.IndexOf(':') >= 2 ) // ':' isn't included in `Path.GetInvalidPathChars()` on Windows for some reason.
             {
                 throw new ArgumentException( DefaultMessage + "The format generates file-names that contain illegal characters, such as ':' or '/'." );
             }

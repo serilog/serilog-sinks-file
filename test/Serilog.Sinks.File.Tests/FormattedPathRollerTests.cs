@@ -177,6 +177,17 @@ namespace Serilog.Sinks.File.Tests
             } );
         }
 
+        [Fact]
+        public void ConstructorComplainsIfFormatContainsInvalidPathCharacters()
+        {
+            Assert.Throws( typeof(ArgumentException), () => {
+
+                var roller = PathRoller.CreateForFormattedPath( logDirectoryPath: null, filePathFormat: "dd/MM/yyyy HH:mm:ss", interval: RollingInterval.Minute );
+
+                Assert.True( condition: false, userMessage: nameof(PathRoller.CreateForFormattedPath) + " should throw, so this assertion should never be encountered." );
+            } );
+        }
+
         [Theory]
         [InlineData( RollingInterval.Infinite )]
         [InlineData( RollingInterval.Year )]
