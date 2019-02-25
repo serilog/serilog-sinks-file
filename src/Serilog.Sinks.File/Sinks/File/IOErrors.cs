@@ -18,7 +18,9 @@ namespace Serilog.Sinks.File
 {
     static class IOErrors
     {
+#pragma warning disable CA1801 // Review unused parameters
         public static bool IsLockedFile(IOException ex)
+#pragma warning restore CA1801 // Review unused parameters
         {
 #if HRESULTS
             var errorCode = System.Runtime.InteropServices.Marshal.GetHRForException(ex) & ((1 << 16) - 1);

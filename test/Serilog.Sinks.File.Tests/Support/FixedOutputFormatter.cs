@@ -6,7 +6,7 @@ namespace Serilog.Tests.Support
 {
     public class FixedOutputFormatter : ITextFormatter
     {
-        string _substitutionText;
+        readonly string _substitutionText;
 
         public FixedOutputFormatter(string substitutionText)
         {

@@ -9,7 +9,7 @@ namespace Serilog.Sinks.File
     /// <summary>
     /// A sink wrapper that periodically flushes the wrapped sink to disk.
     /// </summary>
-    public class PeriodicFlushToDiskSink : ILogEventSink, IDisposable
+    public sealed class PeriodicFlushToDiskSink : ILogEventSink, IDisposable
     {
         readonly ILogEventSink _sink;
         readonly Timer _timer;
