@@ -34,7 +34,7 @@ namespace Serilog.Sinks.File
             // So "yyyy-MM-dd" is okay (as 'yyyy' is always 4, 'MM' and 'dd' are always 2)
             // But "yyyyy MMMM h" isn't, because 'MMMM' could be "May" or "August" and 'h' could be "1" or "12".
 
-            // TODO: Consider validating `periodFormat` by throwing ArgumentException or FormatException if it contains any variable-length DateTime specifiers?
+            // It isn't necessary to validate `periodFormat` if it contains any variable-length DateTime specifiers as all possible format-strings are internal constants in this assembly.
 
             // e.g. "^fileNamePrefix(?<period>\d{8})(?<sequence>_([0-9]){3,}){0,1}fileNameSuffix$" would match "filename20190222_001fileNameSuffix"
             string pattern = "^" + Regex.Escape( this.filePathPrefix ) + "(?<" + PeriodMatchGroup + ">\\d{" + this.periodFormat.Length + "})" + "(?<" + SequenceNumberMatchGroup + ">_[0-9]{3,}){0,1}" +  Regex.Escape( this.filePathSuffix ) + "$";
@@ -97,7 +97,7 @@ namespace Serilog.Sinks.File
                 }
                 else
                 {
-                    // This should never happen.
+                    return false; // This could happen if the file-name matches the regex but isn't a valid DateTime, e.g. "12349940" (for 1234-99-40)
                 }
             }
 
@@ -111,10 +111,11 @@ namespace Serilog.Sinks.File
                 }
                 else
                 {
-                    // This should never happen.
+                    return false; // The regex accepts 3 or more consecutive digits with no upper-bound, so a string like "_99999999999999999" would match the regex but fail in `Int32.TryParse`.
                 }
             }
 
+            // A file-name can match the regex and lack both a DateTime value and a Sequence number and still be valid and match, e.g. an Infinite rolling-period with the path specified as "C:\logs\mylog.log".
             return true;
         }
     }

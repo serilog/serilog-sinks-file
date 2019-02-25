@@ -47,7 +47,12 @@ namespace Serilog.Sinks.File
             return directoryPath;
         }
 
-        public static bool CaseInsensitiveFileSystem => true; // HACK TODO: This is surprisingly difficult.
+        public static bool CaseInsensitiveFileSystem => true;
+        // HACK TODO: This is surprisingly difficult.
+        // There are a few possibilities:
+        // * On Windows 10 in a WSL context, we can check for `FILE_FLAG_POSIX_SEMANTICS` on a given directory (as NTFS now supports per-directory case-sensitivity...)O
+        // * On other platforms, we can test case-sensitivity by creating a file with a random (unused) name like "ABCDEFG.txt" and then testing if "abcdefg.TXT" exists.
+        // * Alternatively, perhaps allow users to specify a flag during configuration to declare the filesystem case-sensitive?
     }
 
     internal class FileInfoComparer : IEqualityComparer<FileInfo>
