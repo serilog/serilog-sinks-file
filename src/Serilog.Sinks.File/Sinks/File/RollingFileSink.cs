@@ -14,14 +14,15 @@
 
 #pragma warning disable 618
 
-using System;
-using System.IO;
-using System.Linq;
-using System.Text;
 using Serilog.Core;
 using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Formatting;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
 
 namespace Serilog.Sinks.File
 {
@@ -35,6 +36,7 @@ namespace Serilog.Sinks.File
         readonly bool _buffered;
         readonly bool _shared;
         readonly bool _rollOnFileSizeLimit;
+        readonly Func<IEnumerable<LogEvent>> _logFileHeaders;
 
         readonly object _syncRoot = new object();
         bool _isDisposed;
@@ -50,7 +52,8 @@ namespace Serilog.Sinks.File
                               bool buffered,
                               bool shared,
                               RollingInterval rollingInterval,
-                              bool rollOnFileSizeLimit)
+                              bool rollOnFileSizeLimit,
+                              Func<IEnumerable<LogEvent>> logFileHeaders)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0) throw new ArgumentException("Negative value provided; file size limit must be non-negative");
@@ -64,6 +67,7 @@ namespace Serilog.Sinks.File
             _buffered = buffered;
             _shared = shared;
             _rollOnFileSizeLimit = rollOnFileSizeLimit;
+            _logFileHeaders = logFileHeaders;
         }
 
         public void Emit(LogEvent logEvent)
@@ -146,8 +150,8 @@ namespace Serilog.Sinks.File
                 try
                 {
                     _currentFile = _shared ?
-                        (IFileSink)new SharedFileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding) :
-                        new FileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding, _buffered);
+                        (IFileSink)new SharedFileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding, _logFileHeaders) :
+                        new FileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding, _buffered, _logFileHeaders);
                     _currentFileSequence = sequence;
                 }
                 catch (IOException ex)
@@ -177,7 +181,7 @@ namespace Serilog.Sinks.File
             // because files are only opened on response to an event being processed.
             var potentialMatches = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
                 .Select(Path.GetFileName)
-                .Union(new [] { currentFileName });
+                .Union(new[] { currentFileName });
 
             var newestFirst = _roller
                 .SelectMatches(potentialMatches)

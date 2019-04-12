@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
-using System.IO;
-using System.Text;
 using Serilog.Events;
 using Serilog.Formatting;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
 
 namespace Serilog.Sinks.File
 {
@@ -33,6 +34,8 @@ namespace Serilog.Sinks.File
         readonly bool _buffered;
         readonly object _syncRoot = new object();
         readonly WriteCountingStream _countingStreamWrapper;
+        readonly Func<IEnumerable<LogEvent>> _logFileHeaders;
+        bool _appendHeaderLogs = false;
 
         /// <summary>Construct a <see cref="FileSink"/>.</summary>
         /// <param name="path">Path to the file.</param>
@@ -43,10 +46,11 @@ namespace Serilog.Sinks.File
         /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
         /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
         /// is false.</param>
+        /// <param name="logFileHeaders">This action calls when a new log file created. It enables you to write any header text to the log file.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
         /// <remarks>The file will be written using the UTF-8 character set.</remarks>
         /// <exception cref="IOException"></exception>
-        public FileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding encoding = null, bool buffered = false)
+        public FileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding encoding = null, bool buffered = false, Func<IEnumerable<LogEvent>> logFileHeaders = null)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (textFormatter == null) throw new ArgumentNullException(nameof(textFormatter));
@@ -55,12 +59,16 @@ namespace Serilog.Sinks.File
             _textFormatter = textFormatter;
             _fileSizeLimitBytes = fileSizeLimitBytes;
             _buffered = buffered;
+            _logFileHeaders = logFileHeaders;
 
             var directory = Path.GetDirectoryName(path);
             if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
             }
+
+            if (logFileHeaders != null && FileNotFoundOrEmpty(path))
+                _appendHeaderLogs = true;
 
             Stream outputStream = _underlyingStream = System.IO.File.Open(path, FileMode.Append, FileAccess.Write, FileShare.Read);
             if (_fileSizeLimitBytes != null)
@@ -69,6 +77,13 @@ namespace Serilog.Sinks.File
             }
 
             _output = new StreamWriter(outputStream, encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        }
+
+        bool FileNotFoundOrEmpty(string path)
+        {
+            var fileInfo = new FileInfo(path);
+
+            return !fileInfo.Exists || fileInfo.Length == 0;
         }
 
         bool IFileSink.EmitOrOverflow(LogEvent logEvent)
@@ -82,12 +97,27 @@ namespace Serilog.Sinks.File
                         return false;
                 }
 
-                _textFormatter.Format(logEvent, _output);
-                if (!_buffered)
-                    _output.Flush();
+                if (_appendHeaderLogs)
+                {
+                    var logFileHeaderCollection = _logFileHeaders.Invoke();
+
+                    foreach (var item in logFileHeaderCollection)
+                        AppendToOutput(item);
+
+                    _appendHeaderLogs = false;
+                }
+
+                AppendToOutput(logEvent);
 
                 return true;
             }
+        }
+
+        private void AppendToOutput(LogEvent logEvent)
+        {
+            _textFormatter.Format(logEvent, _output);
+            if (!_buffered)
+                _output.Flush();
         }
 
         /// <summary>
@@ -96,7 +126,7 @@ namespace Serilog.Sinks.File
         /// <param name="logEvent">The log event to write.</param>
         public void Emit(LogEvent logEvent)
         {
-            ((IFileSink) this).EmitOrOverflow(logEvent);
+            ((IFileSink)this).EmitOrOverflow(logEvent);
         }
 
         /// <inheritdoc />

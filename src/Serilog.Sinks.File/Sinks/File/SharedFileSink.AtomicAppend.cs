@@ -14,13 +14,14 @@
 
 #if ATOMIC_APPEND
 
-using System;
-using System.IO;
-using System.Security.AccessControl;
-using System.Text;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Formatting;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Security.AccessControl;
+using System.Text;
 
 namespace Serilog.Sinks.File
 {
@@ -36,6 +37,8 @@ namespace Serilog.Sinks.File
         readonly ITextFormatter _textFormatter;
         readonly long? _fileSizeLimitBytes;
         readonly object _syncRoot = new object();
+        readonly Func<IEnumerable<LogEvent>> _logFileHeaders;
+        bool _appendHeaderLogs = false;
 
         // The stream is reopened with a larger buffer if atomic writes beyond the current buffer size are needed.
         FileStream _fileOutput;
@@ -50,10 +53,11 @@ namespace Serilog.Sinks.File
         /// For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit
         /// will be written in full even if it exceeds the limit.</param>
         /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
+        /// <param name="logFileHeaders">This action calls when a new log file created. It enables you to write any header text to the log file.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
         /// <remarks>The file will be written using the UTF-8 character set.</remarks>
         /// <exception cref="IOException"></exception>
-        public SharedFileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding encoding = null)
+        public SharedFileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding encoding = null, Func<IEnumerable<LogEvent>> logFileHeaders = null)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (textFormatter == null) throw new ArgumentNullException(nameof(textFormatter));
@@ -63,12 +67,16 @@ namespace Serilog.Sinks.File
             _path = path;
             _textFormatter = textFormatter;
             _fileSizeLimitBytes = fileSizeLimitBytes;
+            _logFileHeaders = logFileHeaders;
 
             var directory = Path.GetDirectoryName(path);
             if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
             }
+
+            if (logFileHeaders != null && FileNotFoundOrEmpty(path))
+                _appendHeaderLogs = true;
 
             // FileSystemRights.AppendData sets the Win32 FILE_APPEND_DATA flag. On Linux this is O_APPEND, but that API is not yet
             // exposed by .NET Core.
@@ -85,6 +93,13 @@ namespace Serilog.Sinks.File
                 encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         }
 
+        bool FileNotFoundOrEmpty(string path)
+        {
+            var fileInfo = new FileInfo(path);
+
+            return !fileInfo.Exists || fileInfo.Length == 0;
+        }
+
         bool IFileSink.EmitOrOverflow(LogEvent logEvent)
         {
             if (logEvent == null) throw new ArgumentNullException(nameof(logEvent));
@@ -93,10 +108,20 @@ namespace Serilog.Sinks.File
             {
                 try
                 {
-                    _textFormatter.Format(logEvent, _output);
-                    _output.Flush();
+                    if (_appendHeaderLogs)
+                    {
+                        var logFileHeaderCollection = _logFileHeaders.Invoke();
+
+                        foreach (var item in logFileHeaderCollection)
+                            AppendToOutput(item);
+
+                        _appendHeaderLogs = false;
+                    }
+
+                    AppendToOutput(logEvent);
+
                     var bytes = _writeBuffer.GetBuffer();
-                    var length = (int) _writeBuffer.Length;
+                    var length = (int)_writeBuffer.Length;
                     if (length > _fileStreamBufferLength)
                     {
                         var oldOutput = _fileOutput;
@@ -139,6 +164,12 @@ namespace Serilog.Sinks.File
                     _writeBuffer.SetLength(0);
                 }
             }
+        }
+
+        private void AppendToOutput(LogEvent logEvent)
+        {
+            _textFormatter.Format(logEvent, _output);
+            _output.Flush();
         }
 
         /// <summary>
