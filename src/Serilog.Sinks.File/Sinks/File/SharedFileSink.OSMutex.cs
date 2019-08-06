@@ -1,4 +1,4 @@
-// Copyright 2013-2016 Serilog Contributors
+﻿// Copyright 2013-2019 Serilog Contributors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,26 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if OS_MUTEX
+
 using System;
 using System.IO;
 using System.Text;
 using Serilog.Events;
 using Serilog.Formatting;
+using System.Threading;
+using Serilog.Debugging;
 
 namespace Serilog.Sinks.File
 {
     /// <summary>
     /// Write log events to a disk file.
     /// </summary>
-    public sealed class FileSink : IFileSink, IDisposable
+    [Obsolete("This type will be removed from the public API in a future version; use `WriteTo.File(shared: true)` instead.")]
+    public sealed class SharedFileSink : IFileSink, IDisposable
     {
         readonly TextWriter _output;
         readonly FileStream _underlyingStream;
         readonly ITextFormatter _textFormatter;
         readonly long? _fileSizeLimitBytes;
-        readonly bool _buffered;
         readonly object _syncRoot = new object();
-        readonly WriteCountingStream _countingStreamWrapper;
+
+        const string MutexNameSuffix = ".serilog";
+        const int MutexWaitTimeout = 10000;
+        readonly Mutex _mutex;
 
         /// <summary>Construct a <see cref="FileSink"/>.</summary>
         /// <param name="path">Path to the file.</param>
@@ -40,31 +47,16 @@ namespace Serilog.Sinks.File
         /// For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit
         /// will be written in full even if it exceeds the limit.</param>
         /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
-        /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
-        /// is false.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
-        /// <remarks>This constructor preserves compatibility with early versions of the public API. New code should not depend on this type.</remarks>
+        /// <remarks>The file will be written using the UTF-8 character set.</remarks>
         /// <exception cref="IOException"></exception>
-        [Obsolete("This type and constructor will be removed from the public API in a future version; use `WriteTo.File()` instead.")]
-        public FileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding encoding = null, bool buffered = false)
-            : this(path, textFormatter, fileSizeLimitBytes, encoding, buffered, null)
-        {
-        }
-
-        // This overload should be used internally; the overload above maintains compatibility with the earlier public API.
-        internal FileSink(
-            string path,
-            ITextFormatter textFormatter,
-            long? fileSizeLimitBytes,
-            Encoding encoding,
-            bool buffered,
-            FileLifecycleHooks hooks)
+        public SharedFileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding encoding = null)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
-            if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0) throw new ArgumentException("Negative value provided; file size limit must be non-negative.");
+            if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0)
+                throw new ArgumentException("Negative value provided; file size limit must be non-negative");
             _textFormatter = textFormatter ?? throw new ArgumentNullException(nameof(textFormatter));
             _fileSizeLimitBytes = fileSizeLimitBytes;
-            _buffered = buffered;
 
             var directory = Path.GetDirectoryName(path);
             if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
@@ -72,40 +64,39 @@ namespace Serilog.Sinks.File
                 Directory.CreateDirectory(directory);
             }
 
-            Stream outputStream = _underlyingStream = System.IO.File.Open(path, FileMode.Append, FileAccess.Write, FileShare.Read);
-            if (_fileSizeLimitBytes != null)
-            {
-                outputStream = _countingStreamWrapper = new WriteCountingStream(_underlyingStream);
-            }
-
-            // Parameter reassignment.
-            encoding = encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-
-            if (hooks != null)
-            {
-                outputStream = hooks.OnFileOpened(outputStream, encoding) ??
-                               throw new InvalidOperationException($"The file lifecycle hook `{nameof(FileLifecycleHooks.OnFileOpened)}(...)` returned `null`.");
-            }
-
-            _output = new StreamWriter(outputStream, encoding);
+            var mutexName = Path.GetFullPath(path).Replace(Path.DirectorySeparatorChar, ':') + MutexNameSuffix;
+            _mutex = new Mutex(false, mutexName);
+            _underlyingStream = System.IO.File.Open(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+            _output = new StreamWriter(_underlyingStream, encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         }
 
         bool IFileSink.EmitOrOverflow(LogEvent logEvent)
         {
             if (logEvent == null) throw new ArgumentNullException(nameof(logEvent));
+
             lock (_syncRoot)
             {
-                if (_fileSizeLimitBytes != null)
+                if (!TryAcquireMutex())
+                    return true; // We didn't overflow, but, roll-on-size should not be attempted
+
+                try
                 {
-                    if (_countingStreamWrapper.CountedLength >= _fileSizeLimitBytes.Value)
-                        return false;
-                }
+                    _underlyingStream.Seek(0, SeekOrigin.End);
+                    if (_fileSizeLimitBytes != null)
+                    {
+                        if (_underlyingStream.Length >= _fileSizeLimitBytes.Value)
+                            return false;
+                    }
 
-                _textFormatter.Format(logEvent, _output);
-                if (!_buffered)
+                    _textFormatter.Format(logEvent, _output);
                     _output.Flush();
-
-                return true;
+                    _underlyingStream.Flush();
+                    return true;
+                }
+                finally
+                {
+                    ReleaseMutex();
+                }
             }
         }
 
@@ -115,7 +106,7 @@ namespace Serilog.Sinks.File
         /// <param name="logEvent">The log event to write.</param>
         public void Emit(LogEvent logEvent)
         {
-            ((IFileSink) this).EmitOrOverflow(logEvent);
+            ((IFileSink)this).EmitOrOverflow(logEvent);
         }
 
         /// <inheritdoc />
@@ -124,6 +115,7 @@ namespace Serilog.Sinks.File
             lock (_syncRoot)
             {
                 _output.Dispose();
+                _mutex.Dispose();
             }
         }
 
@@ -132,9 +124,43 @@ namespace Serilog.Sinks.File
         {
             lock (_syncRoot)
             {
-                _output.Flush();
-                _underlyingStream.Flush(true);
+                if (!TryAcquireMutex())
+                    return;
+
+                try
+                {
+                    _underlyingStream.Flush(true);
+                }
+                finally
+                {
+                    ReleaseMutex();
+                }
             }
+        }
+
+        bool TryAcquireMutex()
+        {
+            try
+            {
+                if (!_mutex.WaitOne(MutexWaitTimeout))
+                {
+                    SelfLog.WriteLine("Shared file mutex could not be acquired within {0} ms", MutexWaitTimeout);
+                    return false;
+                }
+            }
+            catch (AbandonedMutexException)
+            {
+                SelfLog.WriteLine("Inherited shared file mutex after abandonment by another process");
+            }
+
+            return true;
+        }
+
+        void ReleaseMutex()
+        {
+            _mutex.ReleaseMutex();
         }
     }
 }
+
+#endif

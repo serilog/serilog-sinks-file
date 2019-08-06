@@ -1,4 +1,4 @@
-﻿// Copyright 2017 Serilog Contributors
+﻿// Copyright 2013-2016 Serilog Contributors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,16 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.IO;
+
 namespace Serilog.Sinks.File
 {
-    /// <summary>
-    /// Supported by (file-based) sinks that can be explicitly flushed.
-    /// </summary>
-    public interface IFlushableFileSink
+    static class IOErrors
     {
-        /// <summary>
-        /// Flush buffered contents to disk.
-        /// </summary>
-        void FlushToDisk();
+        public static bool IsLockedFile(IOException ex)
+        {
+#if HRESULTS
+            var errorCode = System.Runtime.InteropServices.Marshal.GetHRForException(ex) & ((1 << 16) - 1);
+            return errorCode == 32 || errorCode == 33;
+#else
+            return true;
+#endif
+        }
     }
 }

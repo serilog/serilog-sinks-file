@@ -1,12 +1,8 @@
 ﻿using Serilog.Formatting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Serilog.Events;
 using System.IO;
 
-namespace Serilog.Tests
+namespace Serilog.Tests.Support
 {
     public class FixedOutputFormatter : ITextFormatter
     {

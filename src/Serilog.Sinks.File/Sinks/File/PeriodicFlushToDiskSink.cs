@@ -1,4 +1,18 @@
-﻿using System;
+﻿// Copyright 2016-2019 Serilog Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+using System;
 using System.Threading;
 using Serilog.Core;
 using Serilog.Debugging;
@@ -9,6 +23,7 @@ namespace Serilog.Sinks.File
     /// <summary>
     /// A sink wrapper that periodically flushes the wrapped sink to disk.
     /// </summary>
+    [Obsolete("This type will be removed from the public API in a future version; use `WriteTo.File(flushToDiskInterval:)` instead.")]
     public class PeriodicFlushToDiskSink : ILogEventSink, IDisposable
     {
         readonly ILogEventSink _sink;
@@ -21,15 +36,12 @@ namespace Serilog.Sinks.File
         /// </summary>
         /// <param name="sink">The sink to wrap.</param>
         /// <param name="flushInterval">The interval at which to flush the underlying sink.</param>
-        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentNullException"/>
         public PeriodicFlushToDiskSink(ILogEventSink sink, TimeSpan flushInterval)
         {
-            if (sink == null) throw new ArgumentNullException(nameof(sink));
+            _sink = sink ?? throw new ArgumentNullException(nameof(sink));
 
-            _sink = sink;
-
-            var flushable = sink as IFlushableFileSink;
-            if (flushable != null)
+            if (sink is IFlushableFileSink flushable)
             {
                 _timer = new Timer(_ => FlushToDisk(flushable), null, flushInterval, flushInterval);
             }
