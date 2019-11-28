@@ -228,6 +228,12 @@ namespace Serilog.Sinks.File.Tests
             var folder = Some.TempFolderPath();
             var pathFormat = Path.Combine(folder, fileName);
 
+            var firstEvent = events.FirstOrDefault();
+            if (firstEvent != null)
+            {
+                Clock.SetTestDateTimeNow(firstEvent.Timestamp.DateTime);
+            }
+
             var config = new LoggerConfiguration();
             configureFile(pathFormat, config.WriteTo);
             var log = config.CreateLogger();

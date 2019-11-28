@@ -65,6 +65,8 @@ namespace Serilog.Sinks.File
             _shared = shared;
             _rollOnFileSizeLimit = rollOnFileSizeLimit;
             _hooks = hooks;
+
+            _propagateExceptions = propagateExceptions;
         }
 
         public void Emit(LogEvent logEvent)
@@ -91,7 +93,7 @@ namespace Serilog.Sinks.File
             {
                 OpenFile(now);
             }
-            else if (nextSequence || now >= _nextCheckpoint.Value)
+            else if (nextSequence || now >= _nextCheckpoint)
             {
                 int? minSequence = null;
                 if (nextSequence)

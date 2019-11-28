@@ -23,9 +23,10 @@ namespace Serilog.Sinks.File.Tests
         [Fact]
         public void WhenAuditingCreationExceptionsPropagate()
         {
+            long? NoRollOnFileSizeBytes = null;
             Assert.Throws<ArgumentException>(() =>
                 new LoggerConfiguration()
-                    .AuditTo.File(InvalidPath)
+                    .AuditTo.File(InvalidPath, rollOnFileSizeBytes: NoRollOnFileSizeBytes)
                     .CreateLogger());
         }
 
