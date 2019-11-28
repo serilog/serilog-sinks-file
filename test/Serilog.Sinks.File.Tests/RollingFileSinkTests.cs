@@ -61,7 +61,7 @@ namespace Serilog.Sinks.File.Tests
 
             TestRollingEventSequence(
                 (pf, wt) => wt.File(pf, retainedFileCountLimit: 2, rollingInterval: RollingInterval.Day),
-                new[] {e1, e2, e3},
+                new[] { e1, e2, e3 },
                 files =>
                 {
                     Assert.Equal(3, files.Count);
@@ -81,7 +81,7 @@ namespace Serilog.Sinks.File.Tests
 
             TestRollingEventSequence(
                 (pf, wt) => wt.File(pf, retainedFileCountLimit: 2, rollingInterval: RollingInterval.Day, hooks: new ArchiveOldLogsHook(archiveDirectory)),
-                new[] {e1, e2, e3},
+                new[] { e1, e2, e3 },
                 files =>
                 {
                     Assert.Equal(3, files.Count);

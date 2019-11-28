@@ -183,7 +183,7 @@ namespace Serilog.Sinks.File
             // because files are only opened on response to an event being processed.
             var potentialMatches = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
                 .Select(Path.GetFileName)
-                .Union(new [] { currentFileName });
+                .Union(new[] { currentFileName });
 
             var newestFirst = _roller
                 .SelectMatches(potentialMatches)
