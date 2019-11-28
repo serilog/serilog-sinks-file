@@ -65,6 +65,8 @@ namespace Serilog.Sinks.File
             _shared = shared;
             _rollOnFileSizeLimit = rollOnFileSizeLimit;
             _hooks = hooks;
+
+            OpenFile(Clock.DateTimeNow);
         }
 
         public void Emit(LogEvent logEvent)
