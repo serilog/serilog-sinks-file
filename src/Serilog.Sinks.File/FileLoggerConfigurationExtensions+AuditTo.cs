@@ -54,7 +54,12 @@ namespace Serilog
             IFormatProvider formatProvider,
             LoggingLevelSwitch levelSwitch)
         {
-            return File(sinkConfiguration, path, restrictedToMinimumLevel, outputTemplate, formatProvider, levelSwitch, null, null);
+            const RollingInterval previousDefaultRollingInterval = RollingInterval.Infinite;
+            const bool previousDefaultShared = false;
+            const long previousDefaultRollOnFileSizeBytes = 1L * 1024 * 1024 * 1024;
+
+            return File(sinkConfiguration, path, restrictedToMinimumLevel, outputTemplate, formatProvider, levelSwitch, previousDefaultShared,
+                previousDefaultRollingInterval, previousDefaultRollOnFileSizeBytes, null, null);
         }
 
         /// <summary>
@@ -81,7 +86,12 @@ namespace Serilog
             LogEventLevel restrictedToMinimumLevel,
             LoggingLevelSwitch levelSwitch)
         {
-            return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, levelSwitch, null, null);
+            const RollingInterval previousDefaultRollingInterval = RollingInterval.Infinite;
+            const bool previousDefaultShared = false;
+            const long previousDefaultRollOnFileSizeBytes = 1L * 1024 * 1024 * 1024;
+
+            return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, levelSwitch, previousDefaultShared,
+                previousDefaultRollingInterval, previousDefaultRollOnFileSizeBytes, null, null);
         }
 
         /// <summary>
@@ -114,8 +124,12 @@ namespace Serilog
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (outputTemplate == null) throw new ArgumentNullException(nameof(outputTemplate));
 
-            var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
-            return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, levelSwitch, encoding, hooks);
+            const RollingInterval previousDefaultRollingInterval = RollingInterval.Infinite;
+            const bool previousDefaultShared = false;
+            const long previousDefaultRollOnFileSizeBytes = 1L * 1024 * 1024 * 1024;
+
+            return File(sinkConfiguration, path, restrictedToMinimumLevel, outputTemplate, formatProvider, levelSwitch, previousDefaultShared,
+                previousDefaultRollingInterval, previousDefaultRollOnFileSizeBytes, encoding, hooks);
         }
 
         /// <summary>
@@ -149,8 +163,12 @@ namespace Serilog
             if (formatter == null) throw new ArgumentNullException(nameof(formatter));
             if (path == null) throw new ArgumentNullException(nameof(path));
 
-            return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, null, levelSwitch, false, true,
-                false, null, encoding, RollingInterval.Infinite, false, null, hooks);
+            const RollingInterval previousDefaultRollingInterval = RollingInterval.Infinite;
+            const bool previousDefaultShared = false;
+            const long previousDefaultRollOnFileSizeBytes = 1L * 1024 * 1024 * 1024;
+
+            return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, levelSwitch, previousDefaultShared,
+                previousDefaultRollingInterval, previousDefaultRollOnFileSizeBytes, encoding, hooks);
         }
 
         /// <summary>
