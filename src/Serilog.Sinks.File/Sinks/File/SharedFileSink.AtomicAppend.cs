@@ -20,6 +20,7 @@ using System.Security.AccessControl;
 using System.Text;
 using Serilog.Events;
 using Serilog.Formatting;
+using static Serilog.Sinks.File.IO;
 
 namespace Serilog.Sinks.File
 {
@@ -61,14 +62,14 @@ namespace Serilog.Sinks.File
             _fileSizeLimitBytes = fileSizeLimitBytes;
 
             var directory = Path.GetDirectoryName(path);
-            if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+            if (!string.IsNullOrWhiteSpace(directory) && !DirectoryExists(directory))
             {
-                Directory.CreateDirectory(directory);
+                DirectoryCreateDirectory(directory);
             }
 
             // FileSystemRights.AppendData sets the Win32 FILE_APPEND_DATA flag. On Linux this is O_APPEND, but that API is not yet
             // exposed by .NET Core.
-            _fileOutput = new FileStream(
+            _fileOutput = NewFileStream(
                 path,
                 FileMode.Append,
                 FileSystemRights.AppendData,
@@ -97,7 +98,7 @@ namespace Serilog.Sinks.File
                     {
                         var oldOutput = _fileOutput;
 
-                        _fileOutput = new FileStream(
+                        _fileOutput = NewFileStream(
                             _path,
                             FileMode.Append,
                             FileSystemRights.AppendData,
