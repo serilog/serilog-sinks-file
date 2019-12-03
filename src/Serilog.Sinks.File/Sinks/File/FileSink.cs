@@ -17,6 +17,7 @@ using System.IO;
 using System.Text;
 using Serilog.Events;
 using Serilog.Formatting;
+using static Serilog.Sinks.File.IO;
 
 namespace Serilog.Sinks.File
 {
@@ -67,12 +68,12 @@ namespace Serilog.Sinks.File
             _buffered = buffered;
 
             var directory = Path.GetDirectoryName(path);
-            if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+            if (!string.IsNullOrWhiteSpace(directory) && !DirectoryExists(directory))
             {
-                Directory.CreateDirectory(directory);
+                DirectoryCreateDirectory(directory);
             }
 
-            Stream outputStream = _underlyingStream = System.IO.File.Open(path, FileMode.Append, FileAccess.Write, FileShare.Read);
+            Stream outputStream = _underlyingStream = FileOpen(path, FileMode.Append, FileAccess.Write, FileShare.Read);
             if (_fileSizeLimitBytes != null)
             {
                 outputStream = _countingStreamWrapper = new WriteCountingStream(_underlyingStream);

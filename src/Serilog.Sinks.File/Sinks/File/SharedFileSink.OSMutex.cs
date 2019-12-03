@@ -21,6 +21,7 @@ using Serilog.Events;
 using Serilog.Formatting;
 using System.Threading;
 using Serilog.Debugging;
+using static Serilog.Sinks.File.IO;
 
 namespace Serilog.Sinks.File
 {
@@ -59,14 +60,14 @@ namespace Serilog.Sinks.File
             _fileSizeLimitBytes = fileSizeLimitBytes;
 
             var directory = Path.GetDirectoryName(path);
-            if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+            if (!string.IsNullOrWhiteSpace(directory) && !DirectoryExists(directory))
             {
-                Directory.CreateDirectory(directory);
+                DirectoryCreateDirectory(directory);
             }
 
             var mutexName = Path.GetFullPath(path).Replace(Path.DirectorySeparatorChar, ':') + MutexNameSuffix;
             _mutex = new Mutex(false, mutexName);
-            _underlyingStream = System.IO.File.Open(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+            _underlyingStream = FileOpen(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
             _output = new StreamWriter(_underlyingStream, encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         }
 
