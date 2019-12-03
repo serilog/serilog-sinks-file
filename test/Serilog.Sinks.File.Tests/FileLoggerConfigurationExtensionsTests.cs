@@ -31,6 +31,96 @@ namespace Serilog.Sinks.File.Tests
         }
 
         [Fact]
+        public void WhenAuditFileCannotBeOpenLoggerThrows()
+        {
+            try
+            {
+                IO.Reset(fileOpen: (_, __, ___, ____) => throw new IOException("IO error"));
+
+                using (var tmp = TempFolder.ForCaller())
+                using (var log = new LoggerConfiguration()
+                    .AuditTo.File(new ThrowingLogEventFormatter(), tmp.AllocateFilename())
+                    .CreateLogger())
+                {
+                    var ex = Assert.Throws<AggregateException>(() => log.Information("Hello"));
+                    var bex = ex.GetBaseException();
+                    Assert.IsType<IOException>(bex);
+                    Assert.Equal("IO error", bex.Message);
+                }
+            }
+            finally
+            {
+                IO.Reset();
+            }
+        }
+
+        [Fact]
+        public void WhenFileCannotBeOpenLoggerDoesNotThrow()
+        {
+            try
+            {
+                IO.Reset(fileOpen: (_, __, ___, ____) => throw new IOException("IO error"));
+
+                using (var tmp = TempFolder.ForCaller())
+                using (var log = new LoggerConfiguration()
+                    .WriteTo.File(new ThrowingLogEventFormatter(), tmp.AllocateFilename())
+                    .CreateLogger())
+                {
+                    log.Information("Hello");
+                }
+            }
+            finally
+            {
+                IO.Reset();
+            }
+        }
+
+        [Fact]
+        public void WhenAuditFileCannotBeOpenBecauseFilesIsLockedLoggerThrows()
+        {
+            try
+            {
+                IO.Reset(fileOpen: (_, __, ___, ____) => throw new IOException("File is locked"));
+
+                using (var tmp = TempFolder.ForCaller())
+                using (var log = new LoggerConfiguration()
+                    .AuditTo.File(new ThrowingLogEventFormatter(), tmp.AllocateFilename())
+                    .CreateLogger())
+                {
+                    var ex = Assert.Throws<AggregateException>(() => log.Information("Hello"));
+                    var bex = ex.GetBaseException();
+                    Assert.IsType<IOException>(bex);
+                    Assert.Equal("File is locked", bex.Message);
+                }
+            }
+            finally
+            {
+                IO.Reset();
+            }
+        }
+
+        [Fact]
+        public void WhenFileCannotBeOpenBecauseFilesIsLockedLoggerDoesNotThrow()
+        {
+            try
+            {
+                IO.Reset(fileOpen: (_, __, ___, ____) => throw new IOException("File is locked", 0x70070020));
+
+                using (var tmp = TempFolder.ForCaller())
+                using (var log = new LoggerConfiguration()
+                    .WriteTo.File(new ThrowingLogEventFormatter(), tmp.AllocateFilename())
+                    .CreateLogger())
+                {
+                    log.Information("Hello");
+                }
+            }
+            finally
+            {
+                IO.Reset();
+            }
+        }
+
+        [Fact]
         public void WhenWritingLoggingExceptionsAreSuppressed()
         {
             using (var tmp = TempFolder.ForCaller())
