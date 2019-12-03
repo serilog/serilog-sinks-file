@@ -35,6 +35,7 @@ namespace Serilog.Sinks.File
         readonly bool _shared;
         readonly bool _rollOnFileSizeLimit;
         readonly FileLifecycleHooks _hooks;
+        readonly bool _propagateExceptions;
 
         readonly object _syncRoot = new object();
         bool _isDisposed;
@@ -51,11 +52,13 @@ namespace Serilog.Sinks.File
                               bool shared,
                               RollingInterval rollingInterval,
                               bool rollOnFileSizeLimit,
-                              FileLifecycleHooks hooks)
+                              FileLifecycleHooks hooks,
+                              bool propagateExceptions)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0) throw new ArgumentException("Negative value provided; file size limit must be non-negative.");
             if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("Zero or negative value provided; retained file count limit must be at least 1.");
+            if (rollingInterval == RollingInterval.Infinite && !rollOnFileSizeLimit) throw new ArgumentException("Ether rollingInterval or rollOnFileSizeLimit should be set");
 
             _roller = new PathRoller(path, rollingInterval);
             _textFormatter = textFormatter;
@@ -66,7 +69,6 @@ namespace Serilog.Sinks.File
             _shared = shared;
             _rollOnFileSizeLimit = rollOnFileSizeLimit;
             _hooks = hooks;
-
             _propagateExceptions = propagateExceptions;
         }
 
@@ -163,6 +165,11 @@ namespace Serilog.Sinks.File
                     {
                         SelfLog.WriteLine("File target {0} was locked, attempting to open next in sequence (attempt {1})", path, attempt + 1);
                         sequence = (sequence ?? 0) + 1;
+
+                        if (_propagateExceptions && attempt == maxAttempts - 1)
+                        {
+                            throw;
+                        }
                         continue;
                     }
 
