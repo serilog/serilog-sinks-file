@@ -227,8 +227,8 @@ namespace Serilog.Sinks.File.Tests
                         textStream.Position = 0;
                         var lines = textStream.ReadAllLines();
 
-                        Assert.Equal(1, lines.Count);
-                        Assert.True(lines[0].EndsWith(logEvents[i].MessageTemplate.Text));
+                        Assert.Single(lines);
+                        Assert.EndsWith(logEvents[i].MessageTemplate.Text, lines[0]);
                     }
                 }
             }
