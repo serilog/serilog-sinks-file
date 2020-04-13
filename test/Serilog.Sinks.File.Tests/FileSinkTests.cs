@@ -130,7 +130,7 @@ namespace Serilog.Sinks.File.Tests
             long? maxBytes = 5000;
             var encoding = new UTF8Encoding(false);
 
-            Assert.Equal(0, encoding.GetPreamble().Length);
+            Assert.Empty(encoding.GetPreamble());
             WriteTwoEventsAndCheckOutputFileLength(maxBytes, encoding);
         }
 
@@ -139,7 +139,7 @@ namespace Serilog.Sinks.File.Tests
         {
             var encoding = new UTF8Encoding(false);
 
-            Assert.Equal(0, encoding.GetPreamble().Length);
+            Assert.Empty(encoding.GetPreamble());
             WriteTwoEventsAndCheckOutputFileLength(null, encoding);
         }
 
