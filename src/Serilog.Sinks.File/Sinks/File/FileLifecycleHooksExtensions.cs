@@ -43,28 +43,27 @@ namespace Serilog.Sinks.File
 
         class FileLifeCycleHookChain : FileLifecycleHooks
         {
-            private readonly FileLifecycleHooks[] hooks;
+            private readonly FileLifecycleHooks _first;
+            private readonly FileLifecycleHooks _second;
 
-            public FileLifeCycleHookChain(params FileLifecycleHooks[] hooks)
+            public FileLifeCycleHookChain(FileLifecycleHooks first, FileLifecycleHooks second)
             {
-                this.hooks = hooks ?? throw new ArgumentNullException(nameof(hooks));
+                _first = first ?? throw new ArgumentNullException(nameof(first));
+                _second = second ?? throw new ArgumentNullException(nameof(second));
             }
 
             public override Stream OnFileOpened(Stream underlyingStream, Encoding encoding)
             {
-                for (int i = 0; i < hooks.Length; i++)
-                {
-                    underlyingStream = hooks[i].OnFileOpened(underlyingStream, encoding);
-                }
-                return underlyingStream;
+                var firstStreamResult = _first.OnFileOpened(underlyingStream, encoding);
+                var secondStreamResult = _second.OnFileOpened(firstStreamResult, encoding);
+
+                return secondStreamResult;
             }
 
             public override void OnFileDeleting(string path)
             {
-                for (int i = 0; i < hooks.Length; i++)
-                {
-                    hooks[i].OnFileDeleting(path);
-                }
+                _first.OnFileDeleting(path);
+                _second.OnFileDeleting(path);
             }
         }
     }
