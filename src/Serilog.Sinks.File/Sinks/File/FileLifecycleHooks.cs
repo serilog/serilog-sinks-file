@@ -43,5 +43,22 @@ namespace Serilog.Sinks.File
         /// </summary>
         /// <param name="path">The full path to the file being deleted.</param>
         public virtual void OnFileDeleting(string path) {}
+
+        /// <summary>
+        /// Creates a chain of <see cref="FileLifecycleHooks"/> that have their methods called sequentially
+        /// Can be used to compose <see cref="FileLifecycleHooks"/> together; e.g. add header information to each log file and
+        /// compress it.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// var hooks = new GZipHooks().Then(new HeaderWriter("File Header"));
+        /// </code>
+        /// </example>
+        /// <param name="next">The next <see cref="FileLifecycleHooks"/> to have its methods called in the chain</param>
+        /// <returns></returns>
+        public FileLifecycleHooks Then(FileLifecycleHooks next)
+        {
+            return new FileLifeCycleHookChain(this, next);
+        }
     }
 }
