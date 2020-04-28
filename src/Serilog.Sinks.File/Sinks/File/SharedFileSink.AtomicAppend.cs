@@ -72,7 +72,7 @@ namespace Serilog.Sinks.File
                 path,
                 FileMode.Append,
                 FileSystemRights.AppendData,
-                FileShare.ReadWrite,
+                FileShare.ReadWrite | FileShare.Delete,
                 _fileStreamBufferLength,
                 FileOptions.None);
 
@@ -101,7 +101,23 @@ namespace Serilog.Sinks.File
                             _path,
                             FileMode.Append,
                             FileSystemRights.AppendData,
-                            FileShare.ReadWrite,
+                            FileShare.ReadWrite | FileShare.Delete,
+                            length,
+                            FileOptions.None);
+                        _fileStreamBufferLength = length;
+
+                        oldOutput.Dispose();
+                    }
+
+                    if (!System.IO.File.Exists(_path))
+                    {
+                        var oldOutput = _fileOutput;
+
+                        _fileOutput = new FileStream(
+                            _path,
+                            FileMode.Append,
+                            FileSystemRights.AppendData,
+                            FileShare.ReadWrite | FileShare.Delete,
                             length,
                             FileOptions.None);
                         _fileStreamBufferLength = length;

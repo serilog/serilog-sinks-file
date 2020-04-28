@@ -30,6 +30,38 @@ namespace Serilog.Sinks.File.Tests
                 Assert.Contains("Hello, world!", lines[0]);
             }
         }
+        [Fact]
+        public void FileIsReWrittenAfterEventIfDeleted()
+        {
+            using (var tmp = TempFolder.ForCaller())
+            {
+                var nonexistent = tmp.AllocateFilename("txt");
+                var evt = Some.LogEvent("Hello, world!");
+
+                void Emmit()
+                {
+                    using (var sink = new FileSink(nonexistent, new JsonFormatter(), null))
+                    {
+                        sink.Emit(evt);
+                    }
+                }
+
+                Emmit();
+                var lines = System.IO.File.ReadAllLines(nonexistent);
+                Assert.Contains("Hello, world!", lines[0]);
+                Assert.Single(lines);
+
+                System.IO.File.Delete(nonexistent);
+                Assert.False(System.IO.File.Exists(nonexistent));
+                Assert.Throws<FileNotFoundException>(() => System.IO.File.ReadAllLines(nonexistent));
+
+                Emmit();
+                lines = System.IO.File.ReadAllLines(nonexistent);
+                Assert.True(System.IO.File.Exists(nonexistent));
+                Assert.Contains("Hello, world!", lines[0]);
+                Assert.Single(lines);
+            }
+        }
 
         [Fact]
         public void FileIsAppendedToWhenAlreadyCreated()

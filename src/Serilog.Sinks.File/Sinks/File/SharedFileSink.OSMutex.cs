@@ -30,8 +30,9 @@ namespace Serilog.Sinks.File
     [Obsolete("This type will be removed from the public API in a future version; use `WriteTo.File(shared: true)` instead.")]
     public sealed class SharedFileSink : IFileSink, IDisposable
     {
-        readonly TextWriter _output;
-        readonly FileStream _underlyingStream;
+         TextWriter _output;
+         FileStream _underlyingStream;
+        readonly string _path;
         readonly ITextFormatter _textFormatter;
         readonly long? _fileSizeLimitBytes;
         readonly object _syncRoot = new object();
@@ -52,21 +53,21 @@ namespace Serilog.Sinks.File
         /// <exception cref="IOException"></exception>
         public SharedFileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding encoding = null)
         {
-            if (path == null) throw new ArgumentNullException(nameof(path));
+            _path = path ?? throw new ArgumentNullException(nameof(path));
             if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0)
                 throw new ArgumentException("Negative value provided; file size limit must be non-negative");
             _textFormatter = textFormatter ?? throw new ArgumentNullException(nameof(textFormatter));
             _fileSizeLimitBytes = fileSizeLimitBytes;
 
-            var directory = Path.GetDirectoryName(path);
+            var directory = Path.GetDirectoryName(_path);
             if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
             }
 
-            var mutexName = Path.GetFullPath(path).Replace(Path.DirectorySeparatorChar, ':') + MutexNameSuffix;
+            var mutexName = Path.GetFullPath(_path).Replace(Path.DirectorySeparatorChar, ':') + MutexNameSuffix;
             _mutex = new Mutex(false, mutexName);
-            _underlyingStream = System.IO.File.Open(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+            _underlyingStream = System.IO.File.Open(_path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
             _output = new StreamWriter(_underlyingStream, encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         }
 
@@ -81,6 +82,13 @@ namespace Serilog.Sinks.File
 
                 try
                 {
+                    if (!System.IO.File.Exists(_path))
+                    {
+                        _underlyingStream.Dispose();
+                        _underlyingStream = System.IO.File.Open(_path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
+                        _output = new StreamWriter(_underlyingStream,  new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                    }
+
                     _underlyingStream.Seek(0, SeekOrigin.End);
                     if (_fileSizeLimitBytes != null)
                     {

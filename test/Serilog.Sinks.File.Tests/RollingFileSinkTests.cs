@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using Xunit;
 using Serilog.Events;
 using Serilog.Sinks.File.Tests.Support;
@@ -253,6 +254,73 @@ namespace Serilog.Sinks.File.Tests
                 log.Write(Some.InformationEvent());
 
                 Assert.True(Directory.Exists(folder));
+            }
+            finally
+            {
+                log?.Dispose();
+                Directory.Delete(temp, true);
+            }
+        }
+
+        [Fact]
+        public void ShouldReCreateDeletedFiles()
+        {
+            var fileName = Some.String() + "-{Date}.txt";
+            var temp = Some.TempFolderPath();
+            var folder = Path.Combine(temp, Guid.NewGuid().ToString());
+            var pathFormat = Path.Combine(folder, fileName);
+
+            Logger log = null;
+
+            try
+            {
+                log = new LoggerConfiguration()
+                    .WriteTo.File(pathFormat, rollingInterval: RollingInterval.Day, shared:true)
+                    .CreateLogger();
+
+                log.Write(Some.InformationEvent());
+                Assert.True(Directory.Exists(folder));
+
+                var createdFile = Directory.GetFiles(folder)[0];
+                System.IO.File.Delete(createdFile);
+                Assert.False(System.IO.File.Exists(createdFile));
+
+                log = new LoggerConfiguration()
+                    .WriteTo.File(pathFormat, rollingInterval: RollingInterval.Day, shared: true)
+                    .CreateLogger();
+
+                log.Write(Some.InformationEvent());
+                Assert.True(System.IO.File.Exists(createdFile));
+            }
+            finally
+            {
+                log?.Dispose();
+                Directory.Delete(temp, true);
+            }
+        }
+
+        [Fact]
+        public void ShouldBeAbleToDeleteFile()
+        {
+            var fileName = Some.String() + "-{Date}.txt";
+            var temp = Some.TempFolderPath();
+            var folder = Path.Combine(temp, Guid.NewGuid().ToString());
+            var pathFormat = Path.Combine(folder, fileName);
+
+            Logger log = null;
+
+            try
+            {
+                log = new LoggerConfiguration()
+                    .WriteTo.File(pathFormat, retainedFileCountLimit: 3, rollingInterval: RollingInterval.Day, shared:true, flushToDiskInterval:TimeSpan.FromSeconds(1), buffered:false)
+                    .CreateLogger();
+
+                log.Write(Some.InformationEvent());
+                Assert.True(Directory.Exists(folder));
+
+                var createdFile = Directory.GetFiles(folder)[0];
+                System.IO.File.Delete(createdFile);
+                Assert.False(System.IO.File.Exists(createdFile));
             }
             finally
             {
