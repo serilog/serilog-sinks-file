@@ -32,7 +32,7 @@ namespace Serilog
     public static class FileLoggerConfigurationExtensions
     {
         const int DefaultRetainedFileCountLimit = 31; // A long month of logs
-        const long DefaultFileSizeLimitBytes = 1L * 1024 * 1024 * 1024;
+        const long DefaultFileSizeLimitBytes = 1L * 1024 * 1024 * 1024; // 1GB
         const string DefaultOutputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
 
         /// <summary>
@@ -181,7 +181,7 @@ namespace Serilog
         /// <param name="shared">Allow the log file to be shared by multiple processes. The default is false.</param>
         /// <param name="flushToDiskInterval">If provided, a full disk flush will be performed periodically at the specified interval.</param>
         /// <param name="rollingInterval">The interval at which logging will roll over to a new file.</param>
-        /// <param name="rollOnFileSizeLimit">If <code>true</code>, a new file will be created when the file size limit is reached. Filenames 
+        /// <param name="rollOnFileSizeLimit">If <code>true</code>, a new file will be created when the file size limit is reached. Filenames
         /// will have a number appended in the format <code>_NNN</code>, with the first filename given no number.</param>
         /// <param name="retainedFileCountLimit">The maximum number of log files that will be retained,
         /// including the current log file. For unlimited retention, pass null. The default is 31.</param>
@@ -227,7 +227,7 @@ namespace Serilog
         /// <param name="shared">Allow the log file to be shared by multiple processes. The default is false.</param>
         /// <param name="flushToDiskInterval">If provided, a full disk flush will be performed periodically at the specified interval.</param>
         /// <param name="rollingInterval">The interval at which logging will roll over to a new file.</param>
-        /// <param name="rollOnFileSizeLimit">If <code>true</code>, a new file will be created when the file size limit is reached. Filenames 
+        /// <param name="rollOnFileSizeLimit">If <code>true</code>, a new file will be created when the file size limit is reached. Filenames
         /// will have a number appended in the format <code>_NNN</code>, with the first filename given no number.</param>
         /// <param name="retainedFileCountLimit">The maximum number of log files that will be retained,
         /// including the current log file. For unlimited retention, pass null. The default is 31.</param>
@@ -377,7 +377,7 @@ namespace Serilog
         {
             return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, levelSwitch, null, null);
         }
-        
+
         /// <summary>
         /// Write audit log events to the specified file.
         /// </summary>
@@ -466,7 +466,7 @@ namespace Serilog
             if (addSink == null) throw new ArgumentNullException(nameof(addSink));
             if (formatter == null) throw new ArgumentNullException(nameof(formatter));
             if (path == null) throw new ArgumentNullException(nameof(path));
-            if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0) throw new ArgumentException("Negative value provided; file size limit must be non-negative.", nameof(fileSizeLimitBytes));
+            if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.", nameof(fileSizeLimitBytes));
             if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("At least one file must be retained.", nameof(retainedFileCountLimit));
             if (retainedFileTimeLimit.HasValue && retainedFileTimeLimit < TimeSpan.Zero) throw new ArgumentException("Negative value provided; retained file time limit must be non-negative.", nameof(retainedFileTimeLimit));
             if (shared && buffered) throw new ArgumentException("Buffered writes are not available when file sharing is enabled.", nameof(buffered));
