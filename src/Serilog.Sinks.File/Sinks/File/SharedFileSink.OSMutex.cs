@@ -53,8 +53,8 @@ namespace Serilog.Sinks.File
         public SharedFileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding encoding = null)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
-            if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0)
-                throw new ArgumentException("Negative value provided; file size limit must be non-negative");
+            if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1)
+                throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
             _textFormatter = textFormatter ?? throw new ArgumentNullException(nameof(textFormatter));
             _fileSizeLimitBytes = fileSizeLimitBytes;
 
