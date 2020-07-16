@@ -2,7 +2,8 @@
 using Xunit;
 using Serilog.Formatting.Json;
 using Serilog.Sinks.File.Tests.Support;
-using Serilog.Tests.Support;
+
+#pragma warning disable 618
 
 namespace Serilog.Sinks.File.Tests
 {

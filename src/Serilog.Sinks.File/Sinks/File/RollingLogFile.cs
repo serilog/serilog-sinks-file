@@ -1,4 +1,4 @@
-﻿// Copyright 2017 Serilog Contributors
+// Copyright 2013-2017 Serilog Contributors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,17 +11,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+ 
+using System;
 
 namespace Serilog.Sinks.File
 {
-    /// <summary>
-    /// Supported by (file-based) sinks that can be explicitly flushed.
-    /// </summary>
-    public interface IFlushableFileSink
+    class RollingLogFile
     {
-        /// <summary>
-        /// Flush buffered contents to disk.
-        /// </summary>
-        void FlushToDisk();
+        public RollingLogFile(string filename, DateTime? dateTime, int? sequenceNumber)
+        {
+            Filename = filename;
+            DateTime = dateTime;
+            SequenceNumber = sequenceNumber;
+        }
+
+        public string Filename { get; }
+
+        public DateTime? DateTime { get; }
+
+        public int? SequenceNumber { get; }
     }
-}
+} 

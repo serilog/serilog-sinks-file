@@ -11,13 +11,13 @@ namespace Serilog.Sinks.File.Tests.Support
 
         readonly string _tempFolder;
 
-        public TempFolder(string name)
+        public TempFolder(string name = null)
         {
             _tempFolder = System.IO.Path.Combine(
-                Environment.GetEnvironmentVariable("TMP"),
+                Environment.GetEnvironmentVariable("TMP") ?? Environment.GetEnvironmentVariable("TMPDIR") ?? "/tmp",
                 "Serilog.Sinks.File.Tests",
                 Session.ToString("n"),
-                name);
+                name ?? Guid.NewGuid().ToString("n"));
 
             Directory.CreateDirectory(_tempFolder);
         }

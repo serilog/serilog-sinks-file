@@ -12,16 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Serilog.Core;
+using Serilog.Events;
+
 namespace Serilog.Sinks.File
 {
     /// <summary>
-    /// Supported by (file-based) sinks that can be explicitly flushed.
+    /// Exists only for the convenience of <see cref="RollingFileSink"/>, which
+    /// switches implementations based on sharing. Would refactor, but preserving
+    /// backwards compatibility.
     /// </summary>
-    public interface IFlushableFileSink
+    interface IFileSink : ILogEventSink, IFlushableFileSink
     {
-        /// <summary>
-        /// Flush buffered contents to disk.
-        /// </summary>
-        void FlushToDisk();
+        bool EmitOrOverflow(LogEvent logEvent);
     }
 }

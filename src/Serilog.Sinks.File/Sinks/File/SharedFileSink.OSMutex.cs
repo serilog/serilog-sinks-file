@@ -1,4 +1,4 @@
-﻿// Copyright 2013-2016 Serilog Contributors
+﻿// Copyright 2013-2019 Serilog Contributors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 using System;
 using System.IO;
 using System.Text;
-using Serilog.Core;
 using Serilog.Events;
 using Serilog.Formatting;
 using System.Threading;
@@ -28,7 +27,8 @@ namespace Serilog.Sinks.File
     /// <summary>
     /// Write log events to a disk file.
     /// </summary>
-    public sealed class SharedFileSink : ILogEventSink, IFlushableFileSink, IDisposable
+    [Obsolete("This type will be removed from the public API in a future version; use `WriteTo.File(shared: true)` instead.")]
+    public sealed class SharedFileSink : IFileSink, IDisposable
     {
         readonly TextWriter _output;
         readonly FileStream _underlyingStream;
@@ -53,11 +53,9 @@ namespace Serilog.Sinks.File
         public SharedFileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding encoding = null)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
-            if (textFormatter == null) throw new ArgumentNullException(nameof(textFormatter));
-            if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0)
-                throw new ArgumentException("Negative value provided; file size limit must be non-negative");
-
-            _textFormatter = textFormatter;
+            if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1)
+                throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
+            _textFormatter = textFormatter ?? throw new ArgumentNullException(nameof(textFormatter));
             _fileSizeLimitBytes = fileSizeLimitBytes;
 
             var directory = Path.GetDirectoryName(path);
@@ -72,18 +70,14 @@ namespace Serilog.Sinks.File
             _output = new StreamWriter(_underlyingStream, encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         }
 
-        /// <summary>
-        /// Emit the provided log event to the sink.
-        /// </summary>
-        /// <param name="logEvent">The log event to write.</param>
-        public void Emit(LogEvent logEvent)
+        bool IFileSink.EmitOrOverflow(LogEvent logEvent)
         {
             if (logEvent == null) throw new ArgumentNullException(nameof(logEvent));
 
             lock (_syncRoot)
             {
                 if (!TryAcquireMutex())
-                    return;
+                    return true; // We didn't overflow, but, roll-on-size should not be attempted
 
                 try
                 {
@@ -91,18 +85,28 @@ namespace Serilog.Sinks.File
                     if (_fileSizeLimitBytes != null)
                     {
                         if (_underlyingStream.Length >= _fileSizeLimitBytes.Value)
-                            return;
+                            return false;
                     }
 
                     _textFormatter.Format(logEvent, _output);
                     _output.Flush();
                     _underlyingStream.Flush();
+                    return true;
                 }
                 finally
                 {
                     ReleaseMutex();
                 }
             }
+        }
+
+        /// <summary>
+        /// Emit the provided log event to the sink.
+        /// </summary>
+        /// <param name="logEvent">The log event to write.</param>
+        public void Emit(LogEvent logEvent)
+        {
+            ((IFileSink)this).EmitOrOverflow(logEvent);
         }
 
         /// <inheritdoc />

@@ -1,4 +1,4 @@
-﻿// Copyright 2013-2016 Serilog Contributors
+﻿// Copyright 2013-2019 Serilog Contributors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,16 +20,14 @@ namespace Serilog.Sinks.File
     sealed class WriteCountingStream : Stream
     {
         readonly Stream _stream;
-        long _countedLength;
 
         public WriteCountingStream(Stream stream)
         {
-            if (stream == null) throw new ArgumentNullException(nameof(stream));
-            _stream = stream;
-            _countedLength = stream.Length;
+            _stream = stream ?? throw new ArgumentNullException(nameof(stream));
+            CountedLength = stream.Length;
         }
 
-        public long CountedLength => _countedLength;
+        public long CountedLength { get; private set; }
 
         protected override void Dispose(bool disposing)
         {
@@ -42,7 +40,7 @@ namespace Serilog.Sinks.File
         public override void Write(byte[] buffer, int offset, int count)
         {
             _stream.Write(buffer, offset, count);
-            _countedLength += count;
+            CountedLength += count;
         }
 
         public override void Flush() => _stream.Flush();
@@ -54,8 +52,8 @@ namespace Serilog.Sinks.File
 
         public override long Position
         {
-            get { return _stream.Position; }
-            set { throw new NotSupportedException(); }
+            get => _stream.Position;
+            set => throw new NotSupportedException();
         }
 
         public override long Seek(long offset, SeekOrigin origin)
