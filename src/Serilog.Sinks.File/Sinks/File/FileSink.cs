@@ -31,7 +31,7 @@ namespace Serilog.Sinks.File
         readonly long? _fileSizeLimitBytes;
         readonly bool _buffered;
         readonly object _syncRoot = new object();
-        readonly WriteCountingStream _countingStreamWrapper;
+        readonly WriteCountingStream? _countingStreamWrapper;
 
         /// <summary>Construct a <see cref="FileSink"/>.</summary>
         /// <param name="path">Path to the file.</param>
@@ -56,9 +56,9 @@ namespace Serilog.Sinks.File
             string path,
             ITextFormatter textFormatter,
             long? fileSizeLimitBytes,
-            Encoding encoding,
+            Encoding? encoding,
             bool buffered,
-            FileLifecycleHooks hooks)
+            FileLifecycleHooks? hooks)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");

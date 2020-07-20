@@ -30,28 +30,28 @@ namespace Serilog.Sinks.File
         readonly long? _fileSizeLimitBytes;
         readonly int? _retainedFileCountLimit;
         readonly TimeSpan? _retainedFileTimeLimit;
-        readonly Encoding _encoding;
+        readonly Encoding? _encoding;
         readonly bool _buffered;
         readonly bool _shared;
         readonly bool _rollOnFileSizeLimit;
-        readonly FileLifecycleHooks _hooks;
+        readonly FileLifecycleHooks? _hooks;
 
         readonly object _syncRoot = new object();
         bool _isDisposed;
         DateTime? _nextCheckpoint;
-        IFileSink _currentFile;
+        IFileSink? _currentFile;
         int? _currentFileSequence;
 
         public RollingFileSink(string path,
                               ITextFormatter textFormatter,
                               long? fileSizeLimitBytes,
                               int? retainedFileCountLimit,
-                              Encoding encoding,
+                              Encoding? encoding,
                               bool buffered,
                               bool shared,
                               RollingInterval rollingInterval,
                               bool rollOnFileSizeLimit,
-                              FileLifecycleHooks hooks,
+                              FileLifecycleHooks? hooks,
                               TimeSpan? retainedFileTimeLimit)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
