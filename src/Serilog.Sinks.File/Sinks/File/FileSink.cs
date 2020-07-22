@@ -44,7 +44,15 @@ namespace Serilog.Sinks.File
         /// is false.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
         /// <remarks>This constructor preserves compatibility with early versions of the public API. New code should not depend on this type.</remarks>
+        /// <exception cref="ArgumentNullException">When <paramref name="textFormatter"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentException">When <paramref name="fileSizeLimitBytes"/> is <code>null</code> or less than <code>0</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
         /// <exception cref="IOException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PathTooLongException">When <paramref name="path"/> is too long</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
+        /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
         [Obsolete("This type and constructor will be removed from the public API in a future version; use `WriteTo.File()` instead.")]
         public FileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding encoding = null, bool buffered = false)
             : this(path, textFormatter, fileSizeLimitBytes, encoding, buffered, null)
@@ -113,6 +121,7 @@ namespace Serilog.Sinks.File
         /// Emit the provided log event to the sink.
         /// </summary>
         /// <param name="logEvent">The log event to write.</param>
+        /// <exception cref="ArgumentNullException">When <paramref name="logEvent"/> is <code>null</code></exception>
         public void Emit(LogEvent logEvent)
         {
             ((IFileSink) this).EmitOrOverflow(logEvent);
