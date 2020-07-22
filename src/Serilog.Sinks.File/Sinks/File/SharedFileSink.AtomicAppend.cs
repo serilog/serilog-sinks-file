@@ -51,7 +51,7 @@ namespace Serilog.Sinks.File
         /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
         /// <exception cref="IOException"></exception>
-        public SharedFileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding encoding = null)
+        public SharedFileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding? encoding = null)
         {
             if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1)
                 throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null");

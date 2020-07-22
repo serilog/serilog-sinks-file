@@ -265,7 +265,7 @@ namespace Serilog.Sinks.File.Tests
         public void AssemblyVersionIsFixedAt200()
         {
             var assembly = typeof(FileLoggerConfigurationExtensions).GetTypeInfo().Assembly;
-            Assert.Equal("2.0.0.0", assembly.GetName().Version.ToString(4));
+            Assert.Equal("2.0.0.0", assembly.GetName()?.Version?.ToString(4));
         }
 
         static void TestRollingEventSequence(params LogEvent[] events)

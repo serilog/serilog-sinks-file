@@ -125,7 +125,7 @@ namespace Serilog.Sinks.File
                 if (Directory.Exists(_roller.LogFileDirectory))
                 {
                     existingFiles = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
-                                         .Select(Path.GetFileName);
+                                        .Select(f => Path.GetFileName(f));
                 }
             }
             catch (DirectoryNotFoundException) { }
@@ -184,7 +184,7 @@ namespace Serilog.Sinks.File
             // We consider the current file to exist, even if nothing's been written yet,
             // because files are only opened on response to an event being processed.
             var potentialMatches = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
-                .Select(Path.GetFileName)
+                .Select(f => Path.GetFileName(f))
                 .Union(new[] { currentFileName });
 
             var newestFirst = _roller
