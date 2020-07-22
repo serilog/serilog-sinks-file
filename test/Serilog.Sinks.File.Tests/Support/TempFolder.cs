@@ -39,8 +39,8 @@ namespace Serilog.Sinks.File.Tests.Support
 
         public static TempFolder ForCaller([CallerMemberName] string caller = null, [CallerFilePath] string sourceFileName = "")
         {
-            if (caller == null) throw new ArgumentNullException(nameof(caller));
-            if (sourceFileName == null) throw new ArgumentNullException(nameof(sourceFileName));
+            if (caller is null) throw new ArgumentNullException(nameof(caller));
+            if (sourceFileName is null) throw new ArgumentNullException(nameof(sourceFileName));
             
             var folderName = System.IO.Path.GetFileNameWithoutExtension(sourceFileName) + "_" + caller;
 

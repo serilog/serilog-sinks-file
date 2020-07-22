@@ -54,7 +54,7 @@ namespace Serilog.Sinks.File
                               FileLifecycleHooks hooks,
                               TimeSpan? retainedFileTimeLimit)
         {
-            if (path == null) throw new ArgumentNullException(nameof(path));
+            if (path is null) throw new ArgumentNullException(nameof(path));
             if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
             if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("Zero or negative value provided; retained file count limit must be at least 1");
             if (retainedFileTimeLimit.HasValue && retainedFileTimeLimit < TimeSpan.Zero) throw new ArgumentException("Negative value provided; retained file time limit must be non-negative.", nameof(retainedFileTimeLimit));
@@ -73,7 +73,7 @@ namespace Serilog.Sinks.File
 
         public void Emit(LogEvent logEvent)
         {
-            if (logEvent == null) throw new ArgumentNullException(nameof(logEvent));
+            if (logEvent is null) throw new ArgumentNullException(nameof(logEvent));
 
             lock (_syncRoot)
             {
@@ -100,7 +100,7 @@ namespace Serilog.Sinks.File
                 int? minSequence = null;
                 if (nextSequence)
                 {
-                    if (_currentFileSequence == null)
+                    if (_currentFileSequence is null)
                         minSequence = 1;
                     else
                         minSequence = _currentFileSequence.Value + 1;
@@ -139,7 +139,7 @@ namespace Serilog.Sinks.File
             var sequence = latestForThisCheckpoint?.SequenceNumber;
             if (minSequence != null)
             {
-                if (sequence == null || sequence.Value < minSequence.Value)
+                if (sequence is null || sequence.Value < minSequence.Value)
                     sequence = minSequence;
             }
 
@@ -177,7 +177,7 @@ namespace Serilog.Sinks.File
 
         void ApplyRetentionPolicy(string currentFilePath, DateTime now)
         {
-            if (_retainedFileCountLimit == null && _retainedFileTimeLimit == null) return;
+            if (_retainedFileCountLimit is null && _retainedFileTimeLimit is null) return;
 
             var currentFileName = Path.GetFileName(currentFilePath);
 
@@ -231,7 +231,7 @@ namespace Serilog.Sinks.File
         {
             lock (_syncRoot)
             {
-                if (_currentFile == null) return;
+                if (_currentFile is null) return;
                 CloseFile();
                 _isDisposed = true;
             }

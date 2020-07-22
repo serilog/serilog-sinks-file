@@ -35,7 +35,7 @@ namespace Serilog.Sinks.File
 
         public PathRoller(string path, RollingInterval interval)
         {
-            if (path == null) throw new ArgumentNullException(nameof(path));
+            if (path is null) throw new ArgumentNullException(nameof(path));
             _interval = interval;
             _periodFormat = interval.GetFormat();
 

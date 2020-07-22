@@ -256,9 +256,9 @@ namespace Serilog
             FileLifecycleHooks hooks = null,
             TimeSpan? retainedFileTimeLimit = null)
         {
-            if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
-            if (path == null) throw new ArgumentNullException(nameof(path));
-            if (outputTemplate == null) throw new ArgumentNullException(nameof(outputTemplate));
+            if (sinkConfiguration is null) throw new ArgumentNullException(nameof(sinkConfiguration));
+            if (path is null) throw new ArgumentNullException(nameof(path));
+            if (outputTemplate is null) throw new ArgumentNullException(nameof(outputTemplate));
 
             var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
             return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes,
@@ -316,9 +316,9 @@ namespace Serilog
             FileLifecycleHooks hooks = null,
             TimeSpan? retainedFileTimeLimit = null)
         {
-            if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
-            if (formatter == null) throw new ArgumentNullException(nameof(formatter));
-            if (path == null) throw new ArgumentNullException(nameof(path));
+            if (sinkConfiguration is null) throw new ArgumentNullException(nameof(sinkConfiguration));
+            if (formatter is null) throw new ArgumentNullException(nameof(formatter));
+            if (path is null) throw new ArgumentNullException(nameof(path));
 
             return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, levelSwitch,
                 buffered, false, shared, flushToDiskInterval, encoding, rollingInterval, rollOnFileSizeLimit,
@@ -403,9 +403,9 @@ namespace Serilog
             Encoding encoding = null,
             FileLifecycleHooks hooks = null)
         {
-            if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
-            if (path == null) throw new ArgumentNullException(nameof(path));
-            if (outputTemplate == null) throw new ArgumentNullException(nameof(outputTemplate));
+            if (sinkConfiguration is null) throw new ArgumentNullException(nameof(sinkConfiguration));
+            if (path is null) throw new ArgumentNullException(nameof(path));
+            if (outputTemplate is null) throw new ArgumentNullException(nameof(outputTemplate));
 
             var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
             return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, levelSwitch, encoding, hooks);
@@ -437,9 +437,9 @@ namespace Serilog
             Encoding encoding = null,
             FileLifecycleHooks hooks = null)
         {
-            if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
-            if (formatter == null) throw new ArgumentNullException(nameof(formatter));
-            if (path == null) throw new ArgumentNullException(nameof(path));
+            if (sinkConfiguration is null) throw new ArgumentNullException(nameof(sinkConfiguration));
+            if (formatter is null) throw new ArgumentNullException(nameof(formatter));
+            if (path is null) throw new ArgumentNullException(nameof(path));
 
             return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, null, levelSwitch, false, true,
                 false, null, encoding, RollingInterval.Infinite, false, null, hooks, null);
@@ -463,9 +463,9 @@ namespace Serilog
             FileLifecycleHooks hooks,
             TimeSpan? retainedFileTimeLimit)
         {
-            if (addSink == null) throw new ArgumentNullException(nameof(addSink));
-            if (formatter == null) throw new ArgumentNullException(nameof(formatter));
-            if (path == null) throw new ArgumentNullException(nameof(path));
+            if (addSink is null) throw new ArgumentNullException(nameof(addSink));
+            if (formatter is null) throw new ArgumentNullException(nameof(formatter));
+            if (path is null) throw new ArgumentNullException(nameof(path));
             if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.", nameof(fileSizeLimitBytes));
             if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("At least one file must be retained.", nameof(retainedFileCountLimit));
             if (retainedFileTimeLimit.HasValue && retainedFileTimeLimit < TimeSpan.Zero) throw new ArgumentException("Negative value provided; retained file time limit must be non-negative.", nameof(retainedFileTimeLimit));

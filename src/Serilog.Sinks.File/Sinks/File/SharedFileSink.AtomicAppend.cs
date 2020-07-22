@@ -83,7 +83,7 @@ namespace Serilog.Sinks.File
 
         bool IFileSink.EmitOrOverflow(LogEvent logEvent)
         {
-            if (logEvent == null) throw new ArgumentNullException(nameof(logEvent));
+            if (logEvent is null) throw new ArgumentNullException(nameof(logEvent));
 
             lock (_syncRoot)
             {

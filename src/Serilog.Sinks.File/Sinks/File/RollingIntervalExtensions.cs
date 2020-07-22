@@ -63,7 +63,7 @@ namespace Serilog.Sinks.File
         public static DateTime? GetNextCheckpoint(this RollingInterval interval, DateTime instant)
         {
             var current = GetCurrentCheckpoint(interval, instant);
-            if (current == null)
+            if (current is null)
                 return null;
 
             switch (interval)
