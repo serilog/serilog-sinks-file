@@ -36,7 +36,7 @@ namespace Serilog.Sinks.File
         /// </summary>
         /// <param name="sink">The sink to wrap.</param>
         /// <param name="flushInterval">The interval at which to flush the underlying sink.</param>
-        /// <exception cref="ArgumentNullException"/>
+        /// <exception cref="ArgumentNullException">When <paramref name="sink"/> is <code>null</code></exception>
         public PeriodicFlushToDiskSink(ILogEventSink sink, TimeSpan flushInterval)
         {
             _sink = sink ?? throw new ArgumentNullException(nameof(sink));

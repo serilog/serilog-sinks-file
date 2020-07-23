@@ -14,6 +14,7 @@
 
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Text;
 using Serilog.Configuration;
 using Serilog.Core;
@@ -238,6 +239,15 @@ namespace Serilog
         /// Ignored if <paramref see="rollingInterval"/> is <see cref="RollingInterval.Infinite"/>.
         /// The default is to retain files indefinitely.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
+        /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="outputTemplate"/> is <code>null</code></exception>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PathTooLongException">When <paramref name="path"/> is too long</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
+        /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
         public static LoggerConfiguration File(
             this LoggerSinkConfiguration sinkConfiguration,
             string path,
@@ -299,6 +309,15 @@ namespace Serilog
         /// Ignored if <paramref see="rollingInterval"/> is <see cref="RollingInterval.Infinite"/>.
         /// The default is to retain files indefinitely.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
+        /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="formatter"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PathTooLongException">When <paramref name="path"/> is too long</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
+        /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
         public static LoggerConfiguration File(
             this LoggerSinkConfiguration sinkConfiguration,
             ITextFormatter formatter,
@@ -339,6 +358,14 @@ namespace Serilog
         /// the default is "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}".</param>
         /// <returns>Configuration object allowing method chaining.</returns>
         /// <remarks>The file will be written using the UTF-8 character set.</remarks>
+        /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PathTooLongException">When <paramref name="path"/> is too long</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
+        /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
         [Obsolete("New code should not be compiled against this obsolete overload"), EditorBrowsable(EditorBrowsableState.Never)]
         public static LoggerConfiguration File(
             this LoggerAuditSinkConfiguration sinkConfiguration,
@@ -367,6 +394,15 @@ namespace Serilog
         /// to be changed at runtime.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
         /// <remarks>The file will be written using the UTF-8 character set.</remarks>
+        /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="formatter"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PathTooLongException">When <paramref name="path"/> is too long</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
+        /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
         [Obsolete("New code should not be compiled against this obsolete overload"), EditorBrowsable(EditorBrowsableState.Never)]
         public static LoggerConfiguration File(
             this LoggerAuditSinkConfiguration sinkConfiguration,
@@ -393,6 +429,15 @@ namespace Serilog
         /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
         /// <param name="hooks">Optionally enables hooking into log file lifecycle events.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
+        /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="outputTemplate"/> is <code>null</code></exception>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PathTooLongException">When <paramref name="path"/> is too long</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
+        /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
         public static LoggerConfiguration File(
             this LoggerAuditSinkConfiguration sinkConfiguration,
             string path,
@@ -428,6 +473,15 @@ namespace Serilog
         /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
         /// <param name="hooks">Optionally enables hooking into log file lifecycle events.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
+        /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="formatter"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PathTooLongException">When <paramref name="path"/> is too long</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
+        /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
         public static LoggerConfiguration File(
             this LoggerAuditSinkConfiguration sinkConfiguration,
             ITextFormatter formatter,

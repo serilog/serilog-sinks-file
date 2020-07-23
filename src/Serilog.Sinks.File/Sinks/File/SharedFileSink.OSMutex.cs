@@ -49,7 +49,14 @@ namespace Serilog.Sinks.File
         /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
         /// <remarks>The file will be written using the UTF-8 character set.</remarks>
+        /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="textFormatter"/> is <code>null</code></exception>
         /// <exception cref="IOException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PathTooLongException">When <paramref name="path"/> is too long</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
+        /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
         public SharedFileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding? encoding = null)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
@@ -104,6 +111,7 @@ namespace Serilog.Sinks.File
         /// Emit the provided log event to the sink.
         /// </summary>
         /// <param name="logEvent">The log event to write.</param>
+        /// <exception cref="ArgumentNullException">When <paramref name="logEvent"/> is <code>null</code></exception>
         public void Emit(LogEvent logEvent)
         {
             ((IFileSink)this).EmitOrOverflow(logEvent);
