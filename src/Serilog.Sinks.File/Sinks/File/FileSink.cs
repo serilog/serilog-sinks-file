@@ -44,6 +44,22 @@ namespace Serilog.Sinks.File
         /// <param name="fileSizeLimitBytes">The approximate maximum size, in bytes, to which a log file will be allowed to grow.
         /// For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit
         /// will be written in full even if it exceeds the limit.</param>
+        /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
+        /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
+        /// is false.</param>
+        /// <returns>Configuration object allowing method chaining.</returns>
+        /// <remarks>The file will be written using the UTF-8 character set.</remarks>
+        /// <exception cref="IOException"></exception>
+        public FileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding encoding = null, bool buffered = false) :
+            this(path, textFormatter, fileSizeLimitBytes, null, encoding, buffered)
+        { }
+
+        /// <summary>Construct a <see cref="FileSink"/>.</summary>
+        /// <param name="path">Path to the file.</param>
+        /// <param name="textFormatter">Formatter used to convert log events to text.</param>
+        /// <param name="fileSizeLimitBytes">The approximate maximum size, in bytes, to which a log file will be allowed to grow.
+        /// For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit
+        /// will be written in full even if it exceeds the limit.</param>
         /// <param name="trimFileSizeBytes">The size a log file will trimmed to after it reaches fileSizeLimitBytes</param>
         /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
         /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
@@ -51,7 +67,7 @@ namespace Serilog.Sinks.File
         /// <returns>Configuration object allowing method chaining.</returns>
         /// <remarks>The file will be written using the UTF-8 character set.</remarks>
         /// <exception cref="IOException"></exception>
-        public FileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, int? trimFileSizeBytes = null, Encoding encoding = null, bool buffered = false)
+        public FileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, int? trimFileSizeBytes, Encoding encoding = null, bool buffered = false)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (textFormatter == null) throw new ArgumentNullException(nameof(textFormatter));
