@@ -1,9 +1,12 @@
-echo "build: Build started"
+Write-Output "build: Build started"
+
+& dotnet --info
+& dotnet --list-sdks
 
 Push-Location $PSScriptRoot
 
 if(Test-Path .\artifacts) {
-	echo "build: Cleaning .\artifacts"
+	Write-Output "build: Cleaning .\artifacts"
 	Remove-Item .\artifacts -Force -Recurse
 }
 
@@ -15,29 +18,30 @@ $suffix = @{ $true = ""; $false = "$($branch.Substring(0, [math]::Min(10,$branch
 $commitHash = $(git rev-parse --short HEAD)
 $buildSuffix = @{ $true = "$($suffix)-$($commitHash)"; $false = "$($branch)-$($commitHash)" }[$suffix -ne ""]
 
-echo "build: Package version suffix is $suffix"
-echo "build: Build version suffix is $buildSuffix" 
+Write-Output "build: Package version suffix is $suffix"
+Write-Output "build: Build version suffix is $buildSuffix" 
 
-foreach ($src in ls src/*) {
+foreach ($src in Get-ChildItem src/*) {
     Push-Location $src
 
-	echo "build: Packaging project in $src"
+	Write-Output "build: Packaging project in $src"
 
     & dotnet build -c Release --version-suffix=$buildSuffix -p:EnableSourceLink=true
+
     if ($suffix) {
-        & dotnet pack -c Release -o ..\..\artifacts --version-suffix=$suffix --no-build
+        & dotnet pack -c Release --no-build -o ..\..\artifacts --version-suffix=$suffix
     } else {
-        & dotnet pack -c Release -o ..\..\artifacts --no-build
+        & dotnet pack -c Release --no-build -o ..\..\artifacts
     }
     if($LASTEXITCODE -ne 0) { exit 1 }    
 
     Pop-Location
 }
 
-foreach ($test in ls test/*.Tests) {
+foreach ($test in Get-ChildItem test/*.Tests) {
     Push-Location $test
 
-	echo "build: Testing project in $test"
+	Write-Output "build: Testing project in $test"
 
     & dotnet test -c Release
     if($LASTEXITCODE -ne 0) { exit 3 }
