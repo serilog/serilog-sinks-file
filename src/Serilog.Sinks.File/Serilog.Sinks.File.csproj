@@ -10,7 +10,7 @@
     <SignAssembly>true</SignAssembly>
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
     <PackageTags>serilog;file</PackageTags>
-    <PackageIcon>http://serilog.net/images/serilog-sink-nuget.png</PackageIcon>
+    <IconUrl>http://serilog.net/images/serilog-sink-nuget.png</IconUrl>
     <PackageProjectUrl>http://serilog.net</PackageProjectUrl>
     <PackageLicense>http://www.apache.org/licenses/LICENSE-2.0</PackageLicense>
     <RepositoryUrl>https://github.com/serilog/serilog-sinks-file</RepositoryUrl>
