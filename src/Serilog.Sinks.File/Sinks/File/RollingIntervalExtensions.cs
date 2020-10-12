@@ -28,6 +28,8 @@ namespace Serilog.Sinks.File
                     return "yyyy";
                 case RollingInterval.Month:
                     return "yyyyMM";
+                case RollingInterval.Week:
+                    return "yyyyMMdd";
                 case RollingInterval.Day:
                     return "yyyyMMdd";
                 case RollingInterval.Hour:
@@ -49,6 +51,8 @@ namespace Serilog.Sinks.File
                     return new DateTime(instant.Year, 1, 1, 0, 0, 0, instant.Kind);
                 case RollingInterval.Month:
                     return new DateTime(instant.Year, instant.Month, 1, 0, 0, 0, instant.Kind);
+                case RollingInterval.Week:
+                    return new DateTime(instant.Year, instant.Month, instant.Day, 0, 0, 0, instant.Kind);
                 case RollingInterval.Day:
                     return new DateTime(instant.Year, instant.Month, instant.Day, 0, 0, 0, instant.Kind);
                 case RollingInterval.Hour:
@@ -72,6 +76,8 @@ namespace Serilog.Sinks.File
                     return current.Value.AddYears(1);
                 case RollingInterval.Month:
                     return current.Value.AddMonths(1);
+                case RollingInterval.Week:
+                    return current.Value.AddDays(7);
                 case RollingInterval.Day:
                     return current.Value.AddDays(1);
                 case RollingInterval.Hour:
