@@ -80,7 +80,9 @@ namespace Serilog.Sinks.File
                 Directory.CreateDirectory(directory);
             }
 
-            Stream outputStream = _underlyingStream = System.IO.File.Open(path, FileMode.Append, FileAccess.Write, FileShare.Read);
+            Stream outputStream = _underlyingStream = System.IO.File.Open(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+            outputStream.Seek(0, SeekOrigin.End);
+
             if (_fileSizeLimitBytes != null)
             {
                 outputStream = _countingStreamWrapper = new WriteCountingStream(_underlyingStream);
