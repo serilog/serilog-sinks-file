@@ -29,10 +29,10 @@ namespace Serilog.Sinks.File
             _second = second ?? throw new ArgumentNullException(nameof(second));
         }
 
-        public override Stream OnFileOpened(Stream underlyingStream, Encoding encoding)
+        public override Stream OnFileOpened(string path, Stream underlyingStream, Encoding encoding)
         {
-            var firstStreamResult = _first.OnFileOpened(underlyingStream, encoding);
-            var secondStreamResult = _second.OnFileOpened(firstStreamResult, encoding);
+            var firstStreamResult = _first.OnFileOpened(path, underlyingStream, encoding);
+            var secondStreamResult = _second.OnFileOpened(path, firstStreamResult, encoding);
 
             return secondStreamResult;
         }
