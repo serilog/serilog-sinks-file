@@ -79,19 +79,34 @@ namespace Serilog.Sinks.File.Tests
                 e2 = Some.InformationEvent(e1.Timestamp.AddDays(1)),
                 e3 = Some.InformationEvent(e2.Timestamp.AddDays(5));
 
-            var retensionStrategy = new RetainedFileCountLimit(5);
+            var retentionStrategy = new RetainedFileCountLimit(5);
 
             TestRollingEventSequence(
-                (pf, wt) => wt.File(pf, retainedFileCountLimit: retensionStrategy, rollingInterval: RollingInterval.Day),
-                new[] { e1, e2, e3 },
-                files =>
+                (pf, wt) => wt.File(pf, retainedFileCountLimit: retentionStrategy,
+                    rollingInterval: RollingInterval.Day),
+                new[] {e1, e2, e3},
+                preDisposeAction: (files) =>
                 {
                     Assert.Equal(3, files.Count);
                     Assert.True(System.IO.File.Exists(files[0]));
                     Assert.True(System.IO.File.Exists(files[1]));
                     Assert.True(System.IO.File.Exists(files[2]));
 
-                    retensionStrategy.RetainedFileCount = 2;
+                    retentionStrategy.RetainedFileCount = 2;
+
+                    Assert.True(!System.IO.File.Exists(files[0]));
+                    Assert.True(System.IO.File.Exists(files[1]));
+                    Assert.True(System.IO.File.Exists(files[2]));
+                },
+                verifyWritten: files =>
+                {
+                    Assert.Equal(3, files.Count);
+                    Assert.True(!System.IO.File.Exists(files[0]));
+                    Assert.True(System.IO.File.Exists(files[1]));
+                    Assert.True(System.IO.File.Exists(files[2]));
+
+                    // verify de-registration
+                    retentionStrategy.RetainedFileCount = 1;
 
                     Assert.True(!System.IO.File.Exists(files[0]));
                     Assert.True(System.IO.File.Exists(files[1]));
@@ -305,7 +320,8 @@ namespace Serilog.Sinks.File.Tests
         static void TestRollingEventSequence(
             Action<string, LoggerSinkConfiguration> configureFile,
             IEnumerable<LogEvent> events,
-            Action<IList<string>> verifyWritten = null)
+            Action<IList<string>> verifyWritten = null,
+            Action<IList<string>> preDisposeAction = null)
         {
             var fileName = Some.String() + "-.txt";
             var folder = Some.TempFolderPath();
@@ -332,6 +348,7 @@ namespace Serilog.Sinks.File.Tests
             }
             finally
             {
+                preDisposeAction?.Invoke(verified);
                 log.Dispose();
                 verifyWritten?.Invoke(verified);
                 Directory.Delete(folder, true);

@@ -68,7 +68,7 @@ namespace Serilog.Sinks.File
             _rollOnFileSizeLimit = rollOnFileSizeLimit;
             _hooks = hooks;
 
-            _retainedFileCountLimit.Subscribe(RetainedFileCountChanged);
+            _retainedFileCountLimit?.Subscribe(RetainedFileCountChanged);
         }
 
         public void Emit(LogEvent logEvent)
@@ -240,7 +240,7 @@ namespace Serilog.Sinks.File
         {
             lock (_syncRoot)
             {
-                _retainedFileCountLimit.Unsubscribe(RetainedFileCountChanged);
+                _retainedFileCountLimit?.Unsubscribe(RetainedFileCountChanged);
 
                 if (_currentFile == null) return;
                 CloseFile();
