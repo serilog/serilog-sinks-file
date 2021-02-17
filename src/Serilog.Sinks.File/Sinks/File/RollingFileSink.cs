@@ -28,14 +28,13 @@ namespace Serilog.Sinks.File
         readonly PathRoller _roller;
         readonly ITextFormatter _textFormatter;
         readonly long? _fileSizeLimitBytes;
-        readonly int? _retainedFileCountLimit;
+        readonly RetainedFileCountLimit _retainedFileCountLimit;
         readonly TimeSpan? _retainedFileTimeLimit;
         readonly Encoding _encoding;
         readonly bool _buffered;
         readonly bool _shared;
         readonly bool _rollOnFileSizeLimit;
         readonly FileLifecycleHooks _hooks;
-
         readonly object _syncRoot = new object();
         bool _isDisposed;
         DateTime? _nextCheckpoint;
@@ -45,7 +44,7 @@ namespace Serilog.Sinks.File
         public RollingFileSink(string path,
                               ITextFormatter textFormatter,
                               long? fileSizeLimitBytes,
-                              int? retainedFileCountLimit,
+                              RetainedFileCountLimit fileCountLimit,
                               Encoding encoding,
                               bool buffered,
                               bool shared,
@@ -56,19 +55,20 @@ namespace Serilog.Sinks.File
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
-            if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("Zero or negative value provided; retained file count limit must be at least 1");
             if (retainedFileTimeLimit.HasValue && retainedFileTimeLimit < TimeSpan.Zero) throw new ArgumentException("Negative value provided; retained file time limit must be non-negative.", nameof(retainedFileTimeLimit));
 
             _roller = new PathRoller(path, rollingInterval);
             _textFormatter = textFormatter;
             _fileSizeLimitBytes = fileSizeLimitBytes;
-            _retainedFileCountLimit = retainedFileCountLimit;
+            _retainedFileCountLimit = fileCountLimit;
             _retainedFileTimeLimit = retainedFileTimeLimit;
             _encoding = encoding;
             _buffered = buffered;
             _shared = shared;
             _rollOnFileSizeLimit = rollOnFileSizeLimit;
             _hooks = hooks;
+
+            _retainedFileCountLimit.Subscribe(RetainedFileCountChanged);
         }
 
         public void Emit(LogEvent logEvent)
@@ -175,6 +175,14 @@ namespace Serilog.Sinks.File
             }
         }
 
+        private void RetainedFileCountChanged(int obj)
+        {
+            var now = Clock.DateTimeNow;
+            _roller.GetLogFilePath(now, _currentFileSequence, out var path);
+
+            ApplyRetentionPolicy(path, now);
+        }
+
         void ApplyRetentionPolicy(string currentFilePath, DateTime now)
         {
             if (_retainedFileCountLimit == null && _retainedFileTimeLimit == null) return;
@@ -215,7 +223,8 @@ namespace Serilog.Sinks.File
 
         bool ShouldRetainFile(RollingLogFile file, int index, DateTime now)
         {
-            if (_retainedFileCountLimit.HasValue && index >= _retainedFileCountLimit.Value - 1)
+            var fileCount = _retainedFileCountLimit.RetainedFileCount;
+            if (index >= fileCount - 1)
                 return false;
 
             if (_retainedFileTimeLimit.HasValue && file.DateTime.HasValue &&
@@ -231,6 +240,8 @@ namespace Serilog.Sinks.File
         {
             lock (_syncRoot)
             {
+                _retainedFileCountLimit.Unsubscribe(RetainedFileCountChanged);
+
                 if (_currentFile == null) return;
                 CloseFile();
                 _isDisposed = true;

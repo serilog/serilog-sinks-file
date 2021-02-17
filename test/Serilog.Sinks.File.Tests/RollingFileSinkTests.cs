@@ -73,6 +73,33 @@ namespace Serilog.Sinks.File.Tests
         }
 
         [Fact]
+        public void WhenRetentionCountIsChangedOldFilesAreDeleted()
+        {
+            LogEvent e1 = Some.InformationEvent(),
+                e2 = Some.InformationEvent(e1.Timestamp.AddDays(1)),
+                e3 = Some.InformationEvent(e2.Timestamp.AddDays(5));
+
+            var retensionStrategy = new RetainedFileCountLimit(5);
+
+            TestRollingEventSequence(
+                (pf, wt) => wt.File(pf, retainedFileCountLimit: retensionStrategy, rollingInterval: RollingInterval.Day),
+                new[] { e1, e2, e3 },
+                files =>
+                {
+                    Assert.Equal(3, files.Count);
+                    Assert.True(System.IO.File.Exists(files[0]));
+                    Assert.True(System.IO.File.Exists(files[1]));
+                    Assert.True(System.IO.File.Exists(files[2]));
+
+                    retensionStrategy.RetainedFileCount = 2;
+
+                    Assert.True(!System.IO.File.Exists(files[0]));
+                    Assert.True(System.IO.File.Exists(files[1]));
+                    Assert.True(System.IO.File.Exists(files[2]));
+                });
+        }
+
+        [Fact]
         public void WhenRetentionTimeIsSetOldFilesAreDeleted()
         {
             LogEvent e1 = Some.InformationEvent(DateTime.Today.AddDays(-5)),
