@@ -115,6 +115,42 @@ namespace Serilog.Sinks.File.Tests
         }
 
         [Fact]
+        public void WhenCreatedWithLessFilesToRetainTheyGetDeleted()
+        {
+            LogEvent e1 = Some.InformationEvent(),
+                e2 = Some.InformationEvent(e1.Timestamp.AddDays(1)),
+                e3 = Some.InformationEvent(e2.Timestamp.AddDays(5));
+
+            var pathFormat = "";
+
+            TestRollingEventSequence(
+                (pf, wt) =>
+                {
+                    pathFormat = pf;
+                    wt.File(pf, rollingInterval: RollingInterval.Day);
+                },
+                new[] {e1, e2, e3},
+                verifyWritten: files =>
+                {
+                    Assert.Equal(3, files.Count);
+                    Assert.True(System.IO.File.Exists(files[0]));
+                    Assert.True(System.IO.File.Exists(files[1]));
+                    Assert.True(System.IO.File.Exists(files[2]));
+
+                    var config = new LoggerConfiguration();
+                    config.WriteTo.File(pathFormat, retainedFileCountLimit: 2,
+                        rollingInterval: RollingInterval.Day);
+                    using (var newLogger = config.CreateLogger())
+                    {
+                    }
+
+                    Assert.True(!System.IO.File.Exists(files[0]));
+                    Assert.True(System.IO.File.Exists(files[1]));
+                    Assert.True(System.IO.File.Exists(files[2]));
+                });
+        }
+
+        [Fact]
         public void WhenRetentionTimeIsSetOldFilesAreDeleted()
         {
             LogEvent e1 = Some.InformationEvent(DateTime.Today.AddDays(-5)),

@@ -69,6 +69,10 @@ namespace Serilog.Sinks.File
             _hooks = hooks;
 
             _retainedFileCountLimit?.Subscribe(RetainedFileCountChanged);
+            if (_retainedFileCountLimit != null)
+            {
+                RetainedFileCountChanged(_retainedFileCountLimit.RetainedFileCount);
+            }
         }
 
         public void Emit(LogEvent logEvent)
@@ -186,6 +190,7 @@ namespace Serilog.Sinks.File
         void ApplyRetentionPolicy(string currentFilePath, DateTime now)
         {
             if (_retainedFileCountLimit == null && _retainedFileTimeLimit == null) return;
+            if (!Directory.Exists(_roller.LogFileDirectory)) return;
 
             var currentFileName = Path.GetFileName(currentFilePath);
 
