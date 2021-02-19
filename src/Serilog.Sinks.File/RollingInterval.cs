@@ -35,6 +35,11 @@ namespace Serilog
         Month,
 
         /// <summary>
+        /// Roll every calendar week. Filenames will have <code>yyyyMMdd</code> appended.
+        /// </summary>
+        Week,
+
+        /// <summary>
         /// Roll every day. Filenames will have <code>yyyyMMdd</code> appended.
         /// </summary>
         Day,

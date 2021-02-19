@@ -12,6 +12,8 @@ namespace Serilog.Sinks.File.Tests
             new object[]{ RollingInterval.Year,     new DateTime(2018, 06, 01),           new DateTime(2018, 01, 01), new DateTime(2019, 01, 01) },
             new object[]{ RollingInterval.Month,    new DateTime(2018, 01, 01),           new DateTime(2018, 01, 01), new DateTime(2018, 02, 01) },
             new object[]{ RollingInterval.Month,    new DateTime(2018, 01, 14),           new DateTime(2018, 01, 01), new DateTime(2018, 02, 01) },
+            new object[]{ RollingInterval.Week,     new DateTime(2018, 01, 01),           new DateTime(2018, 01, 01), new DateTime(2018, 01, 08) },
+            new object[]{ RollingInterval.Week,     new DateTime(2018, 01, 01, 12, 0, 0), new DateTime(2018, 01, 01), new DateTime(2018, 01, 08) },
             new object[]{ RollingInterval.Day,      new DateTime(2018, 01, 01),           new DateTime(2018, 01, 01), new DateTime(2018, 01, 02) },
             new object[]{ RollingInterval.Day,      new DateTime(2018, 01, 01, 12, 0, 0), new DateTime(2018, 01, 01), new DateTime(2018, 01, 02) },
             new object[]{ RollingInterval.Hour,     new DateTime(2018, 01, 01, 0, 0, 0),  new DateTime(2018, 01, 01), new DateTime(2018, 01, 01, 1, 0, 0) },
