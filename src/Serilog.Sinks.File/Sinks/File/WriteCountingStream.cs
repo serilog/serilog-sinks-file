@@ -43,12 +43,23 @@ namespace Serilog.Sinks.File
             CountedLength += count;
         }
 
-        public override void Flush() => _stream.Flush();
+        public override void Flush() => HandleFlush();
         public override bool CanRead => false;
         public override bool CanSeek => _stream.CanSeek;
         public override bool CanWrite => true;
         public override long Length => _stream.Length;
 
+
+        private void HandleFlush()
+        {
+            try
+            {
+                _stream.Flush();
+            }
+            catch
+            {
+            }
+        }
 
         public override long Position
         {

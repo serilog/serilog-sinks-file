@@ -35,6 +35,8 @@ namespace Serilog.Sinks.File
         readonly bool _shared;
         readonly bool _rollOnFileSizeLimit;
         readonly FileLifecycleHooks _hooks;
+        private bool _pathPresent;
+        private string _directory;
 
         readonly object _syncRoot = new object();
         bool _isDisposed;
@@ -69,6 +71,20 @@ namespace Serilog.Sinks.File
             _shared = shared;
             _rollOnFileSizeLimit = rollOnFileSizeLimit;
             _hooks = hooks;
+
+            checkPathExists(path);
+        }
+
+        private bool checkPathExists(string path)
+        {
+            if (Path.HasExtension(path)) _directory = Path.GetPathRoot(path);
+            if (Directory.Exists(_directory))
+            {
+                _pathPresent = true;
+            }
+            else _pathPresent = false;
+
+            return _pathPresent;
         }
 
         public void Emit(LogEvent logEvent)
@@ -80,6 +96,7 @@ namespace Serilog.Sinks.File
                 if (_isDisposed) throw new ObjectDisposedException("The log file has been disposed.");
 
                 var now = Clock.DateTimeNow;
+
                 AlignCurrentFileTo(now);
 
                 while (_currentFile?.EmitOrOverflow(logEvent) == false && _rollOnFileSizeLimit)
@@ -91,23 +108,31 @@ namespace Serilog.Sinks.File
 
         void AlignCurrentFileTo(DateTime now, bool nextSequence = false)
         {
-            if (!_nextCheckpoint.HasValue)
-            {
-                OpenFile(now);
-            }
-            else if (nextSequence || now >= _nextCheckpoint.Value)
-            {
-                int? minSequence = null;
-                if (nextSequence)
-                {
-                    if (_currentFileSequence == null)
-                        minSequence = 1;
-                    else
-                        minSequence = _currentFileSequence.Value + 1;
-                }
 
-                CloseFile();
-                OpenFile(now, minSequence);
+            if (!checkPathExists(_directory))
+            {
+                _nextCheckpoint = null;
+            }
+            else
+            {
+                if (!_nextCheckpoint.HasValue)
+                {
+                    OpenFile(now);
+                }
+                else if (nextSequence || now >= _nextCheckpoint.Value)
+                {
+                    int? minSequence = null;
+                    if (nextSequence)
+                    {
+                        if (_currentFileSequence == null)
+                            minSequence = 1;
+                        else
+                            minSequence = _currentFileSequence.Value + 1;
+                    }
+
+                    CloseFile();
+                    OpenFile(now, minSequence);
+                }
             }
         }
 
