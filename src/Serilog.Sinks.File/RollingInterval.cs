@@ -35,6 +35,11 @@ namespace Serilog
         Month,
 
         /// <summary>
+        /// Roll every calendar week. Filenames will have <code>yyyyMMdd</code> appended.
+        /// </summary>
+        Week,
+
+        /// <summary>
         /// Roll every day. Filenames will have <code>yyyyMMdd</code> appended.
         /// </summary>
         Day,
@@ -47,6 +52,26 @@ namespace Serilog
         /// <summary>
         /// Roll every minute. Filenames will have <code>yyyyMMddHHmm</code> appended.
         /// </summary>
-        Minute
+        Minute,
+
+        /// <summary>
+        /// Roll every five minute. Filenames will have <code>yyyyMMddHHmm</code> appended with minutes limited to multiples of five.
+        /// </summary>
+        FiveMinutes,
+
+        /// <summary>
+        /// Roll every ten minute. Filenames will have <code>yyyyMMddHHmm</code> appended with minutes limited to multiples of ten.
+        /// </summary>
+        TenMinutes,
+
+        /// <summary>
+        /// Roll every fifteen minute. Filenames will have <code>yyyyMMddHHmm</code> appended with minutes limited to multiples of fifteen.
+        /// </summary>
+        QuarterHour,
+
+        /// <summary>
+        /// Roll every half hour. Filenames will have <code>yyyyMMddHHmm</code> appended with minutes limited to multiples of third.
+        /// </summary>
+        HalfHour
     }
 }
