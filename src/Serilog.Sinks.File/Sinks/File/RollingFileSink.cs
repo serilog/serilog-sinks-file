@@ -49,7 +49,7 @@ namespace Serilog.Sinks.File
                               Encoding encoding,
                               bool buffered,
                               bool shared,
-                              RollingInterval rollingInterval,
+                              Interval.RollingInterval rollingInterval,
                               bool rollOnFileSizeLimit,
                               FileLifecycleHooks hooks,
                               TimeSpan? retainedFileTimeLimit)
