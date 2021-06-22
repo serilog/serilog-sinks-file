@@ -528,13 +528,13 @@ namespace Serilog
 
             ILogEventSink sink;
 
-            if (rollOnFileSizeLimit || rollingInterval != RollingInterval.Infinite)
+            try
             {
-                sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks, retainedFileTimeLimit);
-            }
-            else
-            {
-                try
+                if (rollOnFileSizeLimit || rollingInterval != RollingInterval.Infinite)
+                {
+                    sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks, retainedFileTimeLimit);
+                }
+                else
                 {
                     if (shared)
                     {
@@ -546,16 +546,17 @@ namespace Serilog
                     {
                         sink = new FileSink(path, formatter, fileSizeLimitBytes, encoding, buffered, hooks);
                     }
-                }
-                catch (Exception ex)
-                {
-                    SelfLog.WriteLine("Unable to open file sink for {0}: {1}", path, ex);
 
-                    if (propagateExceptions)
-                        throw;
-
-                    return addSink(new NullSink(), LevelAlias.Maximum, null);
                 }
+            }
+            catch (Exception ex)
+            {
+                SelfLog.WriteLine("Unable to open file sink for {0}: {1}", path, ex);
+
+                if (propagateExceptions)
+                    throw;
+
+                return addSink(new NullSink(), LevelAlias.Maximum, null);
             }
 
             if (flushToDiskInterval.HasValue)

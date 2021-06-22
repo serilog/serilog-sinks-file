@@ -206,6 +206,23 @@ namespace Serilog.Sinks.File.Tests
             }
         }
 
+        [Fact]
+        public static void OnOpenedLifecycleHookCanCaptureFilePath()
+        {
+            using (var tmp = TempFolder.ForCaller())
+            {
+                var capturePath = new CaptureFilePathHook();
+
+                var path = tmp.AllocateFilename("txt");
+                using (new FileSink(path, new JsonFormatter(), null, new UTF8Encoding(false), false, capturePath))
+                {
+                    // Open and capture the log file path
+                }
+
+                Assert.Equal(path, capturePath.Path);
+            }
+        }
+
         static void WriteTwoEventsAndCheckOutputFileLength(long? maxBytes, Encoding encoding)
         {
             using (var tmp = TempFolder.ForCaller())

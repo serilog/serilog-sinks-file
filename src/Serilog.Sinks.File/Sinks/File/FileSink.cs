@@ -91,7 +91,7 @@ namespace Serilog.Sinks.File
 
             if (hooks != null)
             {
-                outputStream = hooks.OnFileOpened(outputStream, encoding) ??
+                outputStream = hooks.OnFileOpened(path, outputStream, encoding) ??
                                throw new InvalidOperationException($"The file lifecycle hook `{nameof(FileLifecycleHooks.OnFileOpened)}(...)` returned `null`.");
             }
 
