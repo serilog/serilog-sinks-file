@@ -16,7 +16,6 @@
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/serilog/serilog-sinks-file</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <RootNamespace>Serilog</RootNamespace>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <DisableImplicitFrameworkReferences Condition=" '$(TargetFramework)' == 'netstandard1.3' ">true</DisableImplicitFrameworkReferences>
