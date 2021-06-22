@@ -11,7 +11,7 @@ namespace Serilog.Sinks.File.Tests.Support
 
         readonly string _tempFolder;
 
-        public TempFolder(string name = null)
+        public TempFolder(string? name = null)
         {
             _tempFolder = System.IO.Path.Combine(
                 Environment.GetEnvironmentVariable("TMP") ?? Environment.GetEnvironmentVariable("TMPDIR") ?? "/tmp",
@@ -37,7 +37,7 @@ namespace Serilog.Sinks.File.Tests.Support
             }
         }
 
-        public static TempFolder ForCaller([CallerMemberName] string caller = null, [CallerFilePath] string sourceFileName = "")
+        public static TempFolder ForCaller([CallerMemberName] string? caller = null, [CallerFilePath] string sourceFileName = "")
         {
             if (caller == null) throw new ArgumentNullException(nameof(caller));
             if (sourceFileName == null) throw new ArgumentNullException(nameof(sourceFileName));
@@ -47,7 +47,7 @@ namespace Serilog.Sinks.File.Tests.Support
             return new TempFolder(folderName);
         }
 
-        public string AllocateFilename(string ext = null)
+        public string AllocateFilename(string? ext = null)
         {
             return System.IO.Path.Combine(Path, Guid.NewGuid().ToString("n") + "." + (ext ?? "tmp"));
         }

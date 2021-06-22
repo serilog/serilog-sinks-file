@@ -241,7 +241,7 @@ namespace Serilog.Sinks.File.Tests
             var folder = Path.Combine(temp, Guid.NewGuid().ToString());
             var pathFormat = Path.Combine(folder, fileName);
 
-            Logger log = null;
+            Logger? log = null;
 
             try
             {
@@ -270,7 +270,7 @@ namespace Serilog.Sinks.File.Tests
         static void TestRollingEventSequence(
             Action<string, LoggerSinkConfiguration> configureFile,
             IEnumerable<LogEvent> events,
-            Action<IList<string>> verifyWritten = null)
+            Action<IList<string>>? verifyWritten = null)
         {
             var fileName = Some.String() + "-.txt";
             var folder = Some.TempFolderPath();
