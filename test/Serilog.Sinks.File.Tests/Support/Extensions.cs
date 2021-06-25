@@ -17,7 +17,7 @@ namespace Serilog.Sinks.File.Tests.Support
 
             using (var reader = new StreamReader(@this))
             {
-                string line;
+                string? line;
                 while ((line = reader.ReadLine()) != null)
                 {
                     lines.Add(line);

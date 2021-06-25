@@ -12,8 +12,7 @@ namespace Serilog.Sinks.File.Tests
         {
             var roller = new PathRoller(Path.Combine("Logs", "log-.txt"), RollingInterval.Day);
             var now = new DateTime(2013, 7, 14, 3, 24, 9, 980);
-            string path;
-            roller.GetLogFilePath(now, null, out path);
+            roller.GetLogFilePath(now, null, out var path);
             AssertEqualAbsolute(Path.Combine("Logs", "log-20130714.txt"), path);
         }
 
@@ -22,8 +21,7 @@ namespace Serilog.Sinks.File.Tests
         {
             var roller = new PathRoller(Path.Combine("Logs", "log-.txt"), RollingInterval.Day);
             var now = new DateTime(2013, 7, 14, 3, 24, 9, 980);
-            string path;
-            roller.GetLogFilePath(now, 12, out path);
+            roller.GetLogFilePath(now, 12, out var path);
             AssertEqualAbsolute(Path.Combine("Logs", "log-20130714_012.txt"), path);
         }
 
@@ -46,8 +44,7 @@ namespace Serilog.Sinks.File.Tests
         {
             var roller = new PathRoller(Path.Combine("Logs", "log-"), RollingInterval.Day);
             var now = new DateTime(2013, 7, 14, 3, 24, 9, 980);
-            string path;
-            roller.GetLogFilePath(now, null, out path);
+            roller.GetLogFilePath(now, null, out var path);
             AssertEqualAbsolute(Path.Combine("Logs", "log-20130714"), path);
         }
 
@@ -56,19 +53,18 @@ namespace Serilog.Sinks.File.Tests
         {
             var roller = new PathRoller("log-", RollingInterval.Day);
             var now = new DateTime(2013, 7, 14, 3, 24, 9, 980);
-            string path;
-            roller.GetLogFilePath(now, null, out path);
+            roller.GetLogFilePath(now, null, out var path);
             AssertEqualAbsolute("log-20130714", path);
         }
 
         [Fact]
-        public void MatchingExcludesSimilarButNonmatchingFiles()
+        public void MatchingExcludesSimilarButNonMatchingFiles()
         {
             var roller = new PathRoller("log-.txt", RollingInterval.Day);
             const string similar1 = "log-0.txt";
-            const string similar2 = "log-helloyou.txt";
+            const string similar2 = "log-hello.txt";
             var matched = roller.SelectMatches(new[] { similar1, similar2 });
-            Assert.Equal(0, matched.Count());
+            Assert.Empty(matched);
         }
 
         [Fact]
@@ -86,7 +82,7 @@ namespace Serilog.Sinks.File.Tests
             var roller = new PathRoller(template, interval);
             var matched = roller.SelectMatches(new[] { zeroth, thirtyFirst }).ToArray();
             Assert.Equal(2, matched.Length);
-            Assert.Equal(null, matched[0].SequenceNumber);
+            Assert.Null(matched[0].SequenceNumber);
             Assert.Equal(31, matched[1].SequenceNumber);
         }
 

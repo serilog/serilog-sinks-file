@@ -31,7 +31,7 @@ namespace Serilog.Sinks.File
         readonly long? _fileSizeLimitBytes;
         readonly bool _buffered;
         readonly object _syncRoot = new object();
-        readonly WriteCountingStream _countingStreamWrapper;
+        readonly WriteCountingStream? _countingStreamWrapper;
 
         /// <summary>Construct a <see cref="FileSink"/>.</summary>
         /// <param name="path">Path to the file.</param>
@@ -44,9 +44,17 @@ namespace Serilog.Sinks.File
         /// is false.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
         /// <remarks>This constructor preserves compatibility with early versions of the public API. New code should not depend on this type.</remarks>
+        /// <exception cref="ArgumentNullException">When <paramref name="textFormatter"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentException">When <paramref name="fileSizeLimitBytes"/> is <code>null</code> or less than <code>0</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
         /// <exception cref="IOException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PathTooLongException">When <paramref name="path"/> is too long</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
+        /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
         [Obsolete("This type and constructor will be removed from the public API in a future version; use `WriteTo.File()` instead.")]
-        public FileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding encoding = null, bool buffered = false)
+        public FileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding? encoding = null, bool buffered = false)
             : this(path, textFormatter, fileSizeLimitBytes, encoding, buffered, null)
         {
         }
@@ -56,12 +64,12 @@ namespace Serilog.Sinks.File
             string path,
             ITextFormatter textFormatter,
             long? fileSizeLimitBytes,
-            Encoding encoding,
+            Encoding? encoding,
             bool buffered,
-            FileLifecycleHooks hooks)
+            FileLifecycleHooks? hooks)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
-            if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0) throw new ArgumentException("Negative value provided; file size limit must be non-negative.");
+            if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
             _textFormatter = textFormatter ?? throw new ArgumentNullException(nameof(textFormatter));
             _fileSizeLimitBytes = fileSizeLimitBytes;
             _buffered = buffered;
@@ -72,7 +80,9 @@ namespace Serilog.Sinks.File
                 Directory.CreateDirectory(directory);
             }
 
-            Stream outputStream = _underlyingStream = System.IO.File.Open(path, FileMode.Append, FileAccess.Write, FileShare.Read);
+            Stream outputStream = _underlyingStream = System.IO.File.Open(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+            outputStream.Seek(0, SeekOrigin.End);
+
             if (_fileSizeLimitBytes != null)
             {
                 outputStream = _countingStreamWrapper = new WriteCountingStream(_underlyingStream);
@@ -83,7 +93,7 @@ namespace Serilog.Sinks.File
 
             if (hooks != null)
             {
-                outputStream = hooks.OnFileOpened(outputStream, encoding) ??
+                outputStream = hooks.OnFileOpened(path, outputStream, encoding) ??
                                throw new InvalidOperationException($"The file lifecycle hook `{nameof(FileLifecycleHooks.OnFileOpened)}(...)` returned `null`.");
             }
 
@@ -97,7 +107,7 @@ namespace Serilog.Sinks.File
             {
                 if (_fileSizeLimitBytes != null)
                 {
-                    if (_countingStreamWrapper.CountedLength >= _fileSizeLimitBytes.Value)
+                    if (_countingStreamWrapper!.CountedLength >= _fileSizeLimitBytes.Value)
                         return false;
                 }
 
@@ -113,6 +123,7 @@ namespace Serilog.Sinks.File
         /// Emit the provided log event to the sink.
         /// </summary>
         /// <param name="logEvent">The log event to write.</param>
+        /// <exception cref="ArgumentNullException">When <paramref name="logEvent"/> is <code>null</code></exception>
         public void Emit(LogEvent logEvent)
         {
             ((IFileSink) this).EmitOrOverflow(logEvent);

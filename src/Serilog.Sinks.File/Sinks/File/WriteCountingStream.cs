@@ -63,7 +63,13 @@ namespace Serilog.Sinks.File
 
         public override void SetLength(long value)
         {
-            throw new NotSupportedException();
+            _stream.SetLength(value);
+
+            if (value < CountedLength)
+            {
+                // File is now shorter and our position has changed to _stream.Length
+                CountedLength = _stream.Length;
+            }
         }
 
         public override int Read(byte[] buffer, int offset, int count)

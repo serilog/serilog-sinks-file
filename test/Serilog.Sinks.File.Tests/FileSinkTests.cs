@@ -130,7 +130,7 @@ namespace Serilog.Sinks.File.Tests
             long? maxBytes = 5000;
             var encoding = new UTF8Encoding(false);
 
-            Assert.Equal(0, encoding.GetPreamble().Length);
+            Assert.Empty(encoding.GetPreamble());
             WriteTwoEventsAndCheckOutputFileLength(maxBytes, encoding);
         }
 
@@ -139,7 +139,7 @@ namespace Serilog.Sinks.File.Tests
         {
             var encoding = new UTF8Encoding(false);
 
-            Assert.Equal(0, encoding.GetPreamble().Length);
+            Assert.Empty(encoding.GetPreamble());
             WriteTwoEventsAndCheckOutputFileLength(null, encoding);
         }
 
@@ -203,6 +203,49 @@ namespace Serilog.Sinks.File.Tests
                 Assert.Equal(2, lines.Length);
                 Assert.Equal(headerWriter.Header, lines[0]);
                 Assert.Equal('{', lines[1][0]);
+            }
+        }
+
+        [Fact]
+        public static void OnOpenedLifecycleHookCanCaptureFilePath()
+        {
+            using (var tmp = TempFolder.ForCaller())
+            {
+                var capturePath = new CaptureFilePathHook();
+
+                var path = tmp.AllocateFilename("txt");
+                using (new FileSink(path, new JsonFormatter(), null, new UTF8Encoding(false), false, capturePath))
+                {
+                    // Open and capture the log file path
+                }
+
+                Assert.Equal(path, capturePath.Path);
+            }
+        }
+
+        [Fact]
+        public static void OnOpenedLifecycleHookCanEmptyTheFileContents()
+        {
+            using (var tmp = TempFolder.ForCaller())
+            {
+                var emptyFileHook = new TruncateFileHook();
+
+                var path = tmp.AllocateFilename("txt");
+                using (var sink = new FileSink(path, new JsonFormatter(), fileSizeLimitBytes: null, encoding: new UTF8Encoding(false), buffered: false))
+                {
+                    sink.Emit(Some.LogEvent());
+                }
+
+                using (var sink = new FileSink(path, new JsonFormatter(), fileSizeLimitBytes: null, encoding: new UTF8Encoding(false), buffered: false, hooks: emptyFileHook))
+                {
+                    // Hook will clear the contents of the file before emitting the log events
+                    sink.Emit(Some.LogEvent());
+                }
+
+                var lines = System.IO.File.ReadAllLines(path);
+
+                Assert.Single(lines);
+                Assert.Equal('{', lines[0][0]);
             }
         }
 

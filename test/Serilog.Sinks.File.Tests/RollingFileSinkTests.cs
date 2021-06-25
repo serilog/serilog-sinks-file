@@ -1,13 +1,13 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Reflection;
 using Xunit;
 using Serilog.Events;
 using Serilog.Sinks.File.Tests.Support;
 using Serilog.Configuration;
+using Serilog.Core;
 
 namespace Serilog.Sinks.File.Tests
 {
@@ -72,6 +72,63 @@ namespace Serilog.Sinks.File.Tests
         }
 
         [Fact]
+        public void WhenRetentionTimeIsSetOldFilesAreDeleted()
+        {
+            LogEvent e1 = Some.InformationEvent(DateTime.Today.AddDays(-5)),
+                e2 = Some.InformationEvent(e1.Timestamp.AddDays(2)),
+                e3 = Some.InformationEvent(e2.Timestamp.AddDays(5));
+
+            TestRollingEventSequence(
+                (pf, wt) => wt.File(pf, retainedFileTimeLimit: TimeSpan.FromDays(1), rollingInterval: RollingInterval.Day),
+                new[] {e1, e2, e3},
+                files =>
+                {
+                    Assert.Equal(3, files.Count);
+                    Assert.True(!System.IO.File.Exists(files[0]));
+                    Assert.True(!System.IO.File.Exists(files[1]));
+                    Assert.True(System.IO.File.Exists(files[2]));
+                });
+        }
+
+        [Fact]
+        public void WhenRetentionCountAndTimeIsSetOldFilesAreDeletedByTime()
+        {
+            LogEvent e1 = Some.InformationEvent(DateTime.Today.AddDays(-5)),
+                e2 = Some.InformationEvent(e1.Timestamp.AddDays(2)),
+                e3 = Some.InformationEvent(e2.Timestamp.AddDays(5));
+
+            TestRollingEventSequence(
+                (pf, wt) => wt.File(pf, retainedFileCountLimit: 2, retainedFileTimeLimit: TimeSpan.FromDays(1), rollingInterval: RollingInterval.Day),
+                new[] {e1, e2, e3},
+                files =>
+                {
+                    Assert.Equal(3, files.Count);
+                    Assert.True(!System.IO.File.Exists(files[0]));
+                    Assert.True(!System.IO.File.Exists(files[1]));
+                    Assert.True(System.IO.File.Exists(files[2]));
+                });
+        }
+
+        [Fact]
+        public void WhenRetentionCountAndTimeIsSetOldFilesAreDeletedByCount()
+        {
+            LogEvent e1 = Some.InformationEvent(DateTime.Today.AddDays(-5)),
+                e2 = Some.InformationEvent(e1.Timestamp.AddDays(2)),
+                e3 = Some.InformationEvent(e2.Timestamp.AddDays(5));
+
+            TestRollingEventSequence(
+                (pf, wt) => wt.File(pf, retainedFileCountLimit: 2, retainedFileTimeLimit: TimeSpan.FromDays(10), rollingInterval: RollingInterval.Day),
+                new[] {e1, e2, e3},
+                files =>
+                {
+                    Assert.Equal(3, files.Count);
+                    Assert.True(!System.IO.File.Exists(files[0]));
+                    Assert.True(System.IO.File.Exists(files[1]));
+                    Assert.True(System.IO.File.Exists(files[2]));
+                });
+        }
+
+        [Fact]
         public void WhenRetentionCountAndArchivingHookIsSetOldFilesAreCopiedAndOriginalDeleted()
         {
             const string archiveDirectory = "OldLogs";
@@ -85,10 +142,9 @@ namespace Serilog.Sinks.File.Tests
                 files =>
                 {
                     Assert.Equal(3, files.Count);
-                    Assert.True(!System.IO.File.Exists(files[0]));
+                    Assert.False(System.IO.File.Exists(files[0]));
                     Assert.True(System.IO.File.Exists(files[1]));
                     Assert.True(System.IO.File.Exists(files[2]));
-
                     Assert.True(System.IO.File.Exists(ArchiveOldLogsHook.AddTopDirectory(files[0], archiveDirectory)));
                 });
         }
@@ -170,8 +226,8 @@ namespace Serilog.Sinks.File.Tests
                         textStream.Position = 0;
                         var lines = textStream.ReadAllLines();
 
-                        Assert.Equal(1, lines.Count);
-                        Assert.True(lines[0].EndsWith(logEvents[i].MessageTemplate.Text));
+                        Assert.Single(lines);
+                        Assert.EndsWith(logEvents[i].MessageTemplate.Text, lines[0]);
                     }
                 }
             }
@@ -185,7 +241,7 @@ namespace Serilog.Sinks.File.Tests
             var folder = Path.Combine(temp, Guid.NewGuid().ToString());
             var pathFormat = Path.Combine(folder, fileName);
 
-            ILogger log = null;
+            Logger? log = null;
 
             try
             {
@@ -199,17 +255,9 @@ namespace Serilog.Sinks.File.Tests
             }
             finally
             {
-                var disposable = (IDisposable)log;
-                if (disposable != null) disposable.Dispose();
+                log?.Dispose();
                 Directory.Delete(temp, true);
             }
-        }
-
-        [Fact]
-        public void AssemblyVersionIsFixedAt200()
-        {
-            var assembly = typeof(FileLoggerConfigurationExtensions).GetTypeInfo().Assembly;
-            Assert.Equal("2.0.0.0", assembly.GetName().Version.ToString(4));
         }
 
         static void TestRollingEventSequence(params LogEvent[] events)
@@ -222,7 +270,7 @@ namespace Serilog.Sinks.File.Tests
         static void TestRollingEventSequence(
             Action<string, LoggerSinkConfiguration> configureFile,
             IEnumerable<LogEvent> events,
-            Action<IList<string>> verifyWritten = null)
+            Action<IList<string>>? verifyWritten = null)
         {
             var fileName = Some.String() + "-.txt";
             var folder = Some.TempFolderPath();

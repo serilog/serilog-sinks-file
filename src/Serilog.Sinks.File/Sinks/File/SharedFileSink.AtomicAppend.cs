@@ -50,11 +50,18 @@ namespace Serilog.Sinks.File
         /// will be written in full even if it exceeds the limit.</param>
         /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
+        /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="textFormatter"/> is <code>null</code></exception>
         /// <exception cref="IOException"></exception>
-        public SharedFileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding encoding = null)
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PathTooLongException">When <paramref name="path"/> is too long</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
+        /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
+        public SharedFileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding? encoding = null)
         {
-            if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0)
-                throw new ArgumentException("Negative value provided; file size limit must be non-negative");
+            if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1)
+                throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null");
 
             _path = path ?? throw new ArgumentNullException(nameof(path));
             _textFormatter = textFormatter ?? throw new ArgumentNullException(nameof(textFormatter));
@@ -141,6 +148,7 @@ namespace Serilog.Sinks.File
         /// Emit the provided log event to the sink.
         /// </summary>
         /// <param name="logEvent">The log event to write.</param>
+        /// <exception cref="ArgumentNullException">When <paramref name="logEvent"/> is <code>null</code></exception>
         public void Emit(LogEvent logEvent)
         {
             ((IFileSink)this).EmitOrOverflow(logEvent);

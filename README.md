@@ -193,4 +193,19 @@ By default, the file sink will flush each event written through it to disk. To i
 
 The [Serilog.Sinks.Async](https://github.com/serilog/serilog-sinks-async) package can be used to wrap the file sink and perform all disk access on a background worker thread.
 
+### Extensibility
+[`FileLifecycleHooks`](https://github.com/serilog/serilog-sinks-file/blob/master/src/Serilog.Sinks.File/Sinks/File/FileLifecycleHooks.cs) provide an extensibility point that allows hooking into different parts of the life cycle of a log file.
+
+You can create a hook by extending from [`FileLifecycleHooks`](https://github.com/serilog/serilog-sinks-file/blob/master/src/Serilog.Sinks.File/Sinks/File/FileLifecycleHooks.cs) and overriding the `OnFileOpened` and/or `OnFileDeleting` methods.
+
+- `OnFileOpened` provides access to the underlying stream that log events are written to, before Serilog begins writing events. You can use this to write your own data to the stream (for example, to write a header row), or to wrap the stream in another stream (for example, to add buffering, compression or encryption)
+
+- `OnFileDeleting` provides a means to work with obsolete rolling log files, *before* they are deleted by Serilog's retention mechanism - for example, to archive log files to another location
+
+Available hooks:
+
+- [serilog-sinks-file-header](https://github.com/cocowalla/serilog-sinks-file-header): writes a header to the start of each log file
+- [serilog-sinks-file-gzip](https://github.com/cocowalla/serilog-sinks-file-gzip): compresses logs as they are written, using streaming GZIP compression
+- [serilog-sinks-file-archive](https://github.com/cocowalla/serilog-sinks-file-archive): archives obsolete rolling log files before they are deleted by Serilog's retention mechanism
+
 _Copyright &copy; 2016 Serilog Contributors - Provided under the [Apache License, Version 2.0](http://apache.org/licenses/LICENSE-2.0.html)._

@@ -14,6 +14,7 @@
 
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Text;
 using Serilog.Configuration;
 using Serilog.Core;
@@ -32,7 +33,7 @@ namespace Serilog
     public static class FileLoggerConfigurationExtensions
     {
         const int DefaultRetainedFileCountLimit = 31; // A long month of logs
-        const long DefaultFileSizeLimitBytes = 1L * 1024 * 1024 * 1024;
+        const long DefaultFileSizeLimitBytes = 1L * 1024 * 1024 * 1024; // 1GB
         const string DefaultOutputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
 
         /// <summary>
@@ -165,7 +166,7 @@ namespace Serilog
         /// <param name="sinkConfiguration">Logger sink configuration.</param>
         /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into
         /// text for the file. If control of regular text formatting is required, use the other
-        /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks)"/>
+        /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?)"/>
         /// and specify the outputTemplate parameter instead.
         /// </param>
         /// <param name="path">Path to the file.</param>
@@ -233,23 +234,37 @@ namespace Serilog
         /// including the current log file. For unlimited retention, pass null. The default is 31.</param>
         /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
         /// <param name="hooks">Optionally enables hooking into log file lifecycle events.</param>
+        /// <param name="retainedFileTimeLimit">The maximum time after the end of an interval that a rolling log file will be retained.
+        /// Must be greater than or equal to <see cref="TimeSpan.Zero"/>.
+        /// Ignored if <paramref see="rollingInterval"/> is <see cref="RollingInterval.Infinite"/>.
+        /// The default is to retain files indefinitely.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
+        /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="outputTemplate"/> is <code>null</code></exception>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PathTooLongException">When <paramref name="path"/> is too long</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
+        /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
         public static LoggerConfiguration File(
             this LoggerSinkConfiguration sinkConfiguration,
             string path,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             string outputTemplate = DefaultOutputTemplate,
-            IFormatProvider formatProvider = null,
+            IFormatProvider? formatProvider = null,
             long? fileSizeLimitBytes = DefaultFileSizeLimitBytes,
-            LoggingLevelSwitch levelSwitch = null,
+            LoggingLevelSwitch? levelSwitch = null,
             bool buffered = false,
             bool shared = false,
             TimeSpan? flushToDiskInterval = null,
             RollingInterval rollingInterval = RollingInterval.Infinite,
             bool rollOnFileSizeLimit = false,
             int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
-            Encoding encoding = null,
-            FileLifecycleHooks hooks = null)
+            Encoding? encoding = null,
+            FileLifecycleHooks? hooks = null,
+            TimeSpan? retainedFileTimeLimit = null)
         {
             if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
             if (path == null) throw new ArgumentNullException(nameof(path));
@@ -258,7 +273,7 @@ namespace Serilog
             var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
             return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes,
                 levelSwitch, buffered, shared, flushToDiskInterval,
-                rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit, encoding, hooks);
+                rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit, encoding, hooks, retainedFileTimeLimit);
         }
 
         /// <summary>
@@ -267,7 +282,7 @@ namespace Serilog
         /// <param name="sinkConfiguration">Logger sink configuration.</param>
         /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into
         /// text for the file. If control of regular text formatting is required, use the other
-        /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks)"/>
+        /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?)"/>
         /// and specify the outputTemplate parameter instead.
         /// </param>
         /// <param name="path">Path to the file.</param>
@@ -289,22 +304,36 @@ namespace Serilog
         /// including the current log file. For unlimited retention, pass null. The default is 31.</param>
         /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
         /// <param name="hooks">Optionally enables hooking into log file lifecycle events.</param>
+        /// <param name="retainedFileTimeLimit">The maximum time after the end of an interval that a rolling log file will be retained.
+        /// Must be greater than or equal to <see cref="TimeSpan.Zero"/>.
+        /// Ignored if <paramref see="rollingInterval"/> is <see cref="RollingInterval.Infinite"/>.
+        /// The default is to retain files indefinitely.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
+        /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="formatter"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PathTooLongException">When <paramref name="path"/> is too long</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
+        /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
         public static LoggerConfiguration File(
             this LoggerSinkConfiguration sinkConfiguration,
             ITextFormatter formatter,
             string path,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             long? fileSizeLimitBytes = DefaultFileSizeLimitBytes,
-            LoggingLevelSwitch levelSwitch = null,
+            LoggingLevelSwitch? levelSwitch = null,
             bool buffered = false,
             bool shared = false,
             TimeSpan? flushToDiskInterval = null,
             RollingInterval rollingInterval = RollingInterval.Infinite,
             bool rollOnFileSizeLimit = false,
             int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
-            Encoding encoding = null,
-            FileLifecycleHooks hooks = null)
+            Encoding? encoding = null,
+            FileLifecycleHooks? hooks = null,
+            TimeSpan? retainedFileTimeLimit = null)
         {
             if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
             if (formatter == null) throw new ArgumentNullException(nameof(formatter));
@@ -312,7 +341,7 @@ namespace Serilog
 
             return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, levelSwitch,
                 buffered, false, shared, flushToDiskInterval, encoding, rollingInterval, rollOnFileSizeLimit,
-                retainedFileCountLimit, hooks);
+                retainedFileCountLimit, hooks, retainedFileTimeLimit);
         }
 
         /// <summary>
@@ -329,6 +358,14 @@ namespace Serilog
         /// the default is "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}".</param>
         /// <returns>Configuration object allowing method chaining.</returns>
         /// <remarks>The file will be written using the UTF-8 character set.</remarks>
+        /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PathTooLongException">When <paramref name="path"/> is too long</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
+        /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
         [Obsolete("New code should not be compiled against this obsolete overload"), EditorBrowsable(EditorBrowsableState.Never)]
         public static LoggerConfiguration File(
             this LoggerAuditSinkConfiguration sinkConfiguration,
@@ -357,6 +394,15 @@ namespace Serilog
         /// to be changed at runtime.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
         /// <remarks>The file will be written using the UTF-8 character set.</remarks>
+        /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="formatter"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PathTooLongException">When <paramref name="path"/> is too long</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
+        /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
         [Obsolete("New code should not be compiled against this obsolete overload"), EditorBrowsable(EditorBrowsableState.Never)]
         public static LoggerConfiguration File(
             this LoggerAuditSinkConfiguration sinkConfiguration,
@@ -367,7 +413,7 @@ namespace Serilog
         {
             return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, levelSwitch, null, null);
         }
-        
+
         /// <summary>
         /// Write audit log events to the specified file.
         /// </summary>
@@ -383,15 +429,24 @@ namespace Serilog
         /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
         /// <param name="hooks">Optionally enables hooking into log file lifecycle events.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
+        /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="outputTemplate"/> is <code>null</code></exception>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PathTooLongException">When <paramref name="path"/> is too long</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
+        /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
         public static LoggerConfiguration File(
             this LoggerAuditSinkConfiguration sinkConfiguration,
             string path,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
             string outputTemplate = DefaultOutputTemplate,
-            IFormatProvider formatProvider = null,
-            LoggingLevelSwitch levelSwitch = null,
-            Encoding encoding = null,
-            FileLifecycleHooks hooks = null)
+            IFormatProvider? formatProvider = null,
+            LoggingLevelSwitch? levelSwitch = null,
+            Encoding? encoding = null,
+            FileLifecycleHooks? hooks = null)
         {
             if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
             if (path == null) throw new ArgumentNullException(nameof(path));
@@ -418,57 +473,68 @@ namespace Serilog
         /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
         /// <param name="hooks">Optionally enables hooking into log file lifecycle events.</param>
         /// <returns>Configuration object allowing method chaining.</returns>
+        /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="formatter"/> is <code>null</code></exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
+        /// <exception cref="IOException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PathTooLongException">When <paramref name="path"/> is too long</exception>
+        /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
+        /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
         public static LoggerConfiguration File(
             this LoggerAuditSinkConfiguration sinkConfiguration,
             ITextFormatter formatter,
             string path,
             LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
-            LoggingLevelSwitch levelSwitch = null,
-            Encoding encoding = null,
-            FileLifecycleHooks hooks = null)
+            LoggingLevelSwitch? levelSwitch = null,
+            Encoding? encoding = null,
+            FileLifecycleHooks? hooks = null)
         {
             if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
             if (formatter == null) throw new ArgumentNullException(nameof(formatter));
             if (path == null) throw new ArgumentNullException(nameof(path));
 
             return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, null, levelSwitch, false, true,
-                false, null, encoding, RollingInterval.Infinite, false, null, hooks);
+                false, null, encoding, RollingInterval.Infinite, false, null, hooks, null);
         }
 
         static LoggerConfiguration ConfigureFile(
-            this Func<ILogEventSink, LogEventLevel, LoggingLevelSwitch, LoggerConfiguration> addSink,
+            this Func<ILogEventSink, LogEventLevel, LoggingLevelSwitch?, LoggerConfiguration> addSink,
             ITextFormatter formatter,
             string path,
             LogEventLevel restrictedToMinimumLevel,
             long? fileSizeLimitBytes,
-            LoggingLevelSwitch levelSwitch,
+            LoggingLevelSwitch? levelSwitch,
             bool buffered,
             bool propagateExceptions,
             bool shared,
             TimeSpan? flushToDiskInterval,
-            Encoding encoding,
+            Encoding? encoding,
             RollingInterval rollingInterval,
             bool rollOnFileSizeLimit,
             int? retainedFileCountLimit,
-            FileLifecycleHooks hooks)
+            FileLifecycleHooks? hooks,
+            TimeSpan? retainedFileTimeLimit)
         {
             if (addSink == null) throw new ArgumentNullException(nameof(addSink));
             if (formatter == null) throw new ArgumentNullException(nameof(formatter));
             if (path == null) throw new ArgumentNullException(nameof(path));
-            if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 0) throw new ArgumentException("Negative value provided; file size limit must be non-negative.", nameof(fileSizeLimitBytes));
+            if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.", nameof(fileSizeLimitBytes));
             if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("At least one file must be retained.", nameof(retainedFileCountLimit));
+            if (retainedFileTimeLimit.HasValue && retainedFileTimeLimit < TimeSpan.Zero) throw new ArgumentException("Negative value provided; retained file time limit must be non-negative.", nameof(retainedFileTimeLimit));
             if (shared && buffered) throw new ArgumentException("Buffered writes are not available when file sharing is enabled.", nameof(buffered));
             if (shared && hooks != null) throw new ArgumentException("File lifecycle hooks are not currently supported for shared log files.", nameof(hooks));
 
             ILogEventSink sink;
 
-            if (rollOnFileSizeLimit || rollingInterval != RollingInterval.Infinite)
+            try
             {
-                sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks);
-            }
-            else
-            {
-                try
+                if (rollOnFileSizeLimit || rollingInterval != RollingInterval.Infinite)
+                {
+                    sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks, retainedFileTimeLimit);
+                }
+                else
                 {
                     if (shared)
                     {
@@ -480,16 +546,17 @@ namespace Serilog
                     {
                         sink = new FileSink(path, formatter, fileSizeLimitBytes, encoding, buffered, hooks);
                     }
-                }
-                catch (Exception ex)
-                {
-                    SelfLog.WriteLine("Unable to open file sink for {0}: {1}", path, ex);
 
-                    if (propagateExceptions)
-                        throw;
-
-                    return addSink(new NullSink(), LevelAlias.Maximum, null);
                 }
+            }
+            catch (Exception ex)
+            {
+                SelfLog.WriteLine("Unable to open file sink for {0}: {1}", path, ex);
+
+                if (propagateExceptions)
+                    throw;
+
+                return addSink(new NullSink(), LevelAlias.Maximum, null);
             }
 
             if (flushToDiskInterval.HasValue)
