@@ -30,14 +30,14 @@ namespace Serilog.Sinks.File
         readonly string _filenameSuffix;
         readonly Regex _filenameMatcher;
 
-        readonly RollingInterval _interval;
+        readonly Interval.RollingInterval _interval;
         readonly string _periodFormat;
 
-        public PathRoller(string path, RollingInterval interval)
+        public PathRoller(string path, Interval.RollingInterval interval)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             _interval = interval;
-            _periodFormat = interval.GetFormat();
+            _periodFormat = interval.Format;
 
             var pathDirectory = Path.GetDirectoryName(path);
             if (string.IsNullOrEmpty(pathDirectory))
@@ -110,8 +110,8 @@ namespace Serilog.Sinks.File
             }
         }
 
-        public DateTime? GetCurrentCheckpoint(DateTime instant) => _interval.GetCurrentCheckpoint(instant);
+        public DateTime? GetCurrentCheckpoint(DateTime instant) => _interval.CurrentCheckpoint(instant);
 
-        public DateTime? GetNextCheckpoint(DateTime instant) => _interval.GetNextCheckpoint(instant);
+        public DateTime? GetNextCheckpoint(DateTime instant) => _interval.NextCheckpoint(instant);
     }
 }

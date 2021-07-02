@@ -24,10 +24,11 @@ namespace Serilog.Sinks.File.Tests
         [MemberData(nameof(IntervalInstantCurrentNextCheckpoint))]
         public void NextIntervalTests(RollingInterval interval, DateTime instant, DateTime? currentCheckpoint, DateTime? nextCheckpoint)
         {
-            var current = interval.GetCurrentCheckpoint(instant);
+            Interval.RollingInterval rollingInterval = interval;
+            var current = rollingInterval.CurrentCheckpoint(instant);
             Assert.Equal(currentCheckpoint, current);
 
-            var next = interval.GetNextCheckpoint(instant);
+            var next = rollingInterval.NextCheckpoint(instant);
             Assert.Equal(nextCheckpoint, next);
         }
     }
