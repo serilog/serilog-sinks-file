@@ -30,28 +30,28 @@ namespace Serilog.Sinks.File
         readonly long? _fileSizeLimitBytes;
         readonly int? _retainedFileCountLimit;
         readonly TimeSpan? _retainedFileTimeLimit;
-        readonly Encoding _encoding;
+        readonly Encoding? _encoding;
         readonly bool _buffered;
         readonly bool _shared;
         readonly bool _rollOnFileSizeLimit;
-        readonly FileLifecycleHooks _hooks;
+        readonly FileLifecycleHooks? _hooks;
 
         readonly object _syncRoot = new object();
         bool _isDisposed;
         DateTime? _nextCheckpoint;
-        IFileSink _currentFile;
+        IFileSink? _currentFile;
         int? _currentFileSequence;
 
         public RollingFileSink(string path,
                               ITextFormatter textFormatter,
                               long? fileSizeLimitBytes,
                               int? retainedFileCountLimit,
-                              Encoding encoding,
+                              Encoding? encoding,
                               bool buffered,
                               bool shared,
                               Interval.RollingInterval rollingInterval,
                               bool rollOnFileSizeLimit,
-                              FileLifecycleHooks hooks,
+                              FileLifecycleHooks? hooks,
                               TimeSpan? retainedFileTimeLimit)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
@@ -125,7 +125,7 @@ namespace Serilog.Sinks.File
                 if (Directory.Exists(_roller.LogFileDirectory))
                 {
                     existingFiles = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
-                                         .Select(Path.GetFileName);
+                                        .Select(f => Path.GetFileName(f));
                 }
             }
             catch (DirectoryNotFoundException) { }
@@ -184,7 +184,7 @@ namespace Serilog.Sinks.File
             // We consider the current file to exist, even if nothing's been written yet,
             // because files are only opened on response to an event being processed.
             var potentialMatches = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
-                .Select(Path.GetFileName)
+                .Select(f => Path.GetFileName(f))
                 .Union(new[] { currentFileName });
 
             var newestFirst = _roller

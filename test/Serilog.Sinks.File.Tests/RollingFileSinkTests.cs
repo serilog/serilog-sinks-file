@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Reflection;
 using Xunit;
 using Serilog.Events;
 using Serilog.Sinks.File.Tests.Support;
@@ -128,7 +127,7 @@ namespace Serilog.Sinks.File.Tests
                     Assert.True(System.IO.File.Exists(files[2]));
                 });
         }
-      
+
         [Fact]
         public void WhenRetentionCountAndArchivingHookIsSetOldFilesAreCopiedAndOriginalDeleted()
         {
@@ -242,7 +241,7 @@ namespace Serilog.Sinks.File.Tests
             var folder = Path.Combine(temp, Guid.NewGuid().ToString());
             var pathFormat = Path.Combine(folder, fileName);
 
-            Logger log = null;
+            Logger? log = null;
 
             try
             {
@@ -261,13 +260,6 @@ namespace Serilog.Sinks.File.Tests
             }
         }
 
-        [Fact]
-        public void AssemblyVersionIsFixedAt200()
-        {
-            var assembly = typeof(FileLoggerConfigurationExtensions).GetTypeInfo().Assembly;
-            Assert.Equal("2.0.0.0", assembly.GetName().Version.ToString(4));
-        }
-
         static void TestRollingEventSequence(params LogEvent[] events)
         {
             TestRollingEventSequence(
@@ -278,7 +270,7 @@ namespace Serilog.Sinks.File.Tests
         static void TestRollingEventSequence(
             Action<string, LoggerSinkConfiguration> configureFile,
             IEnumerable<LogEvent> events,
-            Action<IList<string>> verifyWritten = null)
+            Action<IList<string>>? verifyWritten = null)
         {
             var fileName = Some.String() + "-.txt";
             var folder = Some.TempFolderPath();

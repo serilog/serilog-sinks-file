@@ -9,7 +9,7 @@ namespace Serilog.Sinks.File.Tests.Support
     /// </summary>
     class CaptureFilePathHook : FileLifecycleHooks
     {
-        public string Path { get; private set; }
+        public string? Path { get; private set; }
 
         public override Stream OnFileOpened(string path, Stream _, Encoding __)
         {

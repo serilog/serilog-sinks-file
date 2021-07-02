@@ -57,7 +57,7 @@ namespace Serilog.Sinks.File
         /// <exception cref="PathTooLongException">When <paramref name="path"/> is too long</exception>
         /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
         /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
-        public SharedFileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding encoding = null)
+        public SharedFileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding? encoding = null)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1)

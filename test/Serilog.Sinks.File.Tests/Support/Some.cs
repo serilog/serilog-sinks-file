@@ -24,7 +24,7 @@ namespace Serilog.Sinks.File.Tests.Support
             return Int() + 0.123m;
         }
 
-        public static string String(string tag = null)
+        public static string String(string? tag = null)
         {
             return (tag ?? "") + "__" + Int();
         }

@@ -2,14 +2,14 @@ version: '{build}'
 skip_tags: true
 image:
   - Visual Studio 2019
-  - Ubuntu1804
+  - Ubuntu
 build_script:
 - ps: ./Build.ps1
 for:
 -
   matrix:
     only:
-      - image: Ubuntu1804
+      - image: Ubuntu
   build_script:
     - sh build.sh
 test: off
@@ -21,11 +21,11 @@ deploy:
     secure: rbdBqxBpLt4MkB+mrDOYNDOd8aVZ1zMkysaVNAXNKnC41FYifzX3l9LM8DCrUWU5
   skip_symbols: true
   on:
-    branch: /^(master|dev)$/
+    branch: /^(main|dev)$/
 - provider: GitHub
   auth_token:
     secure: p4LpVhBKxGS5WqucHxFQ5c7C8cP74kbNB0Z8k9Oxx/PMaDQ1+ibmoexNqVU5ZlmX
   artifact: /Serilog.*\.nupkg/
   tag: v$(appveyor_build_version)
   on:
-    branch: master
+    branch: main
