@@ -14,7 +14,7 @@
     <PackageTags>serilog;file</PackageTags>
     <PackageIcon>images\icon.png</PackageIcon>
     <PackageIconUrl>https://serilog.net/images/serilog-sink-nuget.png</PackageIconUrl>
-    <PackageProjectUrl>https://serilog.net</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/serilog/serilog-sinks-file</PackageProjectUrl>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/serilog/serilog-sinks-file</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
