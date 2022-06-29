@@ -528,34 +528,32 @@ namespace Serilog
             if (shared && buffered) throw new ArgumentException("Buffered writes are not available when file sharing is enabled.", nameof(buffered));
             if (shared && hooks != null) throw new ArgumentException("File lifecycle hooks are not currently supported for shared log files.", nameof(hooks));
 
-            // time to resolve path to it's full path if full path not provided.
-            var fullPath = Path.GetFullPath(path);
             ILogEventSink sink;
 
             try
             {
                 if (rollOnFileSizeLimit || rollingInterval != RollingInterval.Infinite)
                 {
-                    sink = new RollingFileSink(fullPath, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks, retainedFileTimeLimit);
+                    sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks, retainedFileTimeLimit);
                 }
                 else
                 {
                     if (shared)
                     {
 #pragma warning disable 618
-                        sink = new SharedFileSink(fullPath, formatter, fileSizeLimitBytes, encoding);
+                        sink = new SharedFileSink(path, formatter, fileSizeLimitBytes, encoding);
 #pragma warning restore 618
                     }
                     else
                     {
-                        sink = new FileSink(fullPath, formatter, fileSizeLimitBytes, encoding, buffered, hooks);
+                        sink = new FileSink(path, formatter, fileSizeLimitBytes, encoding, buffered, hooks);
                     }
 
                 }
             }
             catch (Exception ex)
             {
-                SelfLog.WriteLine("Unable to open file sink for {0}: {1}", fullPath, ex);
+                SelfLog.WriteLine("Unable to open file sink for {0}: {1}", path, ex);
 
                 if (propagateExceptions)
                     throw;
