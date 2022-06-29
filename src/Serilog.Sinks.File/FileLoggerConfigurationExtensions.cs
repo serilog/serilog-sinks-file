@@ -267,8 +267,10 @@ namespace Serilog
             TimeSpan? retainedFileTimeLimit = null)
         {
             if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
-            if (path == null) throw new ArgumentNullException(nameof(path));
-            if (outputTemplate == null) throw new ArgumentNullException(nameof(outputTemplate));
+            
+            // check if null or empty on these.
+            if (string.IsNullOrEmpty(path)) throw new ArgumentNullException(nameof(path));
+            if (string.IsNullOrEmpty(outputTemplate)) throw new ArgumentNullException(nameof(outputTemplate));
 
             var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
             return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes,
@@ -337,7 +339,7 @@ namespace Serilog
         {
             if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
             if (formatter == null) throw new ArgumentNullException(nameof(formatter));
-            if (path == null) throw new ArgumentNullException(nameof(path));
+            if (string.IsNullOrEmpty(path)) throw new ArgumentNullException(nameof(path));
 
             return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, levelSwitch,
                 buffered, false, shared, flushToDiskInterval, encoding, rollingInterval, rollOnFileSizeLimit,
@@ -449,8 +451,8 @@ namespace Serilog
             FileLifecycleHooks? hooks = null)
         {
             if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
-            if (path == null) throw new ArgumentNullException(nameof(path));
-            if (outputTemplate == null) throw new ArgumentNullException(nameof(outputTemplate));
+            if (string.IsNullOrEmpty(path)) throw new ArgumentNullException(nameof(path));
+            if (string.IsNullOrEmpty(outputTemplate)) throw new ArgumentNullException(nameof(outputTemplate));
 
             var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
             return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, levelSwitch, encoding, hooks);
@@ -493,7 +495,7 @@ namespace Serilog
         {
             if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
             if (formatter == null) throw new ArgumentNullException(nameof(formatter));
-            if (path == null) throw new ArgumentNullException(nameof(path));
+            if (string.IsNullOrEmpty(path)) throw new ArgumentNullException(nameof(path));
 
             return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, null, levelSwitch, false, true,
                 false, null, encoding, RollingInterval.Infinite, false, null, hooks, null);
@@ -519,39 +521,41 @@ namespace Serilog
         {
             if (addSink == null) throw new ArgumentNullException(nameof(addSink));
             if (formatter == null) throw new ArgumentNullException(nameof(formatter));
-            if (path == null) throw new ArgumentNullException(nameof(path));
+            if (string.IsNullOrEmpty(path)) throw new ArgumentNullException(nameof(path));
             if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.", nameof(fileSizeLimitBytes));
             if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("At least one file must be retained.", nameof(retainedFileCountLimit));
             if (retainedFileTimeLimit.HasValue && retainedFileTimeLimit < TimeSpan.Zero) throw new ArgumentException("Negative value provided; retained file time limit must be non-negative.", nameof(retainedFileTimeLimit));
             if (shared && buffered) throw new ArgumentException("Buffered writes are not available when file sharing is enabled.", nameof(buffered));
             if (shared && hooks != null) throw new ArgumentException("File lifecycle hooks are not currently supported for shared log files.", nameof(hooks));
 
+            // time to resolve path to it's full path if full path not provided.
+            var fullPath = Path.GetFullPath(path);
             ILogEventSink sink;
 
             try
             {
                 if (rollOnFileSizeLimit || rollingInterval != RollingInterval.Infinite)
                 {
-                    sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks, retainedFileTimeLimit);
+                    sink = new RollingFileSink(fullPath, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks, retainedFileTimeLimit);
                 }
                 else
                 {
                     if (shared)
                     {
 #pragma warning disable 618
-                        sink = new SharedFileSink(path, formatter, fileSizeLimitBytes, encoding);
+                        sink = new SharedFileSink(fullPath, formatter, fileSizeLimitBytes, encoding);
 #pragma warning restore 618
                     }
                     else
                     {
-                        sink = new FileSink(path, formatter, fileSizeLimitBytes, encoding, buffered, hooks);
+                        sink = new FileSink(fullPath, formatter, fileSizeLimitBytes, encoding, buffered, hooks);
                     }
 
                 }
             }
             catch (Exception ex)
             {
-                SelfLog.WriteLine("Unable to open file sink for {0}: {1}", path, ex);
+                SelfLog.WriteLine("Unable to open file sink for {0}: {1}", fullPath, ex);
 
                 if (propagateExceptions)
                     throw;
