@@ -50,6 +50,7 @@ namespace Serilog.Sinks.File
                               bool buffered,
                               bool shared,
                               RollingInterval rollingInterval,
+                              int intervalMultiplier,
                               bool rollOnFileSizeLimit,
                               FileLifecycleHooks? hooks,
                               TimeSpan? retainedFileTimeLimit)
@@ -58,8 +59,9 @@ namespace Serilog.Sinks.File
             if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
             if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("Zero or negative value provided; retained file count limit must be at least 1");
             if (retainedFileTimeLimit.HasValue && retainedFileTimeLimit < TimeSpan.Zero) throw new ArgumentException("Negative value provided; retained file time limit must be non-negative.", nameof(retainedFileTimeLimit));
+            if (intervalMultiplier < 1) intervalMultiplier = 1;
 
-            _roller = new PathRoller(path, rollingInterval);
+            _roller = new PathRoller(path, rollingInterval, intervalMultiplier);
             _textFormatter = textFormatter;
             _fileSizeLimitBytes = fileSizeLimitBytes;
             _retainedFileCountLimit = retainedFileCountLimit;

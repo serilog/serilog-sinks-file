@@ -60,7 +60,7 @@ namespace Serilog.Sinks.File
             }
         }
 
-        public static DateTime? GetNextCheckpoint(this RollingInterval interval, DateTime instant)
+        public static DateTime? GetNextCheckpoint(this RollingInterval interval, int intervalMultiiplier, DateTime instant)
         {
             var current = GetCurrentCheckpoint(interval, instant);
             if (current == null)
@@ -69,15 +69,15 @@ namespace Serilog.Sinks.File
             switch (interval)
             {
                 case RollingInterval.Year:
-                    return current.Value.AddYears(1);
+                    return current.Value.AddYears(intervalMultiiplier);
                 case RollingInterval.Month:
-                    return current.Value.AddMonths(1);
+                    return current.Value.AddMonths(intervalMultiiplier);
                 case RollingInterval.Day:
-                    return current.Value.AddDays(1);
+                    return current.Value.AddDays(intervalMultiiplier);
                 case RollingInterval.Hour:
-                    return current.Value.AddHours(1);
+                    return current.Value.AddHours(intervalMultiiplier);
                 case RollingInterval.Minute:
-                    return current.Value.AddMinutes(1);
+                    return current.Value.AddMinutes(intervalMultiiplier);
                 default:
                     throw new ArgumentException("Invalid rolling interval");
             }

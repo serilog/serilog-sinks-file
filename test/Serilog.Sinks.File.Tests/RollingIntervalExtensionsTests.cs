@@ -27,7 +27,7 @@ namespace Serilog.Sinks.File.Tests
             var current = interval.GetCurrentCheckpoint(instant);
             Assert.Equal(currentCheckpoint, current);
 
-            var next = interval.GetNextCheckpoint(instant);
+            var next = interval.GetNextCheckpoint(1, instant);
             Assert.Equal(nextCheckpoint, next);
         }
     }
