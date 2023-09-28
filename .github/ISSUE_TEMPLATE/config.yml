@@ -1,0 +1,4 @@
+contact_links:
+  - name: Ask for help
+    url: https://stackoverflow.com/tags/serilog
+    about: Ask for help on how to use Serilog.Sinks.File
