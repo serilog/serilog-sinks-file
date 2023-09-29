@@ -16,6 +16,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Serilog.Sinks.File
@@ -26,36 +28,94 @@ namespace Serilog.Sinks.File
         const string SequenceNumberMatchGroup = "sequence";
 
         readonly string _directory;
-        readonly string _filenamePrefix;
-        readonly string _filenameSuffix;
+        readonly string _filenameFormat;
+
         readonly Regex _filenameMatcher;
 
         readonly RollingInterval _interval;
+        private readonly List<PathTokenizer.Token> _tokenized;
         readonly string _periodFormat;
+
 
         public PathRoller(string path, RollingInterval interval)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             _interval = interval;
+
+            _tokenized = PathTokenizer.Tokenize(path);
+
+            StringBuilder formatBuilder = new StringBuilder();
+
+            var dateFound = false;
+            var seqFound = false;
+
             _periodFormat = interval.GetFormat();
 
-            var pathDirectory = Path.GetDirectoryName(path);
+            var i = _tokenized.FindIndex(x => x.Type == PathTokenizer.Token.TokenType.Parameter);
+            if (i < 0)
+                i = _tokenized.Count - 1;
+
+            var lastSeparator = _tokenized.FindLastIndex(i, x => x.Type == PathTokenizer.Token.TokenType.DirectorySeparator);
+
+            string? pathDirectory = null;
+            if (lastSeparator > 0)
+                pathDirectory = Path.Combine(_tokenized.Take(lastSeparator).Where(x => x.Type == PathTokenizer.Token.TokenType.Text).Select(x => x.ToString()).ToArray());
+
             if (string.IsNullOrEmpty(pathDirectory))
                 pathDirectory = Directory.GetCurrentDirectory();
 
+            foreach (var t in _tokenized.Skip(lastSeparator+1))
+            {
+                if (t.Type == PathTokenizer.Token.TokenType.Extension)
+                    break;
+
+                if (t.Type == PathTokenizer.Token.TokenType.Parameter)
+                {
+                    if (t.Value.ToLower() == "date")
+                    {
+                        dateFound = true;
+                        formatBuilder.Append("{0}");
+                        if (t.Argument != null && t.Argument != string.Empty)
+                            _periodFormat = t.Argument;
+                    }
+                    else if (t.Value.ToLower() == "seq")
+                    {
+                        seqFound = true;
+                        formatBuilder.Append("{1}");
+                    }
+                    else
+                        formatBuilder.Append(t.ToString()); 
+                }
+                else
+                    formatBuilder.Append(t.ToString()); 
+            }
+
+            if (!dateFound) formatBuilder.Append("{0}");
+            if (!seqFound) formatBuilder.Append("{1}");
+
+            var ext = _tokenized.FirstOrDefault(x => x.Type == PathTokenizer.Token.TokenType.Extension);
+
+            if (ext != null)
+                formatBuilder.Append(ext.ToString());
+            _filenameFormat = formatBuilder.ToString();
+
             _directory = Path.GetFullPath(pathDirectory);
-            _filenamePrefix = Path.GetFileNameWithoutExtension(path);
-            _filenameSuffix = Path.GetExtension(path);
-            _filenameMatcher = new Regex(
-                "^" +
-                Regex.Escape(_filenamePrefix) +
-                "(?<" + PeriodMatchGroup + ">\\d{" + _periodFormat.Length + "})" +
-                "(?<" + SequenceNumberMatchGroup + ">_[0-9]{3,}){0,1}" +
-                Regex.Escape(_filenameSuffix) +
-                "$",
+
+            _filenameMatcher = new Regex(string.Format(_filenameFormat.Replace("\\", "\\\\"),
+                "(?<" + PeriodMatchGroup + ">.{" + _periodFormat.Length + "})",
+                "(?<" + SequenceNumberMatchGroup + ">_[0-9]{3,}){0,1}") + "$",
                 RegexOptions.Compiled);
 
-            DirectorySearchPattern = $"{_filenamePrefix}*{_filenameSuffix}";
+            //_filenameMatcher = new Regex(
+            //    "^" +
+            //    Regex.Escape(_filenamePrefix) +
+            //    "(?<" + PeriodMatchGroup + ">\\d{" + _periodFormat.Length + "})" +
+            //    "(?<" + SequenceNumberMatchGroup + ">_[0-9]{3,}){0,1}" +
+            //    Regex.Escape(_filenameSuffix) +
+            //    "$",
+            //    RegexOptions.Compiled);
+
+            DirectorySearchPattern = string.Format(_filenameFormat, "*", "*").Replace("**", "*");
         }
 
         public string LogFileDirectory => _directory;
@@ -67,11 +127,11 @@ namespace Serilog.Sinks.File
             var currentCheckpoint = GetCurrentCheckpoint(date);
 
             var tok = currentCheckpoint?.ToString(_periodFormat, CultureInfo.InvariantCulture) ?? "";
-
+            string seq = string.Empty;
             if (sequenceNumber != null)
-                tok += "_" + sequenceNumber.Value.ToString("000", CultureInfo.InvariantCulture);
+                seq = "_" + sequenceNumber.Value.ToString("000", CultureInfo.InvariantCulture);
 
-            path = Path.Combine(_directory, _filenamePrefix + tok + _filenameSuffix);
+            path = Path.Combine(_directory, string.Format(_filenameFormat, tok, seq));
         }
 
         public IEnumerable<RollingLogFile> SelectMatches(IEnumerable<string> filenames)

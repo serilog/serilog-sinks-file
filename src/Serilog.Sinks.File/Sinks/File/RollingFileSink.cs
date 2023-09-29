@@ -124,8 +124,7 @@ namespace Serilog.Sinks.File
             {
                 if (Directory.Exists(_roller.LogFileDirectory))
                 {
-                    existingFiles = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
-                                        .Select(f => Path.GetFileName(f));
+                    existingFiles = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern, SearchOption.AllDirectories);
                 }
             }
             catch (DirectoryNotFoundException) { }
@@ -183,8 +182,7 @@ namespace Serilog.Sinks.File
 
             // We consider the current file to exist, even if nothing's been written yet,
             // because files are only opened on response to an event being processed.
-            var potentialMatches = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
-                .Select(f => Path.GetFileName(f))
+            var potentialMatches = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern, SearchOption.AllDirectories)
                 .Union(new[] { currentFileName });
 
             var newestFirst = _roller
@@ -215,7 +213,7 @@ namespace Serilog.Sinks.File
 
         bool ShouldRetainFile(RollingLogFile file, int index, DateTime now)
         {
-            if (_retainedFileCountLimit.HasValue && index >= _retainedFileCountLimit.Value - 1)
+            if (_retainedFileCountLimit.HasValue && index >= _retainedFileCountLimit.Value)
                 return false;
 
             if (_retainedFileTimeLimit.HasValue && file.DateTime.HasValue &&

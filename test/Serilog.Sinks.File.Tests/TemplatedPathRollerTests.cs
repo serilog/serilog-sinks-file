@@ -17,6 +17,24 @@ namespace Serilog.Sinks.File.Tests
         }
 
         [Fact]
+        public void TheLogFileIncludesDateTokenInPath()
+        {
+            var roller = new PathRoller(Path.Combine("Logs", "logs-{date}", "log.txt"), RollingInterval.Day);
+            var now = new DateTime(2013, 7, 14, 3, 24, 9, 980);
+            roller.GetLogFilePath(now, null, out var path);
+            AssertEqualAbsolute(Path.Combine("Logs", "logs-20130714", "log.txt"), path);
+        }
+
+        [Fact]
+        public void TheLogFileIncludesFormattedTokenInPath()
+        {
+            var roller = new PathRoller(Path.Combine("Logs", "{date:yyyy-MM-dd}", "log.txt"), RollingInterval.Day);
+            var now = new DateTime(2013, 7, 14, 3, 24, 9, 980);
+            roller.GetLogFilePath(now, null, out var path);
+            AssertEqualAbsolute(Path.Combine("Logs", "2013-07-14", "log.txt"), path);
+        }
+
+        [Fact]
         public void ANonZeroIncrementIsIncludedAndPadded()
         {
             var roller = new PathRoller(Path.Combine("Logs", "log-.txt"), RollingInterval.Day);
@@ -75,6 +93,18 @@ namespace Serilog.Sinks.File.Tests
         }
 
         [Theory]
+        [InlineData("logs\\{date}\\log.txt", "logs\\20131210\\log.txt", "logs\\20131210\\log_031.txt", RollingInterval.Day)]
+        [InlineData("logs\\{date}\\log.txt", "logs\\2013121013\\log.txt", "logs\\2013121013\\log_031.txt", RollingInterval.Hour)]
+        public void MatchingSelectsFilesWithPathFormat(string template, string zeroth, string thirtyFirst, RollingInterval interval)
+        {
+            var roller = new PathRoller(template, interval);
+            var matched = roller.SelectMatches(new[] { zeroth, thirtyFirst }).ToArray();
+            Assert.Equal(2, matched.Length);
+            Assert.Null(matched[0].SequenceNumber);
+            Assert.Equal(31, matched[1].SequenceNumber);
+        }
+
+        [Theory]
         [InlineData("log-.txt", "log-20131210.txt", "log-20131210_031.txt", RollingInterval.Day)]
         [InlineData("log-.txt", "log-2013121013.txt", "log-2013121013_031.txt", RollingInterval.Hour)]
         public void MatchingSelectsFiles(string template, string zeroth, string thirtyFirst, RollingInterval interval)
@@ -84,6 +114,16 @@ namespace Serilog.Sinks.File.Tests
             Assert.Equal(2, matched.Length);
             Assert.Null(matched[0].SequenceNumber);
             Assert.Equal(31, matched[1].SequenceNumber);
+        }
+
+        [Theory]
+        [InlineData("logs\\{date}\\log.txt", "logs\\20150101\\log.txt", "logs\\20141231\\log.txt", RollingInterval.Day)]
+        [InlineData("logs\\{date}\\log.txt", "logs\\2015010110\\log.txt", "logs\\2015010109\\log.txt", RollingInterval.Hour)]
+        public void MatchingParsesSubstitutionsWithPathFormat(string template, string newer, string older, RollingInterval interval)
+        {
+            var roller = new PathRoller(template, interval);
+            var matched = roller.SelectMatches(new[] { older, newer }).OrderByDescending(m => m.DateTime).Select(m => m.Filename).ToArray();
+            Assert.Equal(new[] { newer, older }, matched);
         }
 
         [Theory]
