@@ -267,10 +267,8 @@ namespace Serilog
             TimeSpan? retainedFileTimeLimit = null)
         {
             if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
-            
-            // check if null or empty on these.
             if (string.IsNullOrEmpty(path)) throw new ArgumentException(nameof(path));
-            if (string.IsNullOrEmpty(outputTemplate)) throw new ArgumentException(nameof(outputTemplate));
+            if (outputTemplate == null) throw new ArgumentNullException(nameof(outputTemplate));
 
             var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
             return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes,
@@ -452,7 +450,7 @@ namespace Serilog
         {
             if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
             if (string.IsNullOrEmpty(path)) throw new ArgumentException(nameof(path));
-            if (string.IsNullOrEmpty(outputTemplate)) throw new ArgumentException(nameof(outputTemplate));
+            if (outputTemplate == null) throw new ArgumentNullException(nameof(outputTemplate));
 
             var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
             return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, levelSwitch, encoding, hooks);
