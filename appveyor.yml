@@ -18,14 +18,15 @@ artifacts:
 - path: artifacts/Serilog.*.snupkg
 deploy:
 - provider: NuGet
+  server: https://nuget.pkg.github.com/monticola/index.json
   api_key:
-    secure: LE+O+3Zs0nz2F/+M4eDvKBhEBUpUV0t864vN/2dxwa7aIVqeU3pKSMjWRX+JWJ49
+    secure: 87VXONffNiU8ErfeaSaETZLTOfF7GKHqv/CD0tNpYc52+kZlBP2GgsQhpOjv8Reo
   on:
-    branch: /^(main|dev)$/
+    branch: /^(main|dev|serilog-sinks-file)$/
 - provider: GitHub
   auth_token:
-    secure: p4LpVhBKxGS5WqucHxFQ5c7C8cP74kbNB0Z8k9Oxx/PMaDQ1+ibmoexNqVU5ZlmX
+    secure: 87VXONffNiU8ErfeaSaETZLTOfF7GKHqv/CD0tNpYc52+kZlBP2GgsQhpOjv8Reo
   artifact: /Serilog.*(\.|\.s)nupkg/
   tag: v$(appveyor_build_version)
   on:
-    branch: main
+    branch: (main|serilog-sinks-file)
