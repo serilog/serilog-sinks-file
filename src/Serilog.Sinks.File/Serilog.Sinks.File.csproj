@@ -4,7 +4,7 @@
     <Description>Write Serilog events to text files in plain or JSON format.</Description>
     <VersionPrefix>5.0.1</VersionPrefix>
     <Authors>Serilog Contributors</Authors>
-    <TargetFrameworks>net45;netstandard1.3;netstandard2.0;netstandard2.1;net5.0</TargetFrameworks>
+    <TargetFrameworks>net45;netstandard1.3;netstandard2.0;netstandard2.1;net5.0;net6;net7</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageTags>serilog;file</PackageTags>
     <PackageIcon>images\icon.png</PackageIcon>
@@ -18,6 +18,8 @@
     <EnableSourceLink Condition="'$(EnableSourceLink)' == ''">false</EnableSourceLink>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <IncludeSymbols>True</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
