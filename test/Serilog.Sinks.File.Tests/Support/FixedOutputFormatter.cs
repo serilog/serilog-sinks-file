@@ -1,21 +1,19 @@
 ﻿using Serilog.Formatting;
 using Serilog.Events;
-using System.IO;
 
-namespace Serilog.Tests.Support
+namespace Serilog.Tests.Support;
+
+public class FixedOutputFormatter : ITextFormatter
 {
-    public class FixedOutputFormatter : ITextFormatter
+    string _substitutionText;
+
+    public FixedOutputFormatter(string substitutionText)
     {
-        string _substitutionText;
+        _substitutionText = substitutionText;
+    }
 
-        public FixedOutputFormatter(string substitutionText)
-        {
-            _substitutionText = substitutionText;
-        }
-
-        public void Format(LogEvent logEvent, TextWriter output)
-        {
-            output.Write(_substitutionText);
-        }
+    public void Format(LogEvent logEvent, TextWriter output)
+    {
+        output.Write(_substitutionText);
     }
 }

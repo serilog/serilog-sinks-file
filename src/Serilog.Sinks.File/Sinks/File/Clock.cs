@@ -1,4 +1,4 @@
-﻿// Copyright 2013-2016 Serilog Contributors
+// Copyright 2013-2016 Serilog Contributors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,27 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System;
+namespace Serilog.Sinks.File;
 
-namespace Serilog.Sinks.File
+static class Clock
 {
-    static class Clock
+    static Func<DateTime> _dateTimeNow = () => DateTime.Now;
+
+    [ThreadStatic]
+    static DateTime _testDateTimeNow;
+
+    public static DateTime DateTimeNow => _dateTimeNow();
+
+    // Time is set per thread to support parallel
+    // If any thread uses the clock in test mode, all threads
+    // must use it in test mode; once set to test mode only
+    // terminating the application returns it to normal use.
+    public static void SetTestDateTimeNow(DateTime now)
     {
-        static Func<DateTime> _dateTimeNow = () => DateTime.Now;
-
-        [ThreadStatic]
-        static DateTime _testDateTimeNow;
-
-        public static DateTime DateTimeNow => _dateTimeNow();
-
-        // Time is set per thread to support parallel
-        // If any thread uses the clock in test mode, all threads
-        // must use it in test mode; once set to test mode only
-        // terminating the application returns it to normal use.
-        public static void SetTestDateTimeNow(DateTime now)
-        {
-            _testDateTimeNow = now;
-            _dateTimeNow = () => _testDateTimeNow;
-        }
+        _testDateTimeNow = now;
+        _dateTimeNow = () => _testDateTimeNow;
     }
 }

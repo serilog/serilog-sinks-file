@@ -11,24 +11,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
- 
-using System;
 
-namespace Serilog.Sinks.File
+
+namespace Serilog.Sinks.File;
+
+class RollingLogFile
 {
-    class RollingLogFile
+    public RollingLogFile(string filename, DateTime? dateTime, int? sequenceNumber)
     {
-        public RollingLogFile(string filename, DateTime? dateTime, int? sequenceNumber)
-        {
-            Filename = filename;
-            DateTime = dateTime;
-            SequenceNumber = sequenceNumber;
-        }
-
-        public string Filename { get; }
-
-        public DateTime? DateTime { get; }
-
-        public int? SequenceNumber { get; }
+        Filename = filename;
+        DateTime = dateTime;
+        SequenceNumber = sequenceNumber;
     }
-} 
+
+    public string Filename { get; }
+
+    public DateTime? DateTime { get; }
+
+    public int? SequenceNumber { get; }
+}
+

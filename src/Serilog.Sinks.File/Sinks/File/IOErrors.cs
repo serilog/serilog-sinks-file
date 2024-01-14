@@ -12,20 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-using System.IO;
+namespace Serilog.Sinks.File;
 
-namespace Serilog.Sinks.File
+static class IOErrors
 {
-    static class IOErrors
+    public static bool IsLockedFile(IOException ex)
     {
-        public static bool IsLockedFile(IOException ex)
-        {
 #if HRESULTS
-            var errorCode = System.Runtime.InteropServices.Marshal.GetHRForException(ex) & ((1 << 16) - 1);
-            return errorCode == 32 || errorCode == 33;
+        var errorCode = System.Runtime.InteropServices.Marshal.GetHRForException(ex) & ((1 << 16) - 1);
+        return errorCode == 32 || errorCode == 33;
 #else
-            return true;
+        return true;
 #endif
-        }
     }
 }
