@@ -1,102 +1,97 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using Serilog.Events;
+﻿using Serilog.Events;
 using Serilog.Parsing;
 using Xunit.Sdk;
 
 // ReSharper disable UnusedMember.Global
 
-namespace Serilog.Sinks.File.Tests.Support
+namespace Serilog.Sinks.File.Tests.Support;
+
+static class Some
 {
-    static class Some
+    static int _counter;
+
+    public static int Int()
     {
-        static int _counter;
+        return Interlocked.Increment(ref _counter);
+    }
 
-        public static int Int()
-        {
-            return Interlocked.Increment(ref _counter);
-        }
+    public static decimal Decimal()
+    {
+        return Int() + 0.123m;
+    }
 
-        public static decimal Decimal()
-        {
-            return Int() + 0.123m;
-        }
+    public static string String(string? tag = null)
+    {
+        return (tag ?? "") + "__" + Int();
+    }
 
-        public static string String(string? tag = null)
-        {
-            return (tag ?? "") + "__" + Int();
-        }
+    public static TimeSpan TimeSpan()
+    {
+        return System.TimeSpan.FromMinutes(Int());
+    }
 
-        public static TimeSpan TimeSpan()
-        {
-            return System.TimeSpan.FromMinutes(Int());
-        }
+    public static DateTime Instant()
+    {
+        return new DateTime(2012, 10, 28) + TimeSpan();
+    }
 
-        public static DateTime Instant()
-        {
-            return new DateTime(2012, 10, 28) + TimeSpan();
-        }
+    public static DateTimeOffset OffsetInstant()
+    {
+        return new DateTimeOffset(Instant());
+    }
 
-        public static DateTimeOffset OffsetInstant()
-        {
-            return new DateTimeOffset(Instant());
-        }
-
-        public static LogEvent LogEvent(string messageTemplate, params object[] propertyValues)
-        {
-            var log = new LoggerConfiguration().CreateLogger();
+    public static LogEvent LogEvent(string messageTemplate, params object[] propertyValues)
+    {
+        var log = new LoggerConfiguration().CreateLogger();
 #pragma warning disable Serilog004 // Constant MessageTemplate verifier
-            if (!log.BindMessageTemplate(messageTemplate, propertyValues, out var template, out var properties))
+        if (!log.BindMessageTemplate(messageTemplate, propertyValues, out var template, out var properties))
 #pragma warning restore Serilog004 // Constant MessageTemplate verifier
-            {
-                throw new XunitException("Template could not be bound.");
-            }
-            return new LogEvent(DateTimeOffset.Now, LogEventLevel.Information, null, template, properties);
-        }
-
-        public static LogEvent LogEvent(DateTimeOffset? timestamp = null, LogEventLevel level = LogEventLevel.Information)
         {
-            return new LogEvent(timestamp ?? OffsetInstant(), level,
-                null, MessageTemplate(), Enumerable.Empty<LogEventProperty>());
+            throw new XunitException("Template could not be bound.");
         }
+        return new LogEvent(DateTimeOffset.Now, LogEventLevel.Information, null, template, properties);
+    }
 
-        public static LogEvent InformationEvent(DateTimeOffset? timestamp = null)
-        {
-            return LogEvent(timestamp);
-        }
+    public static LogEvent LogEvent(DateTimeOffset? timestamp = null, LogEventLevel level = LogEventLevel.Information)
+    {
+        return new LogEvent(timestamp ?? OffsetInstant(), level,
+            null, MessageTemplate(), Enumerable.Empty<LogEventProperty>());
+    }
 
-        public static LogEvent DebugEvent(DateTimeOffset? timestamp = null)
-        {
-            return LogEvent(timestamp, LogEventLevel.Debug);
-        }
+    public static LogEvent InformationEvent(DateTimeOffset? timestamp = null)
+    {
+        return LogEvent(timestamp);
+    }
 
-        public static LogEventProperty LogEventProperty()
-        {
-            return new LogEventProperty(String(), new ScalarValue(Int()));
-        }
+    public static LogEvent DebugEvent(DateTimeOffset? timestamp = null)
+    {
+        return LogEvent(timestamp, LogEventLevel.Debug);
+    }
 
-        public static string NonexistentTempFilePath()
-        {
-            return Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".txt");
-        }
+    public static LogEventProperty LogEventProperty()
+    {
+        return new LogEventProperty(String(), new ScalarValue(Int()));
+    }
 
-        public static string TempFilePath()
-        {
-            return Path.GetTempFileName();
-        }
+    public static string NonexistentTempFilePath()
+    {
+        return Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".txt");
+    }
 
-        public static string TempFolderPath()
-        {
-            var dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-            Directory.CreateDirectory(dir);
-            return dir;
-        }
+    public static string TempFilePath()
+    {
+        return Path.GetTempFileName();
+    }
 
-        public static MessageTemplate MessageTemplate()
-        {
-            return new MessageTemplateParser().Parse(String());
-        }
+    public static string TempFolderPath()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(dir);
+        return dir;
+    }
+
+    public static MessageTemplate MessageTemplate()
+    {
+        return new MessageTemplateParser().Parse(String());
     }
 }
