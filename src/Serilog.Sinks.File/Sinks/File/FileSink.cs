@@ -67,7 +67,7 @@ public sealed class FileSink : IFileSink, IDisposable
         FileLifecycleHooks? hooks)
     {
         if (path == null) throw new ArgumentNullException(nameof(path));
-        if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
+        if (fileSizeLimitBytes is < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
         _textFormatter = textFormatter ?? throw new ArgumentNullException(nameof(textFormatter));
         _fileSizeLimitBytes = fileSizeLimitBytes;
         _buffered = buffered;

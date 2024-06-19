@@ -46,7 +46,6 @@ sealed class WriteCountingStream : Stream
     public override bool CanWrite => true;
     public override long Length => _stream.Length;
 
-
     public override long Position
     {
         get => _stream.Position;

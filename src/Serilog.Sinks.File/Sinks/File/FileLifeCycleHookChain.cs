@@ -16,10 +16,10 @@ using System.Text;
 
 namespace Serilog.Sinks.File;
 
-class FileLifeCycleHookChain : FileLifecycleHooks
+sealed class FileLifeCycleHookChain : FileLifecycleHooks
 {
-    private readonly FileLifecycleHooks _first;
-    private readonly FileLifecycleHooks _second;
+    readonly FileLifecycleHooks _first;
+    readonly FileLifecycleHooks _second;
 
     public FileLifeCycleHookChain(FileLifecycleHooks first, FileLifecycleHooks second)
     {

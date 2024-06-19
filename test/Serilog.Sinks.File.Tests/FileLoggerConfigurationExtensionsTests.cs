@@ -29,52 +29,44 @@ public class FileLoggerConfigurationExtensionsTests
     [Fact]
     public void WhenWritingLoggingExceptionsAreSuppressed()
     {
-        using (var tmp = TempFolder.ForCaller())
-        using (var log = new LoggerConfiguration()
+        using var tmp = TempFolder.ForCaller();
+        using var log = new LoggerConfiguration()
             .WriteTo.File(new ThrowingLogEventFormatter(), tmp.AllocateFilename())
-            .CreateLogger())
-        {
-            log.Information("Hello");
-        }
+            .CreateLogger();
+        log.Information("Hello");
     }
 
     [Fact]
     public void WhenAuditingLoggingExceptionsPropagate()
     {
-        using (var tmp = TempFolder.ForCaller())
-        using (var log = new LoggerConfiguration()
+        using var tmp = TempFolder.ForCaller();
+        using var log = new LoggerConfiguration()
             .AuditTo.File(new ThrowingLogEventFormatter(), tmp.AllocateFilename())
-            .CreateLogger())
-        {
-            var ex = Assert.Throws<AggregateException>(() => log.Information("Hello"));
-            Assert.IsType<NotImplementedException>(ex.GetBaseException());
-        }
+            .CreateLogger();
+        var ex = Assert.Throws<AggregateException>(() => log.Information("Hello"));
+        Assert.IsType<NotImplementedException>(ex.GetBaseException());
     }
 
     [Fact]
     public void WhenFlushingToDiskReportedFileSinkCanBeCreatedAndDisposed()
     {
-        using (var tmp = TempFolder.ForCaller())
-        using (var log = new LoggerConfiguration()
+        using var tmp = TempFolder.ForCaller();
+        using var log = new LoggerConfiguration()
             .WriteTo.File(tmp.AllocateFilename(), flushToDiskInterval: TimeSpan.FromMilliseconds(500))
-            .CreateLogger())
-        {
-            log.Information("Hello");
-            Thread.Sleep(TimeSpan.FromSeconds(1));
-        }
+            .CreateLogger();
+        log.Information("Hello");
+        Thread.Sleep(TimeSpan.FromSeconds(1));
     }
 
     [Fact]
     public void WhenFlushingToDiskReportedSharedFileSinkCanBeCreatedAndDisposed()
     {
-        using (var tmp = TempFolder.ForCaller())
-        using (var log = new LoggerConfiguration()
+        using var tmp = TempFolder.ForCaller();
+        using var log = new LoggerConfiguration()
             .WriteTo.File(tmp.AllocateFilename(), shared: true, flushToDiskInterval: TimeSpan.FromMilliseconds(500))
-            .CreateLogger())
-        {
-            log.Information("Hello");
-            Thread.Sleep(TimeSpan.FromSeconds(1));
-        }
+            .CreateLogger();
+        log.Information("Hello");
+        Thread.Sleep(TimeSpan.FromSeconds(1));
     }
 
     [Fact]
@@ -98,19 +90,17 @@ public class FileLoggerConfigurationExtensionsTests
     [InlineData(true)]
     public void SpecifiedEncodingIsPropagated(bool shared)
     {
-        using (var tmp = TempFolder.ForCaller())
+        using var tmp = TempFolder.ForCaller();
+        var filename = tmp.AllocateFilename("txt");
+
+        using (var log = new LoggerConfiguration()
+                   .WriteTo.File(filename, outputTemplate: "{Message}", encoding: Encoding.Unicode, shared: shared)
+                   .CreateLogger())
         {
-            var filename = tmp.AllocateFilename("txt");
-
-            using (var log = new LoggerConfiguration()
-                .WriteTo.File(filename, outputTemplate: "{Message}", encoding: Encoding.Unicode, shared: shared)
-                .CreateLogger())
-            {
-                log.Information("ten chars.");
-            }
-
-            // Don't forget the two-byte BOM :-)
-            Assert.Equal(22, System.IO.File.ReadAllBytes(filename).Length);
+            log.Information("ten chars.");
         }
+
+        // Don't forget the two-byte BOM :-)
+        Assert.Equal(22, System.IO.File.ReadAllBytes(filename).Length);
     }
 }

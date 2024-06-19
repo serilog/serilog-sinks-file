@@ -1,8 +1,8 @@
 ﻿namespace Serilog.Sinks.File.Tests.Support;
 
-internal class ArchiveOldLogsHook : FileLifecycleHooks
+class ArchiveOldLogsHook : FileLifecycleHooks
 {
-    private readonly string _relativeArchiveDir;
+    readonly string _relativeArchiveDir;
 
     public ArchiveOldLogsHook(string relativeArchiveDir)
     {

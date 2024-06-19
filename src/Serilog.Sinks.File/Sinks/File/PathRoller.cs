@@ -17,7 +17,7 @@ using System.Text.RegularExpressions;
 
 namespace Serilog.Sinks.File;
 
-class PathRoller
+sealed class PathRoller
 {
     const string PeriodMatchGroup = "period";
     const string SequenceNumberMatchGroup = "sequence";

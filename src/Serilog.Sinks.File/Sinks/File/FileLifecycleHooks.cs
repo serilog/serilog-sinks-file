@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using System.Text;
+// ReSharper disable UnusedMember.Global
 
 namespace Serilog.Sinks.File;
 
