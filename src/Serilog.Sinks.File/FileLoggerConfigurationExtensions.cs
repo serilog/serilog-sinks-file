@@ -518,8 +518,8 @@ public static class FileLoggerConfigurationExtensions
         if (addSink == null) throw new ArgumentNullException(nameof(addSink));
         if (formatter == null) throw new ArgumentNullException(nameof(formatter));
         if (path == null) throw new ArgumentNullException(nameof(path));
-        if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.", nameof(fileSizeLimitBytes));
-        if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("At least one file must be retained.", nameof(retainedFileCountLimit));
+        if (fileSizeLimitBytes is < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.", nameof(fileSizeLimitBytes));
+        if (retainedFileCountLimit is < 1) throw new ArgumentException("At least one file must be retained.", nameof(retainedFileCountLimit));
         if (retainedFileTimeLimit.HasValue && retainedFileTimeLimit < TimeSpan.Zero) throw new ArgumentException("Negative value provided; retained file time limit must be non-negative.", nameof(retainedFileTimeLimit));
         if (shared && buffered) throw new ArgumentException("Buffered writes are not available when file sharing is enabled.", nameof(buffered));
         if (shared && hooks != null) throw new ArgumentException("File lifecycle hooks are not currently supported for shared log files.", nameof(hooks));

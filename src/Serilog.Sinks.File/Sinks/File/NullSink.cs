@@ -21,7 +21,7 @@ namespace Serilog.Sinks.File;
 /// An instance of this sink may be substituted when an instance of the
 /// <see cref="FileSink"/> is unable to be constructed.
 /// </summary>
-class NullSink : ILogEventSink
+sealed class NullSink : ILogEventSink
 {
     public void Emit(LogEvent logEvent)
     {

@@ -52,8 +52,8 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable
                           TimeSpan? retainedFileTimeLimit)
     {
         if (path == null) throw new ArgumentNullException(nameof(path));
-        if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
-        if (retainedFileCountLimit.HasValue && retainedFileCountLimit < 1) throw new ArgumentException("Zero or negative value provided; retained file count limit must be at least 1");
+        if (fileSizeLimitBytes is < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
+        if (retainedFileCountLimit is < 1) throw new ArgumentException("Zero or negative value provided; retained file count limit must be at least 1.");
         if (retainedFileTimeLimit.HasValue && retainedFileTimeLimit < TimeSpan.Zero) throw new ArgumentException("Negative value provided; retained file time limit must be non-negative.", nameof(retainedFileTimeLimit));
 
         _roller = new PathRoller(path, rollingInterval);
@@ -121,8 +121,9 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable
         {
             if (Directory.Exists(_roller.LogFileDirectory))
             {
+                // ReSharper disable once ConvertClosureToMethodGroup
                 existingFiles = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
-                                    .Select(f => Path.GetFileName(f));
+                    .Select(f => Path.GetFileName(f));
             }
         }
         catch (DirectoryNotFoundException) { }
@@ -130,8 +131,12 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable
         var latestForThisCheckpoint = _roller
             .SelectMatches(existingFiles)
             .Where(m => m.DateTime == currentCheckpoint)
+#if ENUMERABLE_MAXBY
+            .MaxBy(m => m.SequenceNumber);
+#else
             .OrderByDescending(m => m.SequenceNumber)
             .FirstOrDefault();
+#endif
 
         var sequence = latestForThisCheckpoint?.SequenceNumber;
         if (minSequence != null)
@@ -149,7 +154,7 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable
             {
                 _currentFile = _shared ?
 #pragma warning disable 618
-                    (IFileSink)new SharedFileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding) :
+                    new SharedFileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding) :
 #pragma warning restore 618
                     new FileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding, _buffered, _hooks);
 
@@ -180,6 +185,7 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable
 
         // We consider the current file to exist, even if nothing's been written yet,
         // because files are only opened on response to an event being processed.
+        // ReSharper disable once ConvertClosureToMethodGroup
         var potentialMatches = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
             .Select(f => Path.GetFileName(f))
             .Union(new[] { currentFileName });

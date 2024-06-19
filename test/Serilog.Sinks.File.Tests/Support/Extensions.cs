@@ -4,7 +4,7 @@ namespace Serilog.Sinks.File.Tests.Support;
 
 public static class Extensions
 {
-    public static object LiteralValue(this LogEventPropertyValue @this)
+    public static object? LiteralValue(this LogEventPropertyValue @this)
     {
         return ((ScalarValue)@this).Value;
     }
@@ -13,13 +13,11 @@ public static class Extensions
     {
         var lines = new List<string>();
 
-        using (var reader = new StreamReader(@this))
+        using var reader = new StreamReader(@this);
+        string? line;
+        while ((line = reader.ReadLine()) != null)
         {
-            string? line;
-            while ((line = reader.ReadLine()) != null)
-            {
-                lines.Add(line);
-            }
+            lines.Add(line);
         }
 
         return lines;

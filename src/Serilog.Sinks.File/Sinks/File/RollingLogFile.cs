@@ -15,19 +15,9 @@
 
 namespace Serilog.Sinks.File;
 
-class RollingLogFile
+class RollingLogFile(string filename, DateTime? dateTime, int? sequenceNumber)
 {
-    public RollingLogFile(string filename, DateTime? dateTime, int? sequenceNumber)
-    {
-        Filename = filename;
-        DateTime = dateTime;
-        SequenceNumber = sequenceNumber;
-    }
-
-    public string Filename { get; }
-
-    public DateTime? DateTime { get; }
-
-    public int? SequenceNumber { get; }
+    public string Filename { get; } = filename;
+    public DateTime? DateTime { get; } = dateTime;
+    public int? SequenceNumber { get; } = sequenceNumber;
 }
-

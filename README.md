@@ -7,7 +7,7 @@ Writes [Serilog](https://serilog.net) events to one or more text files.
 Install the [Serilog.Sinks.File](https://www.nuget.org/packages/Serilog.Sinks.File/) package from NuGet:
 
 ```powershell
-Install-Package Serilog.Sinks.File
+dotnet add package Serilog.Sinks.File
 ```
 
 To configure the sink in C# code, call `WriteTo.File()` during logger configuration:
@@ -36,7 +36,7 @@ The limit can be changed or removed using the `fileSizeLimitBytes` parameter.
 
 ```csharp
     .WriteTo.File("log.txt", fileSizeLimitBytes: null)
-``` 
+```
 
 For the same reason, only **the most recent 31 files** are retained by default (i.e. one long month). To change or remove this limit, pass the `retainedFileCountLimit` parameter.
 
