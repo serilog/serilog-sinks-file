@@ -2,7 +2,7 @@ version: '{build}'
 skip_tags: true
 image:
   - Visual Studio 2022
-  - Ubuntu
+  - Ubuntu2204
 build_script:
 - pwsh: ./Build.ps1
 for:
