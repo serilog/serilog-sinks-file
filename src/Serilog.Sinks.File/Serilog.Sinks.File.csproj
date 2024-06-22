@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Description>Write Serilog events to text files in plain or JSON format.</Description>
-    <VersionPrefix>6.0.0</VersionPrefix>
+    <VersionPrefix>6.0.1</VersionPrefix>
     <Authors>Serilog Contributors</Authors>
     <!-- .NET Framework version targeting is frozen at these two TFMs. -->
     <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT'">net471;net462</TargetFrameworks>
