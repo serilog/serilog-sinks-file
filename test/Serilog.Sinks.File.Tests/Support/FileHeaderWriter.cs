@@ -1,28 +1,26 @@
-﻿using System.IO;
-using System.Text;
+﻿using System.Text;
 
-namespace Serilog.Sinks.File.Tests.Support
+namespace Serilog.Sinks.File.Tests.Support;
+
+class FileHeaderWriter : FileLifecycleHooks
 {
-    class FileHeaderWriter : FileLifecycleHooks
+    public string Header { get; }
+
+    public FileHeaderWriter(string header)
     {
-        public string Header { get; }
+        Header = header;
+    }
 
-        public FileHeaderWriter(string header)
+    public override Stream OnFileOpened(Stream underlyingStream, Encoding encoding)
+    {
+        if (underlyingStream.Length == 0)
         {
-            Header = header;
+            var writer = new StreamWriter(underlyingStream, encoding);
+            writer.WriteLine(Header);
+            writer.Flush();
+            underlyingStream.Flush();
         }
 
-        public override Stream OnFileOpened(Stream underlyingStream, Encoding encoding)
-        {
-            if (underlyingStream.Length == 0)
-            {
-                var writer = new StreamWriter(underlyingStream, encoding);
-                writer.WriteLine(Header);
-                writer.Flush();
-                underlyingStream.Flush();
-            }
-
-            return base.OnFileOpened(underlyingStream, encoding);
-        }
+        return base.OnFileOpened(underlyingStream, encoding);
     }
 }

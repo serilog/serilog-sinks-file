@@ -1,24 +1,21 @@
-using System;
+namespace Serilog.Sinks.File.Tests.Support;
 
-namespace Serilog.Sinks.File.Tests.Support
+public class DelegateDisposable : IDisposable
 {
-    public class DelegateDisposable : IDisposable
+    readonly Action _disposeAction;
+    bool _disposed;
+
+    public DelegateDisposable(Action disposeAction)
     {
-        private readonly Action _disposeAction;
-        private bool _disposed;
+        _disposeAction = disposeAction;
+    }
 
-        public DelegateDisposable(Action disposeAction)
-        {
-            _disposeAction = disposeAction;
-        }
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
 
-        public void Dispose()
-        {
-            if (_disposed)
-                return;
-
-            _disposeAction();
-            _disposed = true;
-        }
+        _disposeAction();
+        _disposed = true;
     }
 }

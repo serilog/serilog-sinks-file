@@ -15,16 +15,15 @@
 using Serilog.Core;
 using Serilog.Events;
 
-namespace Serilog.Sinks.File
+namespace Serilog.Sinks.File;
+
+/// <summary>
+/// An instance of this sink may be substituted when an instance of the
+/// <see cref="FileSink"/> is unable to be constructed.
+/// </summary>
+sealed class NullSink : ILogEventSink
 {
-    /// <summary>
-    /// An instance of this sink may be substituted when an instance of the
-    /// <see cref="FileSink"/> is unable to be constructed.
-    /// </summary>
-    class NullSink : ILogEventSink
+    public void Emit(LogEvent logEvent)
     {
-        public void Emit(LogEvent logEvent)
-        {
-        }
     }
 }

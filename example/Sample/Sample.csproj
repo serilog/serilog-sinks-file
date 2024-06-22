@@ -1,12 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net48;net5.0</TargetFrameworks>
-    <LangVersion>8.0</LangVersion>
-    <Nullable>enable</Nullable>
-    <AssemblyName>Sample</AssemblyName>
+    <TargetFrameworks>net48;net8.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
-    <PackageId>Sample</PackageId>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 

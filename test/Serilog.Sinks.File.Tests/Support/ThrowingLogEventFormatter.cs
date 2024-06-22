@@ -1,15 +1,12 @@
-﻿using System;
-using System.IO;
-using Serilog.Events;
+﻿using Serilog.Events;
 using Serilog.Formatting;
 
-namespace Serilog.Tests.Support
+namespace Serilog.Tests.Support;
+
+public class ThrowingLogEventFormatter : ITextFormatter
 {
-    public class ThrowingLogEventFormatter : ITextFormatter
+    public void Format(LogEvent logEvent, TextWriter output)
     {
-        public void Format(LogEvent logEvent, TextWriter output)
-        {
-            throw new NotImplementedException();
-        }
+        throw new NotImplementedException();
     }
 }
