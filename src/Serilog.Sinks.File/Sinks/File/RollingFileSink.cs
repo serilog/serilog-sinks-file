@@ -49,14 +49,16 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable
                           RollingInterval rollingInterval,
                           bool rollOnFileSizeLimit,
                           FileLifecycleHooks? hooks,
-                          TimeSpan? retainedFileTimeLimit)
+                          TimeSpan? retainedFileTimeLimit,
+                          int? rollingIntervalDuration)
     {
         if (path == null) throw new ArgumentNullException(nameof(path));
         if (fileSizeLimitBytes is < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
         if (retainedFileCountLimit is < 1) throw new ArgumentException("Zero or negative value provided; retained file count limit must be at least 1.");
         if (retainedFileTimeLimit.HasValue && retainedFileTimeLimit < TimeSpan.Zero) throw new ArgumentException("Negative value provided; retained file time limit must be non-negative.", nameof(retainedFileTimeLimit));
+        if (rollingInterval != RollingInterval.Infinite && rollingIntervalDuration.HasValue && rollingIntervalDuration < 1) throw new ArgumentException("Zero or negative value provided; rolling interval duration must be at least 1.", nameof(rollingIntervalDuration));
 
-        _roller = new PathRoller(path, rollingInterval);
+        _roller = new PathRoller(path, rollingInterval, rollingIntervalDuration ?? 1);
         _textFormatter = textFormatter;
         _fileSizeLimitBytes = fileSizeLimitBytes;
         _retainedFileCountLimit = retainedFileCountLimit;

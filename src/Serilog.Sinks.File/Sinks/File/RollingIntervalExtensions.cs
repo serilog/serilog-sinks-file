@@ -1,4 +1,4 @@
-﻿// Copyright 2017 Serilog Contributors
+// Copyright 2017 Serilog Contributors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,19 +44,22 @@ static class RollingIntervalExtensions
         };
     }
 
-    public static DateTime? GetNextCheckpoint(this RollingInterval interval, DateTime instant)
+    public static DateTime? GetNextCheckpoint(this RollingInterval interval, DateTime instant, int? intervalDuration = null)
     {
         var current = GetCurrentCheckpoint(interval, instant);
         if (current == null)
             return null;
 
+        if (!intervalDuration.HasValue || intervalDuration < 1)
+            intervalDuration = 1;
+
         return interval switch
         {
-            RollingInterval.Year => current.Value.AddYears(1),
-            RollingInterval.Month => current.Value.AddMonths(1),
-            RollingInterval.Day => current.Value.AddDays(1),
-            RollingInterval.Hour => current.Value.AddHours(1),
-            RollingInterval.Minute => current.Value.AddMinutes(1),
+            RollingInterval.Year => current.Value.AddYears(intervalDuration.Value),
+            RollingInterval.Month => current.Value.AddMonths(intervalDuration.Value),
+            RollingInterval.Day => current.Value.AddDays(intervalDuration.Value),
+            RollingInterval.Hour => current.Value.AddHours(intervalDuration.Value),
+            RollingInterval.Minute => current.Value.AddMinutes(intervalDuration.Value),
             _ => throw new ArgumentException("Invalid rolling interval.")
         };
     }

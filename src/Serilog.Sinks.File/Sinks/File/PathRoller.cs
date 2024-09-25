@@ -1,4 +1,4 @@
-﻿// Copyright 2013-2016 Serilog Contributors
+// Copyright 2013-2016 Serilog Contributors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,12 +28,16 @@ sealed class PathRoller
     readonly Regex _filenameMatcher;
 
     readonly RollingInterval _interval;
+    private readonly int _intervalDuration;
     readonly string _periodFormat;
 
-    public PathRoller(string path, RollingInterval interval)
+    public PathRoller(string path, RollingInterval interval, int intervalDuration)
     {
         if (path == null) throw new ArgumentNullException(nameof(path));
+        if (interval != RollingInterval.Infinite && intervalDuration < 1) throw new ArgumentException(nameof(intervalDuration));
+
         _interval = interval;
+        _intervalDuration = intervalDuration;
         _periodFormat = interval.GetFormat();
 
         var pathDirectory = Path.GetDirectoryName(path);
@@ -109,5 +113,5 @@ sealed class PathRoller
 
     public DateTime? GetCurrentCheckpoint(DateTime instant) => _interval.GetCurrentCheckpoint(instant);
 
-    public DateTime? GetNextCheckpoint(DateTime instant) => _interval.GetNextCheckpoint(instant);
+    public DateTime? GetNextCheckpoint(DateTime instant) => _interval.GetNextCheckpoint(instant, _intervalDuration);
 }
