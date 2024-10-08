@@ -1,4 +1,4 @@
-﻿// Copyright 2017 Serilog Contributors
+// Copyright 2017 Serilog Contributors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 
 namespace Serilog.Sinks.File;
 
-static class RollingIntervalExtensions
+internal static class RollingIntervalExtensions
 {
     public static string GetFormat(this RollingInterval interval)
     {
@@ -23,7 +23,14 @@ static class RollingIntervalExtensions
             RollingInterval.Infinite => "",
             RollingInterval.Year => "yyyy",
             RollingInterval.Month => "yyyyMM",
-            RollingInterval.Day => "yyyyMMdd",
+            RollingInterval.Day or
+                RollingInterval.Sunday or
+                RollingInterval.Monday or
+                RollingInterval.Tuesday or
+                RollingInterval.Wednesday or
+                RollingInterval.Thursday or
+                RollingInterval.Friday or
+                RollingInterval.Saturday => "yyyyMMdd",
             RollingInterval.Hour => "yyyyMMddHH",
             RollingInterval.Minute => "yyyyMMddHHmm",
             _ => throw new ArgumentException("Invalid rolling interval.")
@@ -37,6 +44,13 @@ static class RollingIntervalExtensions
             RollingInterval.Infinite => null,
             RollingInterval.Year => new DateTime(instant.Year, 1, 1, 0, 0, 0, instant.Kind),
             RollingInterval.Month => new DateTime(instant.Year, instant.Month, 1, 0, 0, 0, instant.Kind),
+            RollingInterval.Sunday => GetDateForRollOnDay(instant, DayOfWeek.Sunday),
+            RollingInterval.Monday => GetDateForRollOnDay(instant, DayOfWeek.Monday),
+            RollingInterval.Tuesday => GetDateForRollOnDay(instant, DayOfWeek.Tuesday),
+            RollingInterval.Wednesday => GetDateForRollOnDay(instant, DayOfWeek.Wednesday),
+            RollingInterval.Thursday => GetDateForRollOnDay(instant, DayOfWeek.Thursday),
+            RollingInterval.Friday => GetDateForRollOnDay(instant, DayOfWeek.Friday),
+            RollingInterval.Saturday => GetDateForRollOnDay(instant, DayOfWeek.Saturday),
             RollingInterval.Day => new DateTime(instant.Year, instant.Month, instant.Day, 0, 0, 0, instant.Kind),
             RollingInterval.Hour => new DateTime(instant.Year, instant.Month, instant.Day, instant.Hour, 0, 0, instant.Kind),
             RollingInterval.Minute => new DateTime(instant.Year, instant.Month, instant.Day, instant.Hour, instant.Minute, 0, instant.Kind),
@@ -48,16 +62,40 @@ static class RollingIntervalExtensions
     {
         var current = GetCurrentCheckpoint(interval, instant);
         if (current == null)
+        {
             return null;
+        }
 
         return interval switch
         {
             RollingInterval.Year => current.Value.AddYears(1),
             RollingInterval.Month => current.Value.AddMonths(1),
+            RollingInterval.Sunday or
+                RollingInterval.Monday or
+                RollingInterval.Tuesday or
+                RollingInterval.Wednesday or
+                RollingInterval.Thursday or
+                RollingInterval.Friday or
+                RollingInterval.Saturday => current.Value.AddDays(7),
             RollingInterval.Day => current.Value.AddDays(1),
             RollingInterval.Hour => current.Value.AddHours(1),
             RollingInterval.Minute => current.Value.AddMinutes(1),
             _ => throw new ArgumentException("Invalid rolling interval.")
         };
+    }
+
+    private static DateTime? GetDateForRollOnDay(DateTime instant, DayOfWeek rollOnDayOfWeek)
+    {
+        int delta = rollOnDayOfWeek - instant.DayOfWeek;
+
+        if (delta > 0)
+        {
+            // Adjust to get the previous roll date for DayOfWeek when the result is positive
+            delta -= 7;
+        }
+
+        var date = instant.Date.AddDays(delta);
+
+        return date;
     }
 }

@@ -1,4 +1,4 @@
-﻿// Copyright 2017 Serilog Contributors
+// Copyright 2017 Serilog Contributors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,5 +47,40 @@ public enum RollingInterval
     /// <summary>
     /// Roll every minute. Filenames will have <code>yyyyMMddHHmm</code> appended.
     /// </summary>
-    Minute
+    Minute,
+
+    /// <summary>
+    /// Roll every Sunday. Filenames will have <code>yyyyMMdd</code> appended.
+    /// </summary>
+    Sunday,
+
+    /// <summary>
+    /// Roll every Monday. Filenames will have <code>yyyyMMdd</code> appended.
+    /// </summary>
+    Monday,
+
+    /// <summary>
+    /// Roll every Tuesday. Filenames will have <code>yyyyMMdd</code> appended.
+    /// </summary>
+    Tuesday,
+
+    /// <summary>
+    /// Roll every Wednesday. Filenames will have <code>yyyyMMdd</code> appended.
+    /// </summary>
+    Wednesday,
+
+    /// <summary>
+    /// Roll every Thursday. Filenames will have <code>yyyyMMdd</code> appended.
+    /// </summary>
+    Thursday,
+
+    /// <summary>
+    /// Roll every Friday. Filenames will have <code>yyyyMMdd</code> appended.
+    /// </summary>
+    Friday,
+
+    /// <summary>
+    /// Roll every Saturday. Filenames will have <code>yyyyMMdd</code> appended.
+    /// </summary>
+    Saturday
 }
