@@ -32,7 +32,7 @@ public static class FileLoggerConfigurationExtensions
 {
     const int DefaultRetainedFileCountLimit = 31; // A long month of logs
     const long DefaultFileSizeLimitBytes = 1L * 1024 * 1024 * 1024; // 1GB
-    const string DefaultOutputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
+    public const string DefaultOutputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
 
     /// <summary>
     /// Write log events to the specified file.
