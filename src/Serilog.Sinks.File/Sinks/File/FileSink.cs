@@ -91,8 +91,16 @@ public sealed class FileSink : IFileSink, IDisposable
 
         if (hooks != null)
         {
-            outputStream = hooks.OnFileOpened(path, outputStream, encoding) ??
-                           throw new InvalidOperationException($"The file lifecycle hook `{nameof(FileLifecycleHooks.OnFileOpened)}(...)` returned `null`.");
+            try
+            {
+                outputStream = hooks.OnFileOpened(path, outputStream, encoding) ??
+                               throw new InvalidOperationException($"The file lifecycle hook `{nameof(FileLifecycleHooks.OnFileOpened)}(...)` returned `null`.");
+            }
+            catch
+            {
+                outputStream?.Dispose();
+                throw;
+            }
         }
 
         _output = new StreamWriter(outputStream, encoding);

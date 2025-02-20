@@ -19,18 +19,18 @@ class FailOpeningHook : FileLifecycleHooks
         _failingInstances = failingInstances;
     }
 
-    public override Stream OnFileOpened(string path, Stream _, Encoding __)
+    public override Stream OnFileOpened(string path, Stream stream, Encoding encoding)
     {
         TimesOpened++;
         if (_failingInstances.Contains(TimesOpened))
         {
             var message = $"We failed on try {TimesOpened}, the file was locked: {_asFileLocked}";
-            
+
             throw _asFileLocked
                 ? new IOException(message)
                 : new Exception(message);
         }
 
-        return base.OnFileOpened(path, _, __);
+        return base.OnFileOpened(path, stream, encoding);
     }
 }

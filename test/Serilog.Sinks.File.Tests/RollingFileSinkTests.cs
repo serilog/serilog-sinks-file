@@ -4,6 +4,7 @@ using Serilog.Events;
 using Serilog.Sinks.File.Tests.Support;
 using Serilog.Configuration;
 using Serilog.Core;
+using Serilog.Debugging;
 using Xunit.Abstractions;
 
 namespace Serilog.Sinks.File.Tests;
@@ -196,22 +197,20 @@ public class RollingFileSinkTests
     {
         var fileName = Some.String() + ".txt";
         using var temp = new TempFolder();
+        using var log = new LoggerConfiguration()
+            .WriteTo.File(Path.Combine(temp.Path, fileName), rollOnFileSizeLimit: true, fileSizeLimitBytes: 1, rollingInterval: RollingInterval.Hour, hooks: new FailOpeningHook(true, 2, 3, 4))
+            .CreateLogger();
         LogEvent e1 = Some.InformationEvent(new DateTime(2012, 10, 28)),
             e2 = Some.InformationEvent(e1.Timestamp.AddSeconds(1)),
             e3 = Some.InformationEvent(e1.Timestamp.AddMinutes(5)),
             e4 = Some.InformationEvent(e1.Timestamp.AddMinutes(31));
         LogEvent[] logEvents = new[] { e1, e2, e3, e4 };
-
-        using (var log = new LoggerConfiguration()
-                   .WriteTo.File(Path.Combine(temp.Path, fileName), rollOnFileSizeLimit: true, fileSizeLimitBytes: 1,
-                       rollingInterval: RollingInterval.Hour, hooks: new FailOpeningHook(true, 2, 3, 4))
-                   .CreateLogger())
+        
+        SelfLog.Enable(_testOutputHelper.WriteLine);
+        foreach (var logEvent in logEvents)
         {
-            foreach (var logEvent in logEvents)
-            {
-                Clock.SetTestDateTimeNow(logEvent.Timestamp.DateTime);
-                log.Write(logEvent);
-            }
+            Clock.SetTestDateTimeNow(logEvent.Timestamp.DateTime);
+            log.Write(logEvent);
         }
 
         var files = Directory.GetFiles(temp.Path)
@@ -219,20 +218,15 @@ public class RollingFileSinkTests
             .ToArray();
         var pattern = "yyyyMMddHH";
 
-        foreach (var file in files)
-        {
-            _testOutputHelper.WriteLine(file + ": " + System.IO.File.ReadAllText(file));
-        }
-        Assert.Equal(5, files.Length);
+        Assert.Equal(4, files.Length);
         // Successful write of e1:
         Assert.True(files[0].EndsWith(ExpectedFileName(fileName, e1.Timestamp, pattern)), files[0]);
         // Failing writes for e2, will be dropped and logged to SelfLog; on lock it will try it three times:
         Assert.True(files[1].EndsWith("_001.txt"), files[1]);
         Assert.True(files[2].EndsWith("_002.txt"), files[2]);
-        Assert.True(files[3].EndsWith("_003.txt"), files[3]);
         /* e3 will be dropped and logged to SelfLog without new file as it's in the 30 minutes cooldown and roller only starts on next hour! */
-        // Successful write of e4:
-        Assert.True(files[4].EndsWith("_004.txt"), files[4]);
+        // Successful write of e4, the third file will be retried after failing initially:
+        Assert.True(files[3].EndsWith("_003.txt"), files[3]);
     }
 
     [Fact]
@@ -240,22 +234,20 @@ public class RollingFileSinkTests
     {
         var fileName = Some.String() + ".txt";
         using var temp = new TempFolder();
+        using var log = new LoggerConfiguration()
+            .WriteTo.File(Path.Combine(temp.Path, fileName), rollOnFileSizeLimit: true, fileSizeLimitBytes: 1, rollingInterval: RollingInterval.Hour, hooks: new FailOpeningHook(false, 2))
+            .CreateLogger();
         LogEvent e1 = Some.InformationEvent(new DateTime(2012, 10, 28)),
             e2 = Some.InformationEvent(e1.Timestamp.AddSeconds(1)),
             e3 = Some.InformationEvent(e1.Timestamp.AddMinutes(5)),
             e4 = Some.InformationEvent(e1.Timestamp.AddMinutes(31));
         LogEvent[] logEvents = new[] { e1, e2, e3, e4 };
-
-        using (var log = new LoggerConfiguration()
-                   .WriteTo.File(Path.Combine(temp.Path, fileName), rollOnFileSizeLimit: true, fileSizeLimitBytes: 1,
-                       rollingInterval: RollingInterval.Hour, hooks: new FailOpeningHook(false, 2))
-                   .CreateLogger())
+        
+        SelfLog.Enable(_testOutputHelper.WriteLine);
+        foreach (var logEvent in logEvents)
         {
-            foreach (var logEvent in logEvents)
-            {
-                Clock.SetTestDateTimeNow(logEvent.Timestamp.DateTime);
-                log.Write(logEvent);
-            }
+            Clock.SetTestDateTimeNow(logEvent.Timestamp.DateTime);
+            log.Write(logEvent);
         }
 
         var files = Directory.GetFiles(temp.Path)
@@ -263,18 +255,13 @@ public class RollingFileSinkTests
             .ToArray();
         var pattern = "yyyyMMddHH";
 
-        foreach (var file in files)
-        {
-            _testOutputHelper.WriteLine(file + ": " + System.IO.File.ReadAllText(file));
-        }
-        Assert.Equal(3, files.Length);
+        Assert.Equal(2, files.Length);
         // Successful write of e1:
         Assert.True(files[0].EndsWith(ExpectedFileName(fileName, e1.Timestamp, pattern)), files[0]);
-        // Failing writes for e2, will be dropped and logged to SelfLog; on non-lock it will try it once:
-        Assert.True(files[1].EndsWith("_001.txt"), files[1]);
+        /* Failing writes for e2, will be dropped and logged to SelfLog; on non-lock it will try it once */
         /* e3 will be dropped and logged to SelfLog without new file as it's in the 30 minutes cooldown and roller only starts on next hour! */
-        // Successful write of e4:
-        Assert.True(files[2].EndsWith("_002.txt"), files[2]);
+        // Successful write of e4, the file will be retried after failing initially:
+        Assert.True(files[1].EndsWith("_001.txt"), files[1]);
     }
 
     [Fact]
