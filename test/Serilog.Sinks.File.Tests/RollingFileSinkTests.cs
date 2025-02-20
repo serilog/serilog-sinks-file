@@ -9,13 +9,18 @@ using Xunit.Abstractions;
 
 namespace Serilog.Sinks.File.Tests;
 
-public class RollingFileSinkTests
+public class RollingFileSinkTests : IDisposable
 {
     private readonly ITestOutputHelper _testOutputHelper;
 
     public RollingFileSinkTests(ITestOutputHelper testOutputHelper)
     {
         _testOutputHelper = testOutputHelper;
+    }
+
+    public void Dispose()
+    {
+        SelfLog.Disable();
     }
 
     [Fact]
