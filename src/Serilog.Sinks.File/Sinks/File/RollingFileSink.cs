@@ -83,16 +83,21 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable
             {
                 AlignCurrentFileTo(now, nextSequence: true);
             }
+
+            if (_currentFile == null)
+            {
+                SelfLog.WriteLine("Log event {0} was lost since it was not possible to open the file or create a new one.", logEvent.RenderMessage());
+            }
         }
     }
 
     void AlignCurrentFileTo(DateTime now, bool nextSequence = false)
     {
-        if (!_nextCheckpoint.HasValue)
+        if (_currentFile == null && !_nextCheckpoint.HasValue)
         {
             OpenFile(now);
         }
-        else if (nextSequence || now >= _nextCheckpoint.Value)
+        else if (nextSequence || (_nextCheckpoint.HasValue && now >= _nextCheckpoint.Value))
         {
             int? minSequence = null;
             if (nextSequence)
@@ -112,68 +117,89 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable
     {
         var currentCheckpoint = _roller.GetCurrentCheckpoint(now);
 
-        // We only try periodically because repeated failures
-        // to open log files REALLY slow an app down.
-        _nextCheckpoint = _roller.GetNextCheckpoint(now) ?? now.AddMinutes(30);
+        _nextCheckpoint = _roller.GetNextCheckpoint(now);
 
-        var existingFiles = Enumerable.Empty<string>();
         try
         {
-            if (Directory.Exists(_roller.LogFileDirectory))
+            var existingFiles = Enumerable.Empty<string>();
+            try
             {
-                // ReSharper disable once ConvertClosureToMethodGroup
-                existingFiles = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
-                    .Select(f => Path.GetFileName(f));
+                if (Directory.Exists(_roller.LogFileDirectory))
+                {
+                    // ReSharper disable once ConvertClosureToMethodGroup
+                    existingFiles = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
+                        .Select(f => Path.GetFileName(f));
+                }
             }
-        }
-        catch (DirectoryNotFoundException) { }
+            catch (DirectoryNotFoundException)
+            {
+            }
 
-        var latestForThisCheckpoint = _roller
-            .SelectMatches(existingFiles)
-            .Where(m => m.DateTime == currentCheckpoint)
+            var latestForThisCheckpoint = _roller
+                .SelectMatches(existingFiles)
+                .Where(m => m.DateTime == currentCheckpoint)
 #if ENUMERABLE_MAXBY
             .MaxBy(m => m.SequenceNumber);
 #else
-            .OrderByDescending(m => m.SequenceNumber)
-            .FirstOrDefault();
+                .OrderByDescending(m => m.SequenceNumber)
+                .FirstOrDefault();
 #endif
 
-        var sequence = latestForThisCheckpoint?.SequenceNumber;
-        if (minSequence != null)
-        {
-            if (sequence == null || sequence.Value < minSequence.Value)
-                sequence = minSequence;
-        }
-
-        const int maxAttempts = 3;
-        for (var attempt = 0; attempt < maxAttempts; attempt++)
-        {
-            _roller.GetLogFilePath(now, sequence, out var path);
-
-            try
+            var sequence = latestForThisCheckpoint?.SequenceNumber;
+            if (minSequence != null)
             {
-                _currentFile = _shared ?
-#pragma warning disable 618
-                    new SharedFileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding) :
-#pragma warning restore 618
-                    new FileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding, _buffered, _hooks);
-
-                _currentFileSequence = sequence;
+                if (sequence == null || sequence.Value < minSequence.Value)
+                    sequence = minSequence;
             }
-            catch (IOException ex)
+
+            const int maxAttempts = 3;
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
             {
-                if (IOErrors.IsLockedFile(ex))
+                _roller.GetLogFilePath(now, sequence, out var path);
+
+                try
                 {
-                    SelfLog.WriteLine("File target {0} was locked, attempting to open next in sequence (attempt {1})", path, attempt + 1);
-                    sequence = (sequence ?? 0) + 1;
-                    continue;
+                    _currentFile = _shared
+                        ?
+#pragma warning disable 618
+                        new SharedFileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding)
+                        :
+#pragma warning restore 618
+                        new FileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding, _buffered, _hooks);
+
+                    _currentFileSequence = sequence;
+                }
+                catch (IOException ex)
+                {
+                    if (IOErrors.IsLockedFile(ex))
+                    {
+                        SelfLog.WriteLine(
+                            "File target {0} was locked, attempting to open next in sequence (attempt {1})", path,
+                            attempt + 1);
+                        sequence = (sequence ?? 0) + 1;
+                        continue;
+                    }
+
+                    throw;
                 }
 
-                throw;
+                ApplyRetentionPolicy(path, now);
+                return;
             }
-
-            ApplyRetentionPolicy(path, now);
-            return;
+        }
+        finally
+        {
+            if (_currentFile == null)
+            {
+                // We only try periodically because repeated failures
+                // to open log files REALLY slow an app down.
+                // If the next checkpoint would be earlier, keep it!
+                var retryCheckpoint = now.AddMinutes(30);
+                if (_nextCheckpoint == null || retryCheckpoint < _nextCheckpoint)
+                {
+                    _nextCheckpoint = retryCheckpoint;
+                }
+            }
         }
     }
 
