@@ -84,10 +84,12 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable
                 AlignCurrentFileTo(now, nextSequence: true);
             }
 
+            /* TODO: We REALLY should add this to avoid stuff become missing undetected.
             if (_currentFile == null)
             {
                 SelfLog.WriteLine("Log event {0} was lost since it was not possible to open the file or create a new one.", logEvent.RenderMessage());
             }
+            */
         }
     }
 
