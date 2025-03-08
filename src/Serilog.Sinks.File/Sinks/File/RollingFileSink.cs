@@ -20,7 +20,7 @@ using Serilog.Formatting;
 
 namespace Serilog.Sinks.File;
 
-sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable
+sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, ISetLoggingFailureListener
 {
     readonly PathRoller _roller;
     readonly ITextFormatter _textFormatter;
@@ -32,6 +32,8 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable
     readonly bool _shared;
     readonly bool _rollOnFileSizeLimit;
     readonly FileLifecycleHooks? _hooks;
+
+    ILoggingFailureListener _failureListener = SelfLog.FailureListener;
 
     readonly object _syncRoot = new();
     bool _isDisposed;
@@ -72,6 +74,7 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable
     {
         if (logEvent == null) throw new ArgumentNullException(nameof(logEvent));
 
+        bool failed;
         lock (_syncRoot)
         {
             if (_isDisposed) throw new ObjectDisposedException("The log file has been disposed.");
@@ -84,12 +87,18 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable
                 AlignCurrentFileTo(now, nextSequence: true);
             }
 
-            /* TODO: We REALLY should add this to avoid stuff become missing undetected.
-            if (_currentFile == null)
-            {
-                SelfLog.WriteLine("Log event {0} was lost since it was not possible to open the file or create a new one.", logEvent.RenderMessage());
-            }
-            */
+            failed = _currentFile == null;
+        }
+
+        if (failed)
+        {
+            // Support fallback chains without the overhead of throwing an exception.
+            _failureListener.OnLoggingFailed(
+                this,
+                LoggingFailureKind.Permanent,
+                "the target file could not be opened or created",
+                [logEvent],
+                exception: null);
         }
     }
 
@@ -170,14 +179,22 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable
                         new FileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding, _buffered, _hooks);
 
                     _currentFileSequence = sequence;
+
+                    if (_currentFile is ISetLoggingFailureListener setLoggingFailureListener)
+                    {
+                        setLoggingFailureListener.SetFailureListener(_failureListener);
+                    }
                 }
                 catch (IOException ex)
                 {
                     if (IOErrors.IsLockedFile(ex))
                     {
-                        SelfLog.WriteLine(
-                            "File target {0} was locked, attempting to open next in sequence (attempt {1})", path,
-                            attempt + 1);
+                        _failureListener.OnLoggingFailed(
+                            this,
+                            LoggingFailureKind.Temporary,
+                            $"file target {path} was locked, attempting to open next in sequence (attempt {attempt + 1})",
+                            events: null,
+                            exception: null);
                         sequence = (sequence ?? 0) + 1;
                         continue;
                     }
@@ -216,7 +233,7 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable
         // ReSharper disable once ConvertClosureToMethodGroup
         var potentialMatches = Directory.GetFiles(_roller.LogFileDirectory, _roller.DirectorySearchPattern)
             .Select(f => Path.GetFileName(f))
-            .Union(new[] { currentFileName });
+            .Union([currentFileName]);
 
         var newestFirst = _roller
             .SelectMatches(potentialMatches)
@@ -239,7 +256,12 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable
             }
             catch (Exception ex)
             {
-                SelfLog.WriteLine("Error {0} while processing obsolete log file {1}", ex, fullPath);
+                _failureListener.OnLoggingFailed(
+                    this,
+                    LoggingFailureKind.Temporary,
+                    $"error while processing obsolete log file {fullPath}",
+                    events: null,
+                    ex);
             }
         }
     }
@@ -285,5 +307,10 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable
         {
             _currentFile?.FlushToDisk();
         }
+    }
+
+    public void SetFailureListener(ILoggingFailureListener failureListener)
+    {
+        _failureListener = failureListener ?? throw new ArgumentNullException(nameof(failureListener));
     }
 }

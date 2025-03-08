@@ -11,7 +11,7 @@ namespace Serilog.Sinks.File.Tests;
 
 public class RollingFileSinkTests : IDisposable
 {
-    private readonly ITestOutputHelper _testOutputHelper;
+    readonly ITestOutputHelper _testOutputHelper;
 
     public RollingFileSinkTests(ITestOutputHelper testOutputHelper)
     {
@@ -172,7 +172,7 @@ public class RollingFileSinkTests : IDisposable
             e3 = Some.InformationEvent(e1.Timestamp.AddMinutes(5)),
             e4 = Some.InformationEvent(e1.Timestamp.AddMinutes(31));
         LogEvent[] logEvents = new[] { e1, e2, e3, e4 };
-        
+
         foreach (var logEvent in logEvents)
         {
             Clock.SetTestDateTimeNow(logEvent.Timestamp.DateTime);
@@ -210,7 +210,7 @@ public class RollingFileSinkTests : IDisposable
             e3 = Some.InformationEvent(e1.Timestamp.AddMinutes(5)),
             e4 = Some.InformationEvent(e1.Timestamp.AddMinutes(31));
         LogEvent[] logEvents = new[] { e1, e2, e3, e4 };
-        
+
         SelfLog.Enable(_testOutputHelper.WriteLine);
         foreach (var logEvent in logEvents)
         {
@@ -247,7 +247,7 @@ public class RollingFileSinkTests : IDisposable
             e3 = Some.InformationEvent(e1.Timestamp.AddMinutes(5)),
             e4 = Some.InformationEvent(e1.Timestamp.AddMinutes(31));
         LogEvent[] logEvents = new[] { e1, e2, e3, e4 };
-        
+
         SelfLog.Enable(_testOutputHelper.WriteLine);
         foreach (var logEvent in logEvents)
         {
