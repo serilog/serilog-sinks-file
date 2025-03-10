@@ -30,6 +30,23 @@ public class RollingFileSinkTests : IDisposable
     }
 
     [Fact]
+    public void ShouldCreateFileWithDatePlaceHolder()
+    {
+        var config = new LoggerConfiguration()
+            .WriteTo.File("{Date}-log.txt", rollingInterval: RollingInterval.Day);
+        var log = config.CreateLogger();
+
+        var now = new DateTime(2013, 7, 14, 3, 24, 9, 980);
+
+        Clock.SetTestDateTimeNow(now);
+        log.Write(Some.InformationEvent());
+
+        var path = Path.Combine(Directory.GetCurrentDirectory(), "20130714-log.txt");
+
+        Assert.True(System.IO.File.Exists(path));
+    }
+
+    [Fact]
     public void EventsAreWrittenWhenSharingIsEnabled()
     {
         TestRollingEventSequence(
@@ -172,7 +189,7 @@ public class RollingFileSinkTests : IDisposable
             e3 = Some.InformationEvent(e1.Timestamp.AddMinutes(5)),
             e4 = Some.InformationEvent(e1.Timestamp.AddMinutes(31));
         LogEvent[] logEvents = new[] { e1, e2, e3, e4 };
-        
+
         foreach (var logEvent in logEvents)
         {
             Clock.SetTestDateTimeNow(logEvent.Timestamp.DateTime);
@@ -210,7 +227,7 @@ public class RollingFileSinkTests : IDisposable
             e3 = Some.InformationEvent(e1.Timestamp.AddMinutes(5)),
             e4 = Some.InformationEvent(e1.Timestamp.AddMinutes(31));
         LogEvent[] logEvents = new[] { e1, e2, e3, e4 };
-        
+
         SelfLog.Enable(_testOutputHelper.WriteLine);
         foreach (var logEvent in logEvents)
         {
@@ -247,7 +264,7 @@ public class RollingFileSinkTests : IDisposable
             e3 = Some.InformationEvent(e1.Timestamp.AddMinutes(5)),
             e4 = Some.InformationEvent(e1.Timestamp.AddMinutes(31));
         LogEvent[] logEvents = new[] { e1, e2, e3, e4 };
-        
+
         SelfLog.Enable(_testOutputHelper.WriteLine);
         foreach (var logEvent in logEvents)
         {
