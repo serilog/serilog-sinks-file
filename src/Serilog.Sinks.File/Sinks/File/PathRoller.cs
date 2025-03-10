@@ -43,16 +43,9 @@ sealed class PathRoller
         _directory = Path.GetFullPath(pathDirectory);
         _filenamePrefix = Path.GetFileNameWithoutExtension(path);
         _filenameSuffix = Path.GetExtension(path);
-        _filenameMatcher = new Regex(
-            "^" +
-            Regex.Escape(_filenamePrefix) +
-            "(?<" + PeriodMatchGroup + ">\\d{" + _periodFormat.Length + "})" +
-            "(?<" + SequenceNumberMatchGroup + ">_[0-9]{3,}){0,1}" +
-            Regex.Escape(_filenameSuffix) +
-            "$",
-            RegexOptions.Compiled);
+        _filenameMatcher = GetFileNameMatcher();
 
-        DirectorySearchPattern = $"{_filenamePrefix}*{_filenameSuffix}";
+        DirectorySearchPattern = GetDirectorySearchPattern();
     }
 
     public string LogFileDirectory => _directory;
@@ -68,7 +61,12 @@ sealed class PathRoller
         if (sequenceNumber != null)
             tok += "_" + sequenceNumber.Value.ToString("000", CultureInfo.InvariantCulture);
 
-        path = Path.Combine(_directory, _filenamePrefix + tok + _filenameSuffix);
+        string fileNameReplaced = ReplaceDatePlaceholder(_filenamePrefix, tok);
+
+        if (string.Equals(_filenamePrefix, fileNameReplaced, StringComparison.InvariantCultureIgnoreCase))
+            fileNameReplaced += tok;
+
+        path = Path.Combine(_directory, fileNameReplaced + _filenameSuffix);
     }
 
     public IEnumerable<RollingLogFile> SelectMatches(IEnumerable<string> filenames)
@@ -110,4 +108,40 @@ sealed class PathRoller
     public DateTime? GetCurrentCheckpoint(DateTime instant) => _interval.GetCurrentCheckpoint(instant);
 
     public DateTime? GetNextCheckpoint(DateTime instant) => _interval.GetNextCheckpoint(instant);
+
+    Regex GetFileNameMatcher()
+    {
+        if (_filenamePrefix.StartsWith("{Date}", StringComparison.InvariantCultureIgnoreCase))
+        {
+            return new Regex(
+                "^" +
+                "(?<" + PeriodMatchGroup + ">\\d{" + _periodFormat.Length + "})" +
+                "(?<" + SequenceNumberMatchGroup + ">_[0-9]{3,}){0,1}" +
+                Regex.Escape(ReplaceDatePlaceholder(_filenamePrefix, string.Empty)) +
+                Regex.Escape(_filenameSuffix) +
+                "$",
+                RegexOptions.Compiled);
+        }
+
+        return new Regex(
+            "^" +
+            Regex.Escape(_filenamePrefix) +
+            "(?<" + PeriodMatchGroup + ">\\d{" + _periodFormat.Length + "})" +
+            "(?<" + SequenceNumberMatchGroup + ">_[0-9]{3,}){0,1}" +
+            Regex.Escape(_filenameSuffix) +
+            "$",
+            RegexOptions.Compiled);
+    }
+
+    string GetDirectorySearchPattern()
+    {
+        return _filenamePrefix.StartsWith("{Date}", StringComparison.InvariantCultureIgnoreCase)
+            ? $"*{ReplaceDatePlaceholder(_filenamePrefix, string.Empty)}{_filenameSuffix}"
+            : $"{_filenamePrefix}*{_filenameSuffix}";
+    }
+
+    static string ReplaceDatePlaceholder(string filenamePrefix, string dateString)
+    {
+        return Regex.Replace(filenamePrefix, @"\{Date}", dateString, RegexOptions.IgnoreCase);
+    }
 }
