@@ -18,6 +18,20 @@ public class FileLoggerConfigurationExtensionsTests
     }
 
     [Fact]
+    public void WhenWritingCreationExceptionsAreReported()
+    {
+        var listener = new CapturingLoggingFailureListener();
+
+        var logger = new LoggerConfiguration()
+            .WriteTo.Fallible(wt => wt.File(InvalidPath), listener)
+            .CreateLogger();
+
+        logger.Information("Hello");
+
+        Assert.Single(listener.FailedEvents);
+    }
+
+    [Fact]
     public void WhenAuditingCreationExceptionsPropagate()
     {
         Assert.Throws<ArgumentException>(() =>

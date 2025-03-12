@@ -549,17 +549,26 @@ public static class FileLoggerConfigurationExtensions
         }
         catch (Exception ex)
         {
-            SelfLog.WriteLine("Unable to open file sink for {0}: {1}", path, ex);
+            // No logging failure listener can be configured here; in future we might allow for a static
+            // default listener, but in the meantime this improves `SelfLog` usefulness and consistency.
+            SelfLog.FailureListener.OnLoggingFailed(
+                typeof(FileLoggerConfigurationExtensions),
+                LoggingFailureKind.Final,
+                $"unable to open file sink for {path}",
+                events: null,
+                ex);
 
             if (propagateExceptions)
                 throw;
 
-            return addSink(new NullSink(), LevelAlias.Maximum, null);
+            return addSink(new FailedSink(), restrictedToMinimumLevel, levelSwitch);
         }
 
         if (flushToDiskInterval.HasValue)
         {
 #pragma warning disable 618
+            // `LoggerSinkConfiguration.Wrap()` is not used here because the target sink is expected
+            // to support `ILogEventSink`.
             sink = new PeriodicFlushToDiskSink(sink, flushToDiskInterval.Value);
 #pragma warning restore 618
         }

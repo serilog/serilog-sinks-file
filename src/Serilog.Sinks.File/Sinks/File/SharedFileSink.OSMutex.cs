@@ -15,6 +15,7 @@
 #if OS_MUTEX
 
 using System.Text;
+using Serilog.Core;
 using Serilog.Events;
 using Serilog.Formatting;
 using Serilog.Debugging;
@@ -25,13 +26,15 @@ namespace Serilog.Sinks.File;
 /// Write log events to a disk file.
 /// </summary>
 [Obsolete("This type will be removed from the public API in a future version; use `WriteTo.File(shared: true)` instead.")]
-public sealed class SharedFileSink : IFileSink, IDisposable
+public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureListener
 {
     readonly TextWriter _output;
     readonly FileStream _underlyingStream;
     readonly ITextFormatter _textFormatter;
     readonly long? _fileSizeLimitBytes;
     readonly object _syncRoot = new();
+
+    ILoggingFailureListener _failureListener = SelfLog.FailureListener;
 
     const string MutexNameSuffix = ".serilog";
     const int MutexWaitTimeout = 10000;
@@ -81,7 +84,11 @@ public sealed class SharedFileSink : IFileSink, IDisposable
         lock (_syncRoot)
         {
             if (!TryAcquireMutex())
-                return true; // We didn't overflow, but, roll-on-size should not be attempted
+            {
+                // Support fallback chains.
+                throw new LoggingFailedException(
+                    $"The shared file mutex could not be acquired within {MutexWaitTimeout} ms.");
+            }
 
             try
             {
@@ -111,7 +118,16 @@ public sealed class SharedFileSink : IFileSink, IDisposable
     /// <exception cref="ArgumentNullException">When <paramref name="logEvent"/> is <code>null</code></exception>
     public void Emit(LogEvent logEvent)
     {
-        ((IFileSink)this).EmitOrOverflow(logEvent);
+        if (!((IFileSink)this).EmitOrOverflow(logEvent))
+        {
+            // Support fallback chains without the overhead of throwing an exception.
+            _failureListener.OnLoggingFailed(
+                this,
+                LoggingFailureKind.Permanent,
+                "the log file size limit has been reached and no rolling behavior was specified",
+                [logEvent],
+                exception: null);
+        }
     }
 
     /// <inheritdoc />
@@ -149,13 +165,12 @@ public sealed class SharedFileSink : IFileSink, IDisposable
         {
             if (!_mutex.WaitOne(MutexWaitTimeout))
             {
-                SelfLog.WriteLine("Shared file mutex could not be acquired within {0} ms", MutexWaitTimeout);
                 return false;
             }
         }
         catch (AbandonedMutexException)
         {
-            SelfLog.WriteLine("Inherited shared file mutex after abandonment by another process");
+            SelfLog.WriteLine("inherited the shared file mutex after abandonment by another process");
         }
 
         return true;
@@ -164,6 +179,11 @@ public sealed class SharedFileSink : IFileSink, IDisposable
     void ReleaseMutex()
     {
         _mutex.ReleaseMutex();
+    }
+
+    void ISetLoggingFailureListener.SetFailureListener(ILoggingFailureListener failureListener)
+    {
+        _failureListener = failureListener ?? throw new ArgumentNullException(nameof(failureListener));
     }
 }
 

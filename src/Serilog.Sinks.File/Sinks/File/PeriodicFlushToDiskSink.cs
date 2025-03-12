@@ -22,11 +22,13 @@ namespace Serilog.Sinks.File;
 /// A sink wrapper that periodically flushes the wrapped sink to disk.
 /// </summary>
 [Obsolete("This type will be removed from the public API in a future version; use `WriteTo.File(flushToDiskInterval:)` instead.")]
-public class PeriodicFlushToDiskSink : ILogEventSink, IDisposable
+public sealed class PeriodicFlushToDiskSink : ILogEventSink, IDisposable, ISetLoggingFailureListener
 {
     readonly ILogEventSink _sink;
     readonly Timer _timer;
     int _flushRequired;
+
+    ILoggingFailureListener _failureListener = SelfLog.FailureListener;
 
     /// <summary>
     /// Construct a <see cref="PeriodicFlushToDiskSink"/> that wraps
@@ -46,7 +48,17 @@ public class PeriodicFlushToDiskSink : ILogEventSink, IDisposable
         else
         {
             _timer = new Timer(_ => { }, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
-            SelfLog.WriteLine("{0} configured to flush {1}, but {2} not implemented", typeof(PeriodicFlushToDiskSink), sink, nameof(IFlushableFileSink));
+
+            // May be an opportunity to improve the failure listener API for these cases - the failure
+            // is important, but not exactly `Final`.
+            SelfLog.FailureListener.OnLoggingFailed(
+                // Class must be sealed in order for this to be safe - `this` may be partially constructed
+                // otherwise.
+                this,
+                LoggingFailureKind.Final,
+                $"configured to flush {sink}, but {nameof(IFlushableFileSink)} not implemented",
+                events: null,
+                exception: null);
         }
     }
 
@@ -77,7 +89,21 @@ public class PeriodicFlushToDiskSink : ILogEventSink, IDisposable
         }
         catch (Exception ex)
         {
-            SelfLog.WriteLine("{0} could not flush the underlying sink to disk: {1}", typeof(PeriodicFlushToDiskSink), ex);
+            _failureListener.OnLoggingFailed(
+                this,
+                LoggingFailureKind.Temporary,
+                "could not flush the underlying file to disk",
+                events: null,
+                ex);
+        }
+    }
+
+    void ISetLoggingFailureListener.SetFailureListener(ILoggingFailureListener failureListener)
+    {
+        _failureListener = failureListener ?? throw new ArgumentNullException(nameof(failureListener));
+        if (_sink is ISetLoggingFailureListener setLoggingFailureListener)
+        {
+            setLoggingFailureListener.SetFailureListener(failureListener);
         }
     }
 }
