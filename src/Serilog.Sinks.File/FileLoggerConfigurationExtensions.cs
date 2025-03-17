@@ -155,7 +155,8 @@ public static class FileLoggerConfigurationExtensions
         Encoding encoding)
     {
         return File(sinkConfiguration, path, restrictedToMinimumLevel, outputTemplate, formatProvider, fileSizeLimitBytes, levelSwitch, buffered,
-            shared, flushToDiskInterval, rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit, encoding, null);
+            shared, flushToDiskInterval, rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit, encoding, null,
+             null);
     }
 
     /// <summary>
@@ -164,7 +165,7 @@ public static class FileLoggerConfigurationExtensions
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
     /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into
     /// text for the file. If control of regular text formatting is required, use the other
-    /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?)"/>
+    /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?, bool, Func{DateTime?,string}?, string?)"/>
     /// and specify the outputTemplate parameter instead.
     /// </param>
     /// <param name="path">Path to the file.</param>
@@ -236,6 +237,11 @@ public static class FileLoggerConfigurationExtensions
     /// Must be greater than or equal to <see cref="TimeSpan.Zero"/>.
     /// Ignored if <paramref see="rollingInterval"/> is <see cref="RollingInterval.Infinite"/>.
     /// The default is to retain files indefinitely.</param>
+    /// <param name="keepPathStaticOnRoll">Use the initial file path as a static file.</param>
+    /// <param name="customFormatFunc">A custom function that returns a custom string for rolling over files.
+    /// Accepts a DateTime for using custom DateTime formats.
+    /// This must return a string that can be matched by <paramref name="customRollPattern"/>.</param>
+    /// <param name="customRollPattern">A custom pattern for rolling over files. This must compile into a <see cref="System.Text.RegularExpressions.Regex"/> </param>
     /// <returns>Configuration object allowing method chaining.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
     /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
@@ -262,7 +268,10 @@ public static class FileLoggerConfigurationExtensions
         int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
         Encoding? encoding = null,
         FileLifecycleHooks? hooks = null,
-        TimeSpan? retainedFileTimeLimit = null)
+        TimeSpan? retainedFileTimeLimit = null,
+        bool keepPathStaticOnRoll = false,
+        Func<DateTime?,string>? customFormatFunc = null,
+        string? customRollPattern = null)
     {
         if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
         if (path == null) throw new ArgumentNullException(nameof(path));
@@ -271,7 +280,7 @@ public static class FileLoggerConfigurationExtensions
         var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
         return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes,
             levelSwitch, buffered, shared, flushToDiskInterval,
-            rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit, encoding, hooks, retainedFileTimeLimit);
+            rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit, encoding, hooks, retainedFileTimeLimit, keepPathStaticOnRoll, customFormatFunc, customRollPattern);
     }
 
     /// <summary>
@@ -280,7 +289,7 @@ public static class FileLoggerConfigurationExtensions
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
     /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into
     /// text for the file. If control of regular text formatting is required, use the other
-    /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?)"/>
+    /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?, bool, Func{DateTime?, string}?, string?)"/>
     /// and specify the outputTemplate parameter instead.
     /// </param>
     /// <param name="path">Path to the file.</param>
@@ -306,6 +315,9 @@ public static class FileLoggerConfigurationExtensions
     /// Must be greater than or equal to <see cref="TimeSpan.Zero"/>.
     /// Ignored if <paramref see="rollingInterval"/> is <see cref="RollingInterval.Infinite"/>.
     /// The default is to retain files indefinitely.</param>
+    /// <param name="keepPathStaticOnRoll">Use the initial file path as a static file.</param>
+    /// <param name="customFormatFunc">A custom function that returns a custom string for rolling over files. This must return a string that can be matched by <paramref name="customRollPattern"/>.</param>
+    /// <param name="customRollPattern">A custom pattern for rolling over files. This must compile into a <see cref="System.Text.RegularExpressions.Regex"/> </param>
     /// <returns>Configuration object allowing method chaining.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
     /// <exception cref="ArgumentNullException">When <paramref name="formatter"/> is <code>null</code></exception>
@@ -331,7 +343,10 @@ public static class FileLoggerConfigurationExtensions
         int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
         Encoding? encoding = null,
         FileLifecycleHooks? hooks = null,
-        TimeSpan? retainedFileTimeLimit = null)
+        TimeSpan? retainedFileTimeLimit = null,
+        bool keepPathStaticOnRoll = false,
+        Func<DateTime?,string>? customFormatFunc = null,
+        string? customRollPattern = null)
     {
         if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
         if (formatter == null) throw new ArgumentNullException(nameof(formatter));
@@ -339,7 +354,7 @@ public static class FileLoggerConfigurationExtensions
 
         return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, levelSwitch,
             buffered, false, shared, flushToDiskInterval, encoding, rollingInterval, rollOnFileSizeLimit,
-            retainedFileCountLimit, hooks, retainedFileTimeLimit);
+            retainedFileCountLimit, hooks, retainedFileTimeLimit, keepPathStaticOnRoll, customFormatFunc, customRollPattern);
     }
 
     /// <summary>
@@ -487,14 +502,15 @@ public static class FileLoggerConfigurationExtensions
         LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
         LoggingLevelSwitch? levelSwitch = null,
         Encoding? encoding = null,
-        FileLifecycleHooks? hooks = null)
+        FileLifecycleHooks? hooks = null
+        )
     {
         if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
         if (formatter == null) throw new ArgumentNullException(nameof(formatter));
         if (path == null) throw new ArgumentNullException(nameof(path));
 
         return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, null, levelSwitch, false, true,
-            false, null, encoding, RollingInterval.Infinite, false, null, hooks, null);
+            false, null, encoding, RollingInterval.Infinite, false, null, hooks, null, false, null, null);
     }
 
     static LoggerConfiguration ConfigureFile(
@@ -513,7 +529,10 @@ public static class FileLoggerConfigurationExtensions
         bool rollOnFileSizeLimit,
         int? retainedFileCountLimit,
         FileLifecycleHooks? hooks,
-        TimeSpan? retainedFileTimeLimit)
+        TimeSpan? retainedFileTimeLimit,
+        bool keepPathStaticOnRoll,
+        Func<DateTime?,string>? customFormatFunc,
+        string? customRollPattern)
     {
         if (addSink == null) throw new ArgumentNullException(nameof(addSink));
         if (formatter == null) throw new ArgumentNullException(nameof(formatter));
@@ -523,6 +542,7 @@ public static class FileLoggerConfigurationExtensions
         if (retainedFileTimeLimit.HasValue && retainedFileTimeLimit < TimeSpan.Zero) throw new ArgumentException("Negative value provided; retained file time limit must be non-negative.", nameof(retainedFileTimeLimit));
         if (shared && buffered) throw new ArgumentException("Buffered writes are not available when file sharing is enabled.", nameof(buffered));
         if (shared && hooks != null) throw new ArgumentException("File lifecycle hooks are not currently supported for shared log files.", nameof(hooks));
+        if(keepPathStaticOnRoll && (fileSizeLimitBytes == null && rollingInterval == RollingInterval.Infinite )) throw new ArgumentException("keepPathStaticOnRoll is only supported when either fileSizeLimitBytes or rollingInterval are enabled");
 
         ILogEventSink sink;
 
@@ -530,7 +550,7 @@ public static class FileLoggerConfigurationExtensions
         {
             if (rollOnFileSizeLimit || rollingInterval != RollingInterval.Infinite)
             {
-                sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks, retainedFileTimeLimit);
+                sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks, retainedFileTimeLimit, keepPathStaticOnRoll, customFormatFunc, customRollPattern);
             }
             else
             {

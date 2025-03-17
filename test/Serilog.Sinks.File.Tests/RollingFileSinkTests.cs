@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Text.RegularExpressions;
 using Xunit;
 using Serilog.Events;
 using Serilog.Sinks.File.Tests.Support;
@@ -294,6 +295,163 @@ public class RollingFileSinkTests : IDisposable
     }
 
     [Fact]
+    public void WhenCustomRollingEnabledItUsesThePattern()
+    {
+        string CustomStringOut(DateTime? time)
+        {
+            return $"_{time??DateTime.Now:yyyy-MM-dd-HH-mm-ss}";
+        }
+
+        var regexPattern = @"_\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}";
+        var fileName = Some.String() + ".txt";
+        using var temp = new TempFolder();
+        using var log = new LoggerConfiguration()
+            .WriteTo.File(Path.Combine(temp.Path, fileName), rollOnFileSizeLimit: true,
+                fileSizeLimitBytes: 40, customFormatFunc: CustomStringOut,
+                customRollPattern: regexPattern)
+            .CreateLogger();
+        LogEvent e1 = Some.InformationEvent(),
+            e2 = Some.InformationEvent(e1.Timestamp),
+            e3 = Some.InformationEvent(e1.Timestamp),
+            e4 = Some.InformationEvent(e1.Timestamp),
+            e5 = Some.InformationEvent(e1.Timestamp);
+        log.Write(e1);
+        log.Write(e2);
+        log.Write(e3);
+        log.Write(e4);
+        log.Write(e5);
+        var files = Directory.GetFiles(temp.Path)
+            .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        Assert.Equal(5, files.Length);
+
+        Assert.True(files[0].EndsWith(fileName), files[0]);
+        foreach (var file in files.Skip(1))
+        {
+            Assert.True(Regex.IsMatch(file, regexPattern), file);
+        }
+    }
+
+    [Fact]
+    public void WhenCustomRollingEnabledAndTimeIntervalItUsesThePattern()
+    {
+        string CustomStringOut(DateTime? time = null)
+        {
+            var t = time ?? DateTime.Now;
+            return $"_{t:yyyy-MM-dd-HH-mm-ss}";
+        }
+
+        var regexPattern = @"_\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}";
+        var fileName = Some.String() + ".txt";
+        using var temp = new TempFolder();
+        LogEvent e1 = Some.InformationEvent(),
+            e2 = Some.InformationEvent(e1.Timestamp.AddDays(2)),
+            e3 = Some.InformationEvent(e2.Timestamp.AddDays(2));
+        TestRollingEventSequence((pf, wt) => wt.File(pf,
+                rollingInterval: RollingInterval.Minute,
+                customFormatFunc: CustomStringOut,
+                customRollPattern: regexPattern),
+            new[] { e1, e2, e3 },
+            files =>
+            {
+                Assert.Equal(3, files.Count);
+                Assert.True(System.IO.File.Exists(files[0]));
+                Assert.True(System.IO.File.Exists(files[1]));
+                Assert.True(System.IO.File.Exists(files[2]));
+                foreach (var file in files.Skip(1))
+                {
+                    Assert.True(Regex.IsMatch(file, regexPattern), file);
+                }
+            },
+            fileNameOverride: fileName,
+            patternOverride:"_yyyy-MM-dd-HH-mm-ss");
+    }
+
+    [Fact]
+    public void WhenStaticEnabledPathBasePathIsLastUpdated()
+    {
+        var fileName = Some.String() + ".txt";
+        using var temp = new TempFolder();
+        using var log = new LoggerConfiguration()
+            .WriteTo.File(Path.Combine(temp.Path, fileName), rollOnFileSizeLimit: true,
+                fileSizeLimitBytes: 40, keepPathStaticOnRoll: true)
+            .CreateLogger();
+        LogEvent e1 = Some.InformationEvent(),
+            e2 = Some.InformationEvent(e1.Timestamp),
+            e3 = Some.InformationEvent(e1.Timestamp),
+            e4 = Some.InformationEvent(e1.Timestamp),
+            e5 = Some.InformationEvent(e1.Timestamp);
+        log.Write(e1);
+        //Sleep here so that LastModifiedTime of the file can be different
+        Thread.Sleep(1000);
+        log.Write(e2);
+        Thread.Sleep(1000);
+        log.Write(e3);
+        var files = Directory.GetFiles(temp.Path)
+            .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        Assert.Equal(3, files.Length);
+
+        Assert.True(files[0].EndsWith(fileName), files[0]);
+        Assert.True(files[1].EndsWith("_001.txt"), files[1]);
+        Assert.True(files[2].EndsWith("_002.txt"), files[2]);
+        var lastModifiedFile = files
+            .Select(f => new FileInfo(f))
+            .OrderByDescending(f => f.LastWriteTime)
+            .First();
+        // Using the full path can result in failures with a space in the User folder name
+        Assert.Equal(Path.GetFileName(files[0]), Path.GetFileName(lastModifiedFile.FullName));
+    }
+
+    [Fact]
+    public void WhenStaticEnabledAndCustomRollPathBasePathIsLastUpdated()
+    {
+        string CustomStringOut(DateTime? time = null)
+        {
+            return $"_{time??DateTime.Now:yyyy-MM-dd-HH-mm-ss}";
+        }
+
+        var regexPattern = @"_\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}";
+        var fileName = Some.String() + ".txt";
+        using var temp = new TempFolder();
+        using var log = new LoggerConfiguration()
+            .WriteTo.File(Path.Combine(temp.Path, fileName),
+                rollOnFileSizeLimit: true,
+                fileSizeLimitBytes: 40,
+                customFormatFunc: CustomStringOut,
+                customRollPattern: regexPattern,
+                keepPathStaticOnRoll: true)
+            .CreateLogger();
+        LogEvent e1 = Some.InformationEvent(),
+            e2 = Some.InformationEvent(e1.Timestamp),
+            e3 = Some.InformationEvent(e1.Timestamp);
+        log.Write(e1);
+        Thread.Sleep(1000);
+        log.Write(e2);
+        Thread.Sleep(1001);
+        log.Write(e3);
+        var files = Directory.GetFiles(temp.Path)
+            .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        Assert.Equal(3, files.Length);
+
+        Assert.True(files[0].EndsWith(fileName), files[0]);
+        foreach (var file in files.Skip(1))
+        {
+            Assert.True(Regex.IsMatch(file, regexPattern), file);
+        }
+        var lastModifiedFile = files
+            .Select(f => new FileInfo(f))
+            .OrderByDescending(f => f.LastWriteTime)
+            .First();
+        // Using the full path can result in failures with a space in the User folder name
+        Assert.Equal(Path.GetFileName(files[0]), Path.GetFileName(lastModifiedFile.FullName));
+    }
+
+    [Fact]
     public void WhenStreamWrapperSpecifiedIsUsedForRolledFiles()
     {
         var gzipWrapper = new GZipHooks();
@@ -384,11 +542,14 @@ public class RollingFileSinkTests : IDisposable
     static void TestRollingEventSequence(
         Action<string, LoggerSinkConfiguration> configureFile,
         IEnumerable<LogEvent> events,
-        Action<IList<string>>? verifyWritten = null)
+        Action<IList<string>>? verifyWritten = null,
+        string? fileNameOverride = null,
+        string? patternOverride = null)
     {
-        var fileName = Some.String() + "-.txt";
-        var folder = Some.TempFolderPath();
+        var fileName = fileNameOverride ?? Some.String() + "-.txt";
+        var folder = new TempFolder().Path;
         var pathFormat = Path.Combine(folder, fileName);
+        var pattern = patternOverride ?? "yyyyMMdd";
 
         var config = new LoggerConfiguration();
         configureFile(pathFormat, config.WriteTo);
@@ -402,8 +563,7 @@ public class RollingFileSinkTests : IDisposable
             {
                 Clock.SetTestDateTimeNow(@event.Timestamp.DateTime);
                 log.Write(@event);
-
-                var expected = ExpectedFileName(pathFormat, @event.Timestamp, "yyyyMMdd");
+                var expected = ExpectedFileName(pathFormat, @event.Timestamp, pattern);
                 Assert.True(System.IO.File.Exists(expected));
 
                 verified.Add(expected);
