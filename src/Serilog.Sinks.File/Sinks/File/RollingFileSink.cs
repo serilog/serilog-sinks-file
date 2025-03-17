@@ -196,7 +196,7 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
                     _roller.GetLogFilePath(now, sequence, out path, out var copyPath);
                     if (copyPath != null && System.IO.File.Exists(path))
                     {
-                        System.IO.File.Copy(path, copyPath);
+                        System.IO.File.Move(path, copyPath);
                     }
                 }
                 else
