@@ -34,11 +34,11 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
-    <DefineConstants>$(DefineConstants);ENUMERABLE_MAXBY</DefineConstants>
+    <DefineConstants>$(DefineConstants);ENUMERABLE_MAXBY;ATOMIC_APPEND</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net9.0' ">
-    <DefineConstants>$(DefineConstants);ENUMERABLE_MAXBY</DefineConstants>
+    <DefineConstants>$(DefineConstants);ENUMERABLE_MAXBY;ATOMIC_APPEND</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
