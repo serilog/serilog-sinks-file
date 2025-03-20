@@ -80,20 +80,14 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
 
         // FileSystemRights.AppendData sets the Win32 FILE_APPEND_DATA flag. On Linux this is O_APPEND, but that API is not yet
         // exposed by .NET Core.
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            _fileOutput = CreateFile(
-            path,
-            FileMode.Append,
-            FileSystemRights.AppendData,
-            FileShare.ReadWrite,
-            _fileStreamBufferLength,
-            FileOptions.None);
-        }
-        else
-        {
-            throw new NotSupportedException();
-        }
+        _fileOutput = CreateFile(
+        path,
+        FileMode.Append,
+        FileSystemRights.AppendData,
+        FileShare.ReadWrite,
+        _fileStreamBufferLength,
+        FileOptions.None);
+        
 
         _writeBuffer = new MemoryStream();
         _output = new StreamWriter(_writeBuffer,
@@ -115,21 +109,15 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
                 if (length > _fileStreamBufferLength)
                 {
                     var oldOutput = _fileOutput;
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        _fileOutput = CreateFile(
-                        _path,
-                        FileMode.Append,
-                        FileSystemRights.AppendData,
-                        FileShare.ReadWrite,
-                        length,
-                        FileOptions.None);
+
+                    _fileOutput = CreateFile(
+                    _path,
+                    FileMode.Append,
+                    FileSystemRights.AppendData,
+                    FileShare.ReadWrite,
+                    length,
+                    FileOptions.None);
                     _fileStreamBufferLength = length;
-                    }
-                    else
-                    {
-                        throw new NotSupportedException();
-                    }
 
                     oldOutput.Dispose();
                 }
