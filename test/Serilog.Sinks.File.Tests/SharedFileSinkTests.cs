@@ -124,6 +124,45 @@ public class SharedFileSinkTests
     }
 
     [Fact]
+    public void FileIsLockedByOneUserAndAnotherUserTriesToWrite()
+    {
+        using var tmp = TempFolder.ForCaller();
+        var path = tmp.AllocateFilename("txt");
+        var evt = Some.LogEvent("Hello, world!");
+
+        // Lock the file by one user
+        using (var stream = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+        {
+            using (var writer = new StreamWriter(stream))
+            {
+                writer.WriteLine("Initial content");
+                writer.Flush();
+
+                // Try to write to the locked file by another user
+                var exceptionThrown = false;
+                try
+                {
+                    using (var sink = new SharedFileSink(path, new JsonFormatter(), null))
+                    {
+                        sink.Emit(evt);
+                    }
+                }
+                catch (IOException)
+                {
+                    exceptionThrown = true;
+                }
+
+                Assert.True(exceptionThrown, "IOException should be thrown when trying to write to a locked file.");
+            }
+        }
+
+        // Verify the file content
+        var lines = System.IO.File.ReadAllLines(path);
+        Assert.Contains("Initial content", lines);
+        Assert.DoesNotContain("Hello, world!", lines);
+    }
+
+    [Fact]
     public async Task FileIsNotLockedDuringAsyncOperations()
     {
         using var tmp = TempFolder.ForCaller();
