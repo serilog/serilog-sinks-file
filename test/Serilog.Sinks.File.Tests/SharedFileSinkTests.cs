@@ -1,4 +1,4 @@
-﻿using Serilog.Core;
+using Serilog.Core;
 using Xunit;
 using Serilog.Formatting.Json;
 using Serilog.Sinks.File.Tests.Support;
@@ -93,5 +93,62 @@ public class SharedFileSinkTests
 
         var size = new FileInfo(path).Length;
         Assert.True(size > maxBytes * 2);
+    }
+
+    [Fact]
+    public void FileIsNotLockedAfterDisposal()
+    {
+        using var tmp = TempFolder.ForCaller();
+        var path = tmp.AllocateFilename("txt");
+        var evt = Some.LogEvent("Hello, world!");
+
+        using (var sink = new SharedFileSink(path, new JsonFormatter(), null))
+        {
+            sink.Emit(evt);
+        }
+
+        // Ensure the file is not locked after the sink is disposed
+        var exceptionThrown = false;
+        try
+        {
+            using (var stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite))
+            {
+            }
+        }
+        catch (IOException)
+        {
+            exceptionThrown = true;
+        }
+
+        Assert.False(exceptionThrown, "File should not be locked after sink disposal.");
+    }
+
+    [Fact]
+    public async Task FileIsNotLockedDuringAsyncOperations()
+    {
+        using var tmp = TempFolder.ForCaller();
+        var path = tmp.AllocateFilename("txt");
+        var evt = Some.LogEvent("Hello, world!");
+
+        using (var sink = new SharedFileSink(path, new JsonFormatter(), null))
+        {
+            await Task.Run(() => sink.Emit(evt));
+        }
+
+        // Ensure the file is not locked after async operations
+        var exceptionThrown = false;
+        try
+        {
+            using (var stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite))
+            {
+                stream.ReadAllLines();
+            }
+        }
+        catch (IOException)
+        {
+            exceptionThrown = true;
+        }
+
+        Assert.False(exceptionThrown, "File should not be locked after async operations.");
     }
 }
