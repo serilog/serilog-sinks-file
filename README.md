@@ -1,4 +1,4 @@
-# Serilog.Sinks.File [![Build status](https://ci.appveyor.com/api/projects/status/hh9gymy0n6tne46j/branch/dev?svg=true)](https://ci.appveyor.com/project/serilog/serilog-sinks-file/branch/dev) [![NuGet Version](http://img.shields.io/nuget/v/Serilog.Sinks.File.svg?style=flat)](https://www.nuget.org/packages/Serilog.Sinks.File/) [![Documentation](https://img.shields.io/badge/docs-wiki-yellow.svg)](https://github.com/serilog/serilog/wiki)
+# Serilog.Sinks.File&nbsp;[![Build status](https://github.com/serilog/serilog-sinks-file/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/serilog/serilog-sinks-file/actions)&nbsp;[![NuGet Version](http://img.shields.io/nuget/v/Serilog.Sinks.File.svg?style=flat)](https://www.nuget.org/packages/Serilog.Sinks.File/)&nbsp;[![Documentation](https://img.shields.io/badge/docs-wiki-yellow.svg)](https://github.com/serilog/serilog/wiki)
 
 Writes [Serilog](https://serilog.net) events to one or more text files.
 

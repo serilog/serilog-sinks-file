@@ -16,6 +16,8 @@
 
 using System.Security.AccessControl;
 using System.Text;
+using Serilog.Core;
+using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Formatting;
 
@@ -25,7 +27,7 @@ namespace Serilog.Sinks.File;
 /// Write log events to a disk file.
 /// </summary>
 [Obsolete("This type will be removed from the public API in a future version; use `WriteTo.File(shared: true)` instead.")]
-public sealed class SharedFileSink : IFileSink, IDisposable
+public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureListener
 {
     readonly MemoryStream _writeBuffer;
     readonly string _path;
@@ -33,6 +35,8 @@ public sealed class SharedFileSink : IFileSink, IDisposable
     readonly ITextFormatter _textFormatter;
     readonly long? _fileSizeLimitBytes;
     readonly object _syncRoot = new();
+
+    ILoggingFailureListener _failureListener = SelfLog.FailureListener;
 
     // The stream is reopened with a larger buffer if atomic writes beyond the current buffer size are needed.
     FileStream _fileOutput;
@@ -59,7 +63,7 @@ public sealed class SharedFileSink : IFileSink, IDisposable
     public SharedFileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding? encoding = null)
     {
         if (fileSizeLimitBytes.HasValue && fileSizeLimitBytes < 1)
-            throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null");
+            throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
 
         _path = path ?? throw new ArgumentNullException(nameof(path));
         _textFormatter = textFormatter ?? throw new ArgumentNullException(nameof(textFormatter));
@@ -149,7 +153,16 @@ public sealed class SharedFileSink : IFileSink, IDisposable
     /// <exception cref="ArgumentNullException">When <paramref name="logEvent"/> is <code>null</code></exception>
     public void Emit(LogEvent logEvent)
     {
-        ((IFileSink)this).EmitOrOverflow(logEvent);
+        if (!((IFileSink)this).EmitOrOverflow(logEvent))
+        {
+            // Support fallback chains without the overhead of throwing an exception.
+            _failureListener.OnLoggingFailed(
+                this,
+                LoggingFailureKind.Permanent,
+                "the log file size limit has been reached and no rolling behavior was specified",
+                [logEvent],
+                exception: null);
+        }
     }
 
     /// <inheritdoc />
@@ -169,6 +182,11 @@ public sealed class SharedFileSink : IFileSink, IDisposable
             _output.Flush();
             _fileOutput.Flush(true);
         }
+    }
+
+    void ISetLoggingFailureListener.SetFailureListener(ILoggingFailureListener failureListener)
+    {
+        _failureListener = failureListener ?? throw new ArgumentNullException(nameof(failureListener));
     }
 }
 

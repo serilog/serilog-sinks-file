@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using Serilog.Core;
+using Xunit;
 using Serilog.Formatting.Json;
 using Serilog.Sinks.File.Tests.Support;
 
@@ -56,8 +57,10 @@ public class SharedFileSinkTests
         var path = tmp.AllocateFilename("txt");
         var evt = Some.LogEvent(new string('n', maxBytes / eventsToLimit));
 
+        var listener = new CapturingLoggingFailureListener();
         using (var sink = new SharedFileSink(path, new JsonFormatter(), maxBytes))
         {
+            ((ISetLoggingFailureListener)sink).SetFailureListener(listener);
             for (var i = 0; i < eventsToLimit * 2; i++)
             {
                 sink.Emit(evt);
@@ -67,6 +70,7 @@ public class SharedFileSinkTests
         var size = new FileInfo(path).Length;
         Assert.True(size > maxBytes);
         Assert.True(size < maxBytes * 2);
+        Assert.NotEmpty(listener.FailedEvents);
     }
 
     [Fact]

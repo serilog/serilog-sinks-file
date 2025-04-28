@@ -4,11 +4,25 @@ using Serilog.Events;
 using Serilog.Sinks.File.Tests.Support;
 using Serilog.Configuration;
 using Serilog.Core;
+using Serilog.Debugging;
+using Xunit.Abstractions;
 
 namespace Serilog.Sinks.File.Tests;
 
-public class RollingFileSinkTests
+public class RollingFileSinkTests : IDisposable
 {
+    readonly ITestOutputHelper _testOutputHelper;
+
+    public RollingFileSinkTests(ITestOutputHelper testOutputHelper)
+    {
+        _testOutputHelper = testOutputHelper;
+    }
+
+    public void Dispose()
+    {
+        SelfLog.Disable();
+    }
+
     [Fact]
     public void LogEventsAreEmittedToTheFileNamedAccordingToTheEventTimestamp()
     {
@@ -146,6 +160,116 @@ public class RollingFileSinkTests
     }
 
     [Fact]
+    public void WhenFirstOpeningFailedWithLockRetryDelayedUntilNextCheckpoint()
+    {
+        var fileName = Some.String() + ".txt";
+        using var temp = new TempFolder();
+        using var log = new LoggerConfiguration()
+            .WriteTo.File(Path.Combine(temp.Path, fileName), rollOnFileSizeLimit: true, fileSizeLimitBytes: 1, rollingInterval: RollingInterval.Minute, hooks: new FailOpeningHook(true, 2, 3, 4))
+            .CreateLogger();
+        LogEvent e1 = Some.InformationEvent(new DateTime(2012, 10, 28)),
+            e2 = Some.InformationEvent(e1.Timestamp.AddSeconds(1)),
+            e3 = Some.InformationEvent(e1.Timestamp.AddMinutes(5)),
+            e4 = Some.InformationEvent(e1.Timestamp.AddMinutes(31));
+        LogEvent[] logEvents = new[] { e1, e2, e3, e4 };
+
+        foreach (var logEvent in logEvents)
+        {
+            Clock.SetTestDateTimeNow(logEvent.Timestamp.DateTime);
+            log.Write(logEvent);
+        }
+
+        var files = Directory.GetFiles(temp.Path)
+            .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var pattern = "yyyyMMddHHmm";
+
+        Assert.Equal(6, files.Length);
+        // Successful write of e1:
+        Assert.True(files[0].EndsWith(ExpectedFileName(fileName, e1.Timestamp, pattern)), files[0]);
+        // Failing writes for e2, will be dropped and logged to SelfLog:
+        Assert.True(files[1].EndsWith("_001.txt"), files[1]);
+        Assert.True(files[2].EndsWith("_002.txt"), files[2]);
+        Assert.True(files[3].EndsWith("_003.txt"), files[3]);
+        // Successful write of e3:
+        Assert.True(files[4].EndsWith(ExpectedFileName(fileName, e3.Timestamp, pattern)), files[4]);
+        // Successful write of e4:
+        Assert.True(files[5].EndsWith(ExpectedFileName(fileName, e4.Timestamp, pattern)), files[5]);
+    }
+
+    [Fact]
+    public void WhenFirstOpeningFailedWithLockRetryDelayed30Minutes()
+    {
+        var fileName = Some.String() + ".txt";
+        using var temp = new TempFolder();
+        using var log = new LoggerConfiguration()
+            .WriteTo.File(Path.Combine(temp.Path, fileName), rollOnFileSizeLimit: true, fileSizeLimitBytes: 1, rollingInterval: RollingInterval.Hour, hooks: new FailOpeningHook(true, 2, 3, 4))
+            .CreateLogger();
+        LogEvent e1 = Some.InformationEvent(new DateTime(2012, 10, 28)),
+            e2 = Some.InformationEvent(e1.Timestamp.AddSeconds(1)),
+            e3 = Some.InformationEvent(e1.Timestamp.AddMinutes(5)),
+            e4 = Some.InformationEvent(e1.Timestamp.AddMinutes(31));
+        LogEvent[] logEvents = new[] { e1, e2, e3, e4 };
+
+        SelfLog.Enable(_testOutputHelper.WriteLine);
+        foreach (var logEvent in logEvents)
+        {
+            Clock.SetTestDateTimeNow(logEvent.Timestamp.DateTime);
+            log.Write(logEvent);
+        }
+
+        var files = Directory.GetFiles(temp.Path)
+            .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var pattern = "yyyyMMddHH";
+
+        Assert.Equal(4, files.Length);
+        // Successful write of e1:
+        Assert.True(files[0].EndsWith(ExpectedFileName(fileName, e1.Timestamp, pattern)), files[0]);
+        // Failing writes for e2, will be dropped and logged to SelfLog; on lock it will try it three times:
+        Assert.True(files[1].EndsWith("_001.txt"), files[1]);
+        Assert.True(files[2].EndsWith("_002.txt"), files[2]);
+        /* e3 will be dropped and logged to SelfLog without new file as it's in the 30 minutes cooldown and roller only starts on next hour! */
+        // Successful write of e4, the third file will be retried after failing initially:
+        Assert.True(files[3].EndsWith("_003.txt"), files[3]);
+    }
+
+    [Fact]
+    public void WhenFirstOpeningFailedWithoutLockRetryDelayed30Minutes()
+    {
+        var fileName = Some.String() + ".txt";
+        using var temp = new TempFolder();
+        using var log = new LoggerConfiguration()
+            .WriteTo.File(Path.Combine(temp.Path, fileName), rollOnFileSizeLimit: true, fileSizeLimitBytes: 1, rollingInterval: RollingInterval.Hour, hooks: new FailOpeningHook(false, 2))
+            .CreateLogger();
+        LogEvent e1 = Some.InformationEvent(new DateTime(2012, 10, 28)),
+            e2 = Some.InformationEvent(e1.Timestamp.AddSeconds(1)),
+            e3 = Some.InformationEvent(e1.Timestamp.AddMinutes(5)),
+            e4 = Some.InformationEvent(e1.Timestamp.AddMinutes(31));
+        LogEvent[] logEvents = new[] { e1, e2, e3, e4 };
+
+        SelfLog.Enable(_testOutputHelper.WriteLine);
+        foreach (var logEvent in logEvents)
+        {
+            Clock.SetTestDateTimeNow(logEvent.Timestamp.DateTime);
+            log.Write(logEvent);
+        }
+
+        var files = Directory.GetFiles(temp.Path)
+            .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var pattern = "yyyyMMddHH";
+
+        Assert.Equal(2, files.Length);
+        // Successful write of e1:
+        Assert.True(files[0].EndsWith(ExpectedFileName(fileName, e1.Timestamp, pattern)), files[0]);
+        /* Failing writes for e2, will be dropped and logged to SelfLog; on non-lock it will try it once */
+        /* e3 will be dropped and logged to SelfLog without new file as it's in the 30 minutes cooldown and roller only starts on next hour! */
+        // Successful write of e4, the file will be retried after failing initially:
+        Assert.True(files[1].EndsWith("_001.txt"), files[1]);
+    }
+
+    [Fact]
     public void WhenSizeLimitIsBreachedNewFilesCreated()
     {
         var fileName = Some.String() + ".txt";
@@ -279,7 +403,7 @@ public class RollingFileSinkTests
                 Clock.SetTestDateTimeNow(@event.Timestamp.DateTime);
                 log.Write(@event);
 
-                var expected = pathFormat.Replace(".txt", @event.Timestamp.ToString("yyyyMMdd") + ".txt");
+                var expected = ExpectedFileName(pathFormat, @event.Timestamp, "yyyyMMdd");
                 Assert.True(System.IO.File.Exists(expected));
 
                 verified.Add(expected);
@@ -291,5 +415,10 @@ public class RollingFileSinkTests
             verifyWritten?.Invoke(verified);
             Directory.Delete(folder, true);
         }
+    }
+
+    static string ExpectedFileName(string fileName, DateTimeOffset timestamp, string pattern)
+    {
+        return fileName.Replace(".txt", timestamp.ToString(pattern) + ".txt");
     }
 }

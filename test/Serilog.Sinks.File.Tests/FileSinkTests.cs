@@ -1,5 +1,6 @@
 ﻿using System.IO.Compression;
 using System.Text;
+using Serilog.Core;
 using Xunit;
 using Serilog.Formatting.Json;
 using Serilog.Sinks.File.Tests.Support;
@@ -59,8 +60,10 @@ public class FileSinkTests
         var path = tmp.AllocateFilename("txt");
         var evt = Some.LogEvent(new string('n', maxBytes / eventsToLimit));
 
+        var listener = new CapturingLoggingFailureListener();
         using (var sink = new FileSink(path, new JsonFormatter(), maxBytes))
         {
+            ((ISetLoggingFailureListener)sink).SetFailureListener(listener);
             for (var i = 0; i < eventsToLimit * 2; i++)
             {
                 sink.Emit(evt);
@@ -70,6 +73,7 @@ public class FileSinkTests
         var size = new FileInfo(path).Length;
         Assert.True(size > maxBytes);
         Assert.True(size < maxBytes * 2);
+        Assert.NotEmpty(listener.FailedEvents);
     }
 
     [Fact]
