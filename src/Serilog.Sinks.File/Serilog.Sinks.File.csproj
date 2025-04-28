@@ -25,20 +25,20 @@
     <DefineConstants>$(DefineConstants);ATOMIC_APPEND;HRESULTS</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(TargetFrameworkIdentifier)' != '.NETFramework' ">
+  <PropertyGroup Condition=" '$(TargetFrameworkIdentifier)' == '.netstandard2.0'">
     <DefineConstants>$(DefineConstants);OS_MUTEX</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
-    <DefineConstants>$(DefineConstants);ENUMERABLE_MAXBY</DefineConstants>
+    <DefineConstants>$(DefineConstants);ENUMERABLE_MAXBY;OS_MUTEX</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
-    <DefineConstants>$(DefineConstants);ENUMERABLE_MAXBY</DefineConstants>
+    <DefineConstants>$(DefineConstants);ENUMERABLE_MAXBY;ATOMIC_APPEND</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net9.0' ">
-    <DefineConstants>$(DefineConstants);ENUMERABLE_MAXBY</DefineConstants>
+    <DefineConstants>$(DefineConstants);ENUMERABLE_MAXBY;ATOMIC_APPEND</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
