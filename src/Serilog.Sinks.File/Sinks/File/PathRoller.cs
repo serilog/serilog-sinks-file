@@ -26,15 +26,29 @@ sealed class PathRoller
     readonly string _filenamePrefix;
     readonly string _filenameSuffix;
     readonly Regex _filenameMatcher;
+    readonly bool _keepPathStatic;
+    readonly string? _customRollPattern;
+    private Func<DateTime?, string>? _customFormatFunc;
 
     readonly RollingInterval _interval;
     readonly string _periodFormat;
 
-    public PathRoller(string path, RollingInterval interval)
+    public PathRoller(string path, RollingInterval interval, bool keepPathStatic = false, Func<DateTime?,string>? customFormatFunc = null,
+        string? customRollPattern = null)
     {
         if (path == null) throw new ArgumentNullException(nameof(path));
         _interval = interval;
-        _periodFormat = interval.GetFormat();
+        _keepPathStatic = keepPathStatic;
+        _customRollPattern = customRollPattern;
+        _customFormatFunc = customFormatFunc;
+
+        if (_customRollPattern != null && _customFormatFunc != null)
+        {
+            ValidateCustomRollPattern(_customRollPattern);
+            ValidateCustomFormatFuncMatchesPattern(customFormatFunc, _customRollPattern);
+        }
+
+
 
         var pathDirectory = Path.GetDirectoryName(path);
         if (string.IsNullOrEmpty(pathDirectory))
@@ -43,30 +57,107 @@ sealed class PathRoller
         _directory = Path.GetFullPath(pathDirectory);
         _filenamePrefix = Path.GetFileNameWithoutExtension(path);
         _filenameSuffix = Path.GetExtension(path);
-        _filenameMatcher = new Regex(
+        if (_customRollPattern == null)
+        {
+            _periodFormat = interval.GetFormat();
+            _filenameMatcher = new Regex(
+                "^" +
+                Regex.Escape(_filenamePrefix) +
+                "(?<" + PeriodMatchGroup + ">\\d{" + _periodFormat.Length + "})" +
+                "(?<" + SequenceNumberMatchGroup + ">_[0-9]{3,}){0,1}" +
+                Regex.Escape(_filenameSuffix) +
+                "$",
+                RegexOptions.Compiled);
+        }
+        else
+        {
+            _periodFormat = _customRollPattern;
+            _filenameMatcher = new Regex(
             "^" +
-            Regex.Escape(_filenamePrefix) +
-            "(?<" + PeriodMatchGroup + ">\\d{" + _periodFormat.Length + "})" +
-            "(?<" + SequenceNumberMatchGroup + ">_[0-9]{3,}){0,1}" +
-            Regex.Escape(_filenameSuffix) +
-            "$",
+                Regex.Escape(_filenamePrefix) +
+                "(?<" + PeriodMatchGroup + ">" + _customRollPattern + ")" +
+                "(?<" + SequenceNumberMatchGroup + ">_[0-9]{3,}){0,1}" +
+                Regex.Escape(_filenameSuffix) +
+                "$",
             RegexOptions.Compiled);
+        }
 
         DirectorySearchPattern = $"{_filenamePrefix}*{_filenameSuffix}";
+    }
+
+    private void ValidateCustomFormatFuncMatchesPattern(Func<DateTime?, string>? customFormatFunc, string customRollPattern)
+    {
+        var temp = customFormatFunc?.Invoke(DateTime.Now);
+        if (temp == null)
+        {
+            throw new ArgumentException("Custom format function did not return a value.", nameof(customFormatFunc));
+        }
+
+        if (!Regex.IsMatch(temp, customRollPattern))
+        {
+            throw new ArgumentException($"Custom format function does not match the custom roll pattern of {customRollPattern}.", nameof(customFormatFunc));
+        }
+
     }
 
     public string LogFileDirectory => _directory;
 
     public string DirectorySearchPattern { get; }
 
+    public void GetLogFilePath(DateTime date, int? sequenceNumber, out string path, out string? copyPath)
+    {
+        var currentCheckpoint = GetCurrentCheckpoint(date);
+
+        var tok = GetToken(sequenceNumber, currentCheckpoint);
+
+        if (_keepPathStatic)
+        {
+            path = Path.Combine(_directory, _filenamePrefix + _filenameSuffix);
+
+            copyPath = Path.Combine(_directory, _filenamePrefix + tok + _filenameSuffix);
+            return;
+        }
+
+        copyPath = null;
+        GetLogFilePath(date, sequenceNumber, out path);
+    }
+
+    private string GetToken(int? sequenceNumber, DateTime? currentCheckpoint)
+    {
+        var tok = string.Empty;
+
+        if (_customFormatFunc == null)
+        {
+            tok = currentCheckpoint?.ToString(_periodFormat, CultureInfo.InvariantCulture) ?? "";
+        }
+        else if( _customFormatFunc != null && sequenceNumber == null && currentCheckpoint != null)
+        {
+            tok = _customFormatFunc.Invoke(currentCheckpoint);
+        }
+        else if( _customFormatFunc != null && sequenceNumber != null && currentCheckpoint == null)
+        {
+            tok = _customFormatFunc.Invoke(DateTime.Now);
+        }
+        else if (_customFormatFunc != null && sequenceNumber == null && currentCheckpoint == null)
+        {
+            return string.Empty;
+        }
+
+        if (sequenceNumber == null) return tok;
+        var path = Path.Combine(_directory, _filenamePrefix + tok + _filenameSuffix);
+        if (System.IO.File.Exists(path))
+        {
+            tok += "_" + sequenceNumber.Value.ToString("000", CultureInfo.InvariantCulture);
+        }
+
+        return tok;
+    }
+
     public void GetLogFilePath(DateTime date, int? sequenceNumber, out string path)
     {
         var currentCheckpoint = GetCurrentCheckpoint(date);
 
-        var tok = currentCheckpoint?.ToString(_periodFormat, CultureInfo.InvariantCulture) ?? "";
-
-        if (sequenceNumber != null)
-            tok += "_" + sequenceNumber.Value.ToString("000", CultureInfo.InvariantCulture);
+        var tok = GetToken(sequenceNumber, currentCheckpoint);
 
         path = Path.Combine(_directory, _filenamePrefix + tok + _filenameSuffix);
     }
@@ -110,4 +201,16 @@ sealed class PathRoller
     public DateTime? GetCurrentCheckpoint(DateTime instant) => _interval.GetCurrentCheckpoint(instant);
 
     public DateTime? GetNextCheckpoint(DateTime instant) => _interval.GetNextCheckpoint(instant);
+
+    private void ValidateCustomRollPattern(string pattern)
+    {
+        try
+        {
+            _ = new Regex(pattern);
+        }
+        catch (ArgumentException)
+        {
+            throw new ArgumentException("The custom roll pattern is not a valid regex pattern.", nameof(pattern));
+        }
+    }
 }

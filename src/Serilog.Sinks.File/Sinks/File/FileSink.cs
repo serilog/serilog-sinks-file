@@ -44,6 +44,7 @@ public sealed class FileSink : IFileSink, IDisposable, ISetLoggingFailureListene
     /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
     /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
     /// is false.</param>
+    /// <param name="keepPathStatic">Indicates that the path is static/persistent</param>
     /// <returns>Configuration object allowing method chaining.</returns>
     /// <remarks>This constructor preserves compatibility with early versions of the public API. New code should not depend on this type.</remarks>
     /// <exception cref="ArgumentNullException">When <paramref name="textFormatter"/> is <code>null</code></exception>
@@ -56,7 +57,7 @@ public sealed class FileSink : IFileSink, IDisposable, ISetLoggingFailureListene
     /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission to access the <paramref name="path"/></exception>
     /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
     [Obsolete("This type and constructor will be removed from the public API in a future version; use `WriteTo.File()` instead.")]
-    public FileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding? encoding = null, bool buffered = false)
+    public FileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding? encoding = null, bool buffered = false, bool keepPathStatic = false)
         : this(path, textFormatter, fileSizeLimitBytes, encoding, buffered, null)
     {
     }
@@ -68,7 +69,9 @@ public sealed class FileSink : IFileSink, IDisposable, ISetLoggingFailureListene
         long? fileSizeLimitBytes,
         Encoding? encoding,
         bool buffered,
-        FileLifecycleHooks? hooks)
+        FileLifecycleHooks? hooks,
+        bool keepPathStatic = false
+        )
     {
         if (path == null) throw new ArgumentNullException(nameof(path));
         if (fileSizeLimitBytes is < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
@@ -82,7 +85,16 @@ public sealed class FileSink : IFileSink, IDisposable, ISetLoggingFailureListene
             Directory.CreateDirectory(directory);
         }
 
-        Stream outputStream = _underlyingStream = System.IO.File.Open(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+        FileMode fileOpenMode;
+        if (System.IO.File.Exists(path) && keepPathStatic)
+        {
+            fileOpenMode = FileMode.Truncate;
+        }
+        else
+        {
+            fileOpenMode = FileMode.OpenOrCreate;
+        }
+        Stream outputStream = _underlyingStream = System.IO.File.Open(path, fileOpenMode, FileAccess.Write, FileShare.Read);
         outputStream.Seek(0, SeekOrigin.End);
 
         if (_fileSizeLimitBytes != null)
@@ -99,6 +111,7 @@ public sealed class FileSink : IFileSink, IDisposable, ISetLoggingFailureListene
             {
                 outputStream = hooks.OnFileOpened(path, outputStream, encoding) ??
                                throw new InvalidOperationException($"The file lifecycle hook `{nameof(FileLifecycleHooks.OnFileOpened)}(...)` returned `null`.");
+
             }
             catch
             {
