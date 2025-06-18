@@ -164,7 +164,7 @@ public static class FileLoggerConfigurationExtensions
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
     /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into
     /// text for the file. If control of regular text formatting is required, use the other
-    /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?)"/>
+    /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?, string?)"/>
     /// and specify the outputTemplate parameter instead.
     /// </param>
     /// <param name="path">Path to the file.</param>
@@ -236,6 +236,7 @@ public static class FileLoggerConfigurationExtensions
     /// Must be greater than or equal to <see cref="TimeSpan.Zero"/>.
     /// Ignored if <paramref see="rollingInterval"/> is <see cref="RollingInterval.Infinite"/>.
     /// The default is to retain files indefinitely.</param>
+    /// <param name="dateTimeFormatFileName"></param>
     /// <returns>Configuration object allowing method chaining.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
     /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
@@ -262,7 +263,8 @@ public static class FileLoggerConfigurationExtensions
         int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
         Encoding? encoding = null,
         FileLifecycleHooks? hooks = null,
-        TimeSpan? retainedFileTimeLimit = null)
+        TimeSpan? retainedFileTimeLimit = null,
+        string? dateTimeFormatFileName = null)
     {
         if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
         if (path == null) throw new ArgumentNullException(nameof(path));
@@ -271,7 +273,7 @@ public static class FileLoggerConfigurationExtensions
         var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
         return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes,
             levelSwitch, buffered, shared, flushToDiskInterval,
-            rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit, encoding, hooks, retainedFileTimeLimit);
+            rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit, encoding, hooks, retainedFileTimeLimit, dateTimeFormatFileName);
     }
 
     /// <summary>
@@ -280,7 +282,7 @@ public static class FileLoggerConfigurationExtensions
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
     /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into
     /// text for the file. If control of regular text formatting is required, use the other
-    /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?)"/>
+    /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?, string?)"/>
     /// and specify the outputTemplate parameter instead.
     /// </param>
     /// <param name="path">Path to the file.</param>
@@ -306,6 +308,7 @@ public static class FileLoggerConfigurationExtensions
     /// Must be greater than or equal to <see cref="TimeSpan.Zero"/>.
     /// Ignored if <paramref see="rollingInterval"/> is <see cref="RollingInterval.Infinite"/>.
     /// The default is to retain files indefinitely.</param>
+    /// <param name="dateTimeFormatFileName"></param>
     /// <returns>Configuration object allowing method chaining.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
     /// <exception cref="ArgumentNullException">When <paramref name="formatter"/> is <code>null</code></exception>
@@ -331,7 +334,8 @@ public static class FileLoggerConfigurationExtensions
         int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
         Encoding? encoding = null,
         FileLifecycleHooks? hooks = null,
-        TimeSpan? retainedFileTimeLimit = null)
+        TimeSpan? retainedFileTimeLimit = null,
+        string? dateTimeFormatFileName = null)
     {
         if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
         if (formatter == null) throw new ArgumentNullException(nameof(formatter));
@@ -339,7 +343,7 @@ public static class FileLoggerConfigurationExtensions
 
         return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, levelSwitch,
             buffered, false, shared, flushToDiskInterval, encoding, rollingInterval, rollOnFileSizeLimit,
-            retainedFileCountLimit, hooks, retainedFileTimeLimit);
+            retainedFileCountLimit, hooks, retainedFileTimeLimit, dateTimeFormatFileName);
     }
 
     /// <summary>
@@ -494,7 +498,7 @@ public static class FileLoggerConfigurationExtensions
         if (path == null) throw new ArgumentNullException(nameof(path));
 
         return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, null, levelSwitch, false, true,
-            false, null, encoding, RollingInterval.Infinite, false, null, hooks, null);
+            false, null, encoding, RollingInterval.Infinite, false, null, hooks, null, null);
     }
 
     static LoggerConfiguration ConfigureFile(
@@ -513,7 +517,8 @@ public static class FileLoggerConfigurationExtensions
         bool rollOnFileSizeLimit,
         int? retainedFileCountLimit,
         FileLifecycleHooks? hooks,
-        TimeSpan? retainedFileTimeLimit)
+        TimeSpan? retainedFileTimeLimit,
+        string? dateTimeFormatFileName)
     {
         if (addSink == null) throw new ArgumentNullException(nameof(addSink));
         if (formatter == null) throw new ArgumentNullException(nameof(formatter));
@@ -530,7 +535,7 @@ public static class FileLoggerConfigurationExtensions
         {
             if (rollOnFileSizeLimit || rollingInterval != RollingInterval.Infinite)
             {
-                sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks, retainedFileTimeLimit);
+                sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks, retainedFileTimeLimit, dateTimeFormatFileName);
             }
             else
             {
