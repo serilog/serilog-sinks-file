@@ -14,6 +14,7 @@
 
 using System.ComponentModel;
 using System.Text;
+using System.Text.RegularExpressions;
 using Serilog.Configuration;
 using Serilog.Core;
 using Serilog.Debugging;
@@ -33,6 +34,7 @@ public static class FileLoggerConfigurationExtensions
     const int DefaultRetainedFileCountLimit = 31; // A long month of logs
     const long DefaultFileSizeLimitBytes = 1L * 1024 * 1024 * 1024; // 1GB
     const string DefaultOutputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
+    private static readonly Regex ValidateDateTimeFormatFileName = new Regex("^(?<date>(?:y{4}[_-]?M{2}[_-]?d{2})|(?:d{2}[_-]?M{2}[_-]?y{4}))[_-]?(?<time>H{2}[_-]?m{2}[_-]?s{2})$", RegexOptions.Compiled); 
 
     /// <summary>
     /// Write log events to the specified file.
@@ -164,7 +166,7 @@ public static class FileLoggerConfigurationExtensions
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
     /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into
     /// text for the file. If control of regular text formatting is required, use the other
-    /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?)"/>
+    /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?, string?)"/>
     /// and specify the outputTemplate parameter instead.
     /// </param>
     /// <param name="path">Path to the file.</param>
@@ -236,6 +238,12 @@ public static class FileLoggerConfigurationExtensions
     /// Must be greater than or equal to <see cref="TimeSpan.Zero"/>.
     /// Ignored if <paramref see="rollingInterval"/> is <see cref="RollingInterval.Infinite"/>.
     /// The default is to retain files indefinitely.</param>
+    /// <param name="dateTimeFormatFileName">This parameter ensures that a timestamp with date and time is set at the end of the file name.<br/> It only works in conjunction with a set file size limit. A rolling interval must not be set.<br/>
+    /// Examples of valid formats:<br/>
+    /// yyyy-MM-dd_HH-mm-ss<br/>
+    /// yyyyMMddHHmmss<br/>
+    /// dd_MM_yyyy-HH_mm_ss<br/>
+    /// ... </param>
     /// <returns>Configuration object allowing method chaining.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
     /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
@@ -262,7 +270,8 @@ public static class FileLoggerConfigurationExtensions
         int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
         Encoding? encoding = null,
         FileLifecycleHooks? hooks = null,
-        TimeSpan? retainedFileTimeLimit = null)
+        TimeSpan? retainedFileTimeLimit = null,
+        string? dateTimeFormatFileName = null)
     {
         if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
         if (path == null) throw new ArgumentNullException(nameof(path));
@@ -271,7 +280,7 @@ public static class FileLoggerConfigurationExtensions
         var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
         return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes,
             levelSwitch, buffered, shared, flushToDiskInterval,
-            rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit, encoding, hooks, retainedFileTimeLimit);
+            rollingInterval, rollOnFileSizeLimit, retainedFileCountLimit, encoding, hooks, retainedFileTimeLimit, dateTimeFormatFileName);
     }
 
     /// <summary>
@@ -280,7 +289,7 @@ public static class FileLoggerConfigurationExtensions
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
     /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into
     /// text for the file. If control of regular text formatting is required, use the other
-    /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?)"/>
+    /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?, string?)"/>
     /// and specify the outputTemplate parameter instead.
     /// </param>
     /// <param name="path">Path to the file.</param>
@@ -306,6 +315,12 @@ public static class FileLoggerConfigurationExtensions
     /// Must be greater than or equal to <see cref="TimeSpan.Zero"/>.
     /// Ignored if <paramref see="rollingInterval"/> is <see cref="RollingInterval.Infinite"/>.
     /// The default is to retain files indefinitely.</param>
+    /// <param name="dateTimeFormatFileName">This parameter ensures that a timestamp with date and time is set at the end of the file name.<br/> It only works in conjunction with a set file size limit. A rolling interval must not be set.<br/>
+    /// Examples of valid formats:<br/>
+    /// yyyy-MM-dd_HH-mm-ss<br/>
+    /// yyyyMMddHHmmss<br/>
+    /// dd_MM_yyyy-HH_mm_ss<br/>
+    /// ... </param>
     /// <returns>Configuration object allowing method chaining.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
     /// <exception cref="ArgumentNullException">When <paramref name="formatter"/> is <code>null</code></exception>
@@ -331,7 +346,8 @@ public static class FileLoggerConfigurationExtensions
         int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
         Encoding? encoding = null,
         FileLifecycleHooks? hooks = null,
-        TimeSpan? retainedFileTimeLimit = null)
+        TimeSpan? retainedFileTimeLimit = null,
+        string? dateTimeFormatFileName = null)
     {
         if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
         if (formatter == null) throw new ArgumentNullException(nameof(formatter));
@@ -339,7 +355,7 @@ public static class FileLoggerConfigurationExtensions
 
         return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, levelSwitch,
             buffered, false, shared, flushToDiskInterval, encoding, rollingInterval, rollOnFileSizeLimit,
-            retainedFileCountLimit, hooks, retainedFileTimeLimit);
+            retainedFileCountLimit, hooks, retainedFileTimeLimit, dateTimeFormatFileName);
     }
 
     /// <summary>
@@ -494,7 +510,7 @@ public static class FileLoggerConfigurationExtensions
         if (path == null) throw new ArgumentNullException(nameof(path));
 
         return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, null, levelSwitch, false, true,
-            false, null, encoding, RollingInterval.Infinite, false, null, hooks, null);
+            false, null, encoding, RollingInterval.Infinite, false, null, hooks, null, null);
     }
 
     static LoggerConfiguration ConfigureFile(
@@ -513,7 +529,8 @@ public static class FileLoggerConfigurationExtensions
         bool rollOnFileSizeLimit,
         int? retainedFileCountLimit,
         FileLifecycleHooks? hooks,
-        TimeSpan? retainedFileTimeLimit)
+        TimeSpan? retainedFileTimeLimit,
+        string? dateTimeFormatFileName)
     {
         if (addSink == null) throw new ArgumentNullException(nameof(addSink));
         if (formatter == null) throw new ArgumentNullException(nameof(formatter));
@@ -523,6 +540,18 @@ public static class FileLoggerConfigurationExtensions
         if (retainedFileTimeLimit.HasValue && retainedFileTimeLimit < TimeSpan.Zero) throw new ArgumentException("Negative value provided; retained file time limit must be non-negative.", nameof(retainedFileTimeLimit));
         if (shared && buffered) throw new ArgumentException("Buffered writes are not available when file sharing is enabled.", nameof(buffered));
         if (shared && hooks != null) throw new ArgumentException("File lifecycle hooks are not currently supported for shared log files.", nameof(hooks));
+        if (dateTimeFormatFileName != null)
+        {
+            if(rollingInterval != RollingInterval.Infinite)
+                throw new ArgumentException($"Argument '{nameof(dateTimeFormatFileName)}' are not supported for rolling interval.");
+
+            if(fileSizeLimitBytes == null)
+                throw new ArgumentException($"Argument '{nameof(dateTimeFormatFileName)}' is not supported, if the argument '{nameof(fileSizeLimitBytes)}' is null.");
+
+            Match match = ValidateDateTimeFormatFileName.Match(dateTimeFormatFileName);
+            if(!match.Success || String.IsNullOrEmpty(match.Groups["date"].Value) || String.IsNullOrEmpty(match.Groups["time"].Value))
+                throw new ArgumentException($"Argument '{nameof(dateTimeFormatFileName)}' does not have the expected format.");
+        }
 
         ILogEventSink sink;
 
@@ -530,7 +559,7 @@ public static class FileLoggerConfigurationExtensions
         {
             if (rollOnFileSizeLimit || rollingInterval != RollingInterval.Infinite)
             {
-                sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks, retainedFileTimeLimit);
+                sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks, retainedFileTimeLimit, dateTimeFormatFileName);
             }
             else
             {
