@@ -66,6 +66,28 @@ Specifying both `rollingInterval` and `rollOnFileSizeLimit` will cause both poli
 
 Old files will be cleaned up as per `retainedFileCountLimit` - the default is 31.
 
+### File name with creation timestamp
+
+For the `fileSizeLimitBytes` parameter, the `dateTimeFormatFileName` parameter can also be set to obtain the creation timestamp in the file name.
+Example of possible formats:
+- yyyy-MM-dd_HH-mm-ss
+- yyyyMMddHHmmss
+- dd_MM_yyyy-HH_mm_ss
+- ...
+
+```csharp
+    .WriteTo.File("log-.txt", fileSizeLimitBytes: 1024, dateTimeFormatFileName: "yyyy-MM-dd_HH-mm-ss")
+```
+
+If the file limit occurs in the same second as the last file was created, a counter is appended.
+This will create a file set like:
+
+```
+log-2025-06-20_17-16-35.txt
+log-2025-06-20_20-43-16.txt
+log-2025-06-20_20-43-16_001.txt
+```
+
 ### XML `<appSettings>` configuration
 
 To use the file sink with the [Serilog.Settings.AppSettings](https://github.com/serilog/serilog-settings-appsettings) package, first install that package if you haven't already done so:

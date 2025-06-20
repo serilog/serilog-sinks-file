@@ -14,6 +14,7 @@
 
 using System.ComponentModel;
 using System.Text;
+using System.Text.RegularExpressions;
 using Serilog.Configuration;
 using Serilog.Core;
 using Serilog.Debugging;
@@ -33,6 +34,7 @@ public static class FileLoggerConfigurationExtensions
     const int DefaultRetainedFileCountLimit = 31; // A long month of logs
     const long DefaultFileSizeLimitBytes = 1L * 1024 * 1024 * 1024; // 1GB
     const string DefaultOutputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
+    private static readonly Regex ValidateDateTimeFormatFileName = new Regex("^(?<date>(?:y{4}[_-]?M{2}[_-]?d{2})|(?:d{2}[_-]?M{2}[_-]?y{4}))[_-]?(?<time>H{2}[_-]?m{2}[_-]?s{2})$", RegexOptions.Compiled); 
 
     /// <summary>
     /// Write log events to the specified file.
@@ -236,7 +238,12 @@ public static class FileLoggerConfigurationExtensions
     /// Must be greater than or equal to <see cref="TimeSpan.Zero"/>.
     /// Ignored if <paramref see="rollingInterval"/> is <see cref="RollingInterval.Infinite"/>.
     /// The default is to retain files indefinitely.</param>
-    /// <param name="dateTimeFormatFileName"></param>
+    /// <param name="dateTimeFormatFileName">This parameter ensures that a timestamp with date and time is set at the end of the file name.<br/> It only works in conjunction with a set file size limit. A rolling interval must not be set.<br/>
+    /// Examples of valid formats:<br/>
+    /// yyyy-MM-dd_HH-mm-ss<br/>
+    /// yyyyMMddHHmmss<br/>
+    /// dd_MM_yyyy-HH_mm_ss<br/>
+    /// ... </param>
     /// <returns>Configuration object allowing method chaining.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
     /// <exception cref="ArgumentNullException">When <paramref name="path"/> is <code>null</code></exception>
@@ -308,7 +315,12 @@ public static class FileLoggerConfigurationExtensions
     /// Must be greater than or equal to <see cref="TimeSpan.Zero"/>.
     /// Ignored if <paramref see="rollingInterval"/> is <see cref="RollingInterval.Infinite"/>.
     /// The default is to retain files indefinitely.</param>
-    /// <param name="dateTimeFormatFileName"></param>
+    /// <param name="dateTimeFormatFileName">This parameter ensures that a timestamp with date and time is set at the end of the file name.<br/> It only works in conjunction with a set file size limit. A rolling interval must not be set.<br/>
+    /// Examples of valid formats:<br/>
+    /// yyyy-MM-dd_HH-mm-ss<br/>
+    /// yyyyMMddHHmmss<br/>
+    /// dd_MM_yyyy-HH_mm_ss<br/>
+    /// ... </param>
     /// <returns>Configuration object allowing method chaining.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
     /// <exception cref="ArgumentNullException">When <paramref name="formatter"/> is <code>null</code></exception>
@@ -528,6 +540,18 @@ public static class FileLoggerConfigurationExtensions
         if (retainedFileTimeLimit.HasValue && retainedFileTimeLimit < TimeSpan.Zero) throw new ArgumentException("Negative value provided; retained file time limit must be non-negative.", nameof(retainedFileTimeLimit));
         if (shared && buffered) throw new ArgumentException("Buffered writes are not available when file sharing is enabled.", nameof(buffered));
         if (shared && hooks != null) throw new ArgumentException("File lifecycle hooks are not currently supported for shared log files.", nameof(hooks));
+        if (dateTimeFormatFileName != null)
+        {
+            if(rollingInterval != RollingInterval.Infinite)
+                throw new ArgumentException($"Argument '{nameof(dateTimeFormatFileName)}' are not supported for rolling interval.");
+
+            if(fileSizeLimitBytes == null)
+                throw new ArgumentException($"Argument '{nameof(dateTimeFormatFileName)}' is not supported, if the argument '{nameof(fileSizeLimitBytes)}' is null.");
+
+            Match match = ValidateDateTimeFormatFileName.Match(dateTimeFormatFileName);
+            if(!match.Success || String.IsNullOrEmpty(match.Groups["date"].Value) || String.IsNullOrEmpty(match.Groups["time"].Value))
+                throw new ArgumentException($"Argument '{nameof(dateTimeFormatFileName)}' does not have the expected format.");
+        }
 
         ILogEventSink sink;
 
