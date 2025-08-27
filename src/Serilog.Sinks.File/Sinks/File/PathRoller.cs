@@ -150,7 +150,7 @@ sealed class PathRoller
     private string GetPathForPattern(string intervalToken,
         string sequenceNumber)
     {
-        string newPrefix = _filenamePrefix.Replace(IntervalPathPatternMatcher, intervalToken).Replace(
+        var newPrefix = _filenamePrefix.Replace(IntervalPathPatternMatcher, intervalToken).Replace(
             SequenceNumberPathPatternMatcher,
             sequenceNumber);
 
