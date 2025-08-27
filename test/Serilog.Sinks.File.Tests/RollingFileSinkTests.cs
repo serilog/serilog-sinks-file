@@ -50,7 +50,8 @@ public class RollingFileSinkTests : IDisposable
     {
         // Doesn't test flushing, but ensures we haven't broken basic logging
         TestRollingEventSequence(
-            (pf, wt) => wt.File(pf, flushToDiskInterval: TimeSpan.FromMilliseconds(50), rollingInterval: RollingInterval.Day),
+            (pf, wt) => wt.File(pf, flushToDiskInterval: TimeSpan.FromMilliseconds(50),
+                rollingInterval: RollingInterval.Day),
             new[] { Some.InformationEvent() });
     }
 
@@ -71,7 +72,7 @@ public class RollingFileSinkTests : IDisposable
 
         TestRollingEventSequence(
             (pf, wt) => wt.File(pf, retainedFileCountLimit: 2, rollingInterval: RollingInterval.Day),
-            new[] {e1, e2, e3},
+            new[] { e1, e2, e3 },
             files =>
             {
                 Assert.Equal(3, files.Count);
@@ -90,7 +91,7 @@ public class RollingFileSinkTests : IDisposable
 
         TestRollingEventSequence(
             (pf, wt) => wt.File(pf, retainedFileTimeLimit: TimeSpan.FromDays(1), rollingInterval: RollingInterval.Day),
-            new[] {e1, e2, e3},
+            new[] { e1, e2, e3 },
             files =>
             {
                 Assert.Equal(3, files.Count);
@@ -108,8 +109,9 @@ public class RollingFileSinkTests : IDisposable
             e3 = Some.InformationEvent(e2.Timestamp.AddDays(5));
 
         TestRollingEventSequence(
-            (pf, wt) => wt.File(pf, retainedFileCountLimit: 2, retainedFileTimeLimit: TimeSpan.FromDays(1), rollingInterval: RollingInterval.Day),
-            new[] {e1, e2, e3},
+            (pf, wt) => wt.File(pf, retainedFileCountLimit: 2, retainedFileTimeLimit: TimeSpan.FromDays(1),
+                rollingInterval: RollingInterval.Day),
+            new[] { e1, e2, e3 },
             files =>
             {
                 Assert.Equal(3, files.Count);
@@ -127,8 +129,9 @@ public class RollingFileSinkTests : IDisposable
             e3 = Some.InformationEvent(e2.Timestamp.AddDays(5));
 
         TestRollingEventSequence(
-            (pf, wt) => wt.File(pf, retainedFileCountLimit: 2, retainedFileTimeLimit: TimeSpan.FromDays(10), rollingInterval: RollingInterval.Day),
-            new[] {e1, e2, e3},
+            (pf, wt) => wt.File(pf, retainedFileCountLimit: 2, retainedFileTimeLimit: TimeSpan.FromDays(10),
+                rollingInterval: RollingInterval.Day),
+            new[] { e1, e2, e3 },
             files =>
             {
                 Assert.Equal(3, files.Count);
@@ -143,12 +146,13 @@ public class RollingFileSinkTests : IDisposable
     {
         const string archiveDirectory = "OldLogs";
         LogEvent e1 = Some.InformationEvent(),
-                e2 = Some.InformationEvent(e1.Timestamp.AddDays(1)),
-                e3 = Some.InformationEvent(e2.Timestamp.AddDays(5));
+            e2 = Some.InformationEvent(e1.Timestamp.AddDays(1)),
+            e3 = Some.InformationEvent(e2.Timestamp.AddDays(5));
 
         TestRollingEventSequence(
-            (pf, wt) => wt.File(pf, retainedFileCountLimit: 2, rollingInterval: RollingInterval.Day, hooks: new ArchiveOldLogsHook(archiveDirectory)),
-            new[] {e1, e2, e3},
+            (pf, wt) => wt.File(pf, retainedFileCountLimit: 2, rollingInterval: RollingInterval.Day,
+                hooks: new ArchiveOldLogsHook(archiveDirectory)),
+            new[] { e1, e2, e3 },
             files =>
             {
                 Assert.Equal(3, files.Count);
@@ -165,7 +169,8 @@ public class RollingFileSinkTests : IDisposable
         var fileName = Some.String() + ".txt";
         using var temp = new TempFolder();
         using var log = new LoggerConfiguration()
-            .WriteTo.File(Path.Combine(temp.Path, fileName), rollOnFileSizeLimit: true, fileSizeLimitBytes: 1, rollingInterval: RollingInterval.Minute, hooks: new FailOpeningHook(true, 2, 3, 4))
+            .WriteTo.File(Path.Combine(temp.Path, fileName), rollOnFileSizeLimit: true, fileSizeLimitBytes: 1,
+                rollingInterval: RollingInterval.Minute, hooks: new FailOpeningHook(true, 2, 3, 4))
             .CreateLogger();
         LogEvent e1 = Some.InformationEvent(new DateTime(2012, 10, 28)),
             e2 = Some.InformationEvent(e1.Timestamp.AddSeconds(1)),
@@ -203,7 +208,8 @@ public class RollingFileSinkTests : IDisposable
         var fileName = Some.String() + ".txt";
         using var temp = new TempFolder();
         using var log = new LoggerConfiguration()
-            .WriteTo.File(Path.Combine(temp.Path, fileName), rollOnFileSizeLimit: true, fileSizeLimitBytes: 1, rollingInterval: RollingInterval.Hour, hooks: new FailOpeningHook(true, 2, 3, 4))
+            .WriteTo.File(Path.Combine(temp.Path, fileName), rollOnFileSizeLimit: true, fileSizeLimitBytes: 1,
+                rollingInterval: RollingInterval.Hour, hooks: new FailOpeningHook(true, 2, 3, 4))
             .CreateLogger();
         LogEvent e1 = Some.InformationEvent(new DateTime(2012, 10, 28)),
             e2 = Some.InformationEvent(e1.Timestamp.AddSeconds(1)),
@@ -240,7 +246,8 @@ public class RollingFileSinkTests : IDisposable
         var fileName = Some.String() + ".txt";
         using var temp = new TempFolder();
         using var log = new LoggerConfiguration()
-            .WriteTo.File(Path.Combine(temp.Path, fileName), rollOnFileSizeLimit: true, fileSizeLimitBytes: 1, rollingInterval: RollingInterval.Hour, hooks: new FailOpeningHook(false, 2))
+            .WriteTo.File(Path.Combine(temp.Path, fileName), rollOnFileSizeLimit: true, fileSizeLimitBytes: 1,
+                rollingInterval: RollingInterval.Hour, hooks: new FailOpeningHook(false, 2))
             .CreateLogger();
         LogEvent e1 = Some.InformationEvent(new DateTime(2012, 10, 28)),
             e2 = Some.InformationEvent(e1.Timestamp.AddSeconds(1)),
@@ -281,7 +288,9 @@ public class RollingFileSinkTests : IDisposable
             e2 = Some.InformationEvent(e1.Timestamp),
             e3 = Some.InformationEvent(e1.Timestamp);
 
-        log.Write(e1); log.Write(e2); log.Write(e3);
+        log.Write(e1);
+        log.Write(e2);
+        log.Write(e3);
 
         var files = Directory.GetFiles(temp.Path)
             .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
@@ -309,10 +318,10 @@ public class RollingFileSinkTests : IDisposable
         };
 
         using (var log = new LoggerConfiguration()
-            .WriteTo.File(Path.Combine(temp.Path, fileName), rollOnFileSizeLimit: true, fileSizeLimitBytes: 1, hooks: gzipWrapper)
-            .CreateLogger())
+                   .WriteTo.File(Path.Combine(temp.Path, fileName), rollOnFileSizeLimit: true, fileSizeLimitBytes: 1,
+                       hooks: gzipWrapper)
+                   .CreateLogger())
         {
-
             foreach (var logEvent in logEvents)
             {
                 log.Write(logEvent);
@@ -371,6 +380,28 @@ public class RollingFileSinkTests : IDisposable
         {
             log?.Dispose();
             Directory.Delete(temp, true);
+        }
+    }
+
+
+    [Fact]
+    public void IfTheLogPathContainsPlaceholdersTheyWillBeReplacedWithActualValues()
+    {
+        var path = "logs/my_log_file_{interval}_{sequence_number}_formatted";
+        var expectedPath = $"logs/my_log_file_{DateTimeOffset.Now:yyyyMMddHH}__formatted";
+        Logger? log = null;
+        try
+        {
+            log = new LoggerConfiguration().WriteTo.File(path,rollingInterval:RollingInterval.Hour).CreateLogger();
+            log.Write(Some.InformationEvent());
+            log.Write(Some.LogEvent(DateTimeOffset.Now,LogEventLevel.Warning));
+            log.Warning(expectedPath);
+            Assert.True(System.IO.File.Exists(expectedPath));
+        }
+        finally
+        {
+            log?.Dispose();
+            System.IO.File.Delete(expectedPath);
         }
     }
 
