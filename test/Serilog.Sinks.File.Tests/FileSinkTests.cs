@@ -1,6 +1,7 @@
-﻿using System.IO.Compression;
+using System.IO.Compression;
 using System.Text;
 using Serilog.Core;
+using Serilog.Events;
 using Xunit;
 using Serilog.Formatting.Json;
 using Serilog.Sinks.File.Tests.Support;
@@ -146,7 +147,7 @@ public class FileSinkTests
         var path = tmp.AllocateFilename("txt");
         var evt = Some.LogEvent("Hello, world!");
 
-        using (var sink = new FileSink(path, new JsonFormatter(), null, null, false, gzipWrapper))
+        using (var sink = new FileSink(path, new JsonFormatter(), null, null, false, gzipWrapper, LevelAlias.Off))
         {
             sink.Emit(evt);
             sink.Emit(evt);
@@ -178,12 +179,12 @@ public class FileSinkTests
         var headerWriter = new FileHeaderWriter("This is the file header");
 
         var path = tmp.AllocateFilename("txt");
-        using (new FileSink(path, new JsonFormatter(), null, new UTF8Encoding(false), false, headerWriter))
+        using (new FileSink(path, new JsonFormatter(), null, new UTF8Encoding(false), false, headerWriter, LevelAlias.Off))
         {
             // Open and write header
         }
 
-        using (var sink = new FileSink(path, new JsonFormatter(), null, new UTF8Encoding(false), false, headerWriter))
+        using (var sink = new FileSink(path, new JsonFormatter(), null, new UTF8Encoding(false), false, headerWriter, LevelAlias.Off))
         {
             // Length check should prevent duplicate header here
             sink.Emit(Some.LogEvent());
@@ -203,7 +204,7 @@ public class FileSinkTests
         var capturePath = new CaptureFilePathHook();
 
         var path = tmp.AllocateFilename("txt");
-        using (new FileSink(path, new JsonFormatter(), null, new UTF8Encoding(false), false, capturePath))
+        using (new FileSink(path, new JsonFormatter(), null, new UTF8Encoding(false), false, capturePath, LevelAlias.Off))
         {
             // Open and capture the log file path
         }
@@ -223,7 +224,7 @@ public class FileSinkTests
             sink.Emit(Some.LogEvent());
         }
 
-        using (var sink = new FileSink(path, new JsonFormatter(), fileSizeLimitBytes: null, encoding: new UTF8Encoding(false), buffered: false, hooks: emptyFileHook))
+        using (var sink = new FileSink(path, new JsonFormatter(), fileSizeLimitBytes: null, encoding: new UTF8Encoding(false), buffered: false, hooks: emptyFileHook, LevelAlias.Off))
         {
             // Hook will clear the contents of the file before emitting the log events
             sink.Emit(Some.LogEvent());
@@ -233,6 +234,83 @@ public class FileSinkTests
 
         Assert.Single(lines);
         Assert.Equal('{', lines[0][0]);
+    }
+
+    [Fact]
+    public void WhenFlushAtMinimumLevelIsNotReachedLineIsNotFlushed()
+    {
+        using var tmp = TempFolder.ForCaller();
+        var path = tmp.AllocateFilename("txt");
+        var formatter = new JsonFormatter();
+
+        using (var sink = new FileSink(path, formatter, null, null, true, null, LogEventLevel.Fatal))
+        {
+            sink.Emit(Some.LogEvent(level: LogEventLevel.Information));
+
+            var lines = ReadAllLinesShared(path);
+            Assert.Empty(lines);
+        }
+
+        var savedLines = System.IO.File.ReadAllLines(path);
+        Assert.Single(savedLines);
+    }
+
+    [Fact]
+    public void WhenFlushAtMinimumLevelIsReachedLineIsFlushed()
+    {
+        using var tmp = TempFolder.ForCaller();
+        var path = tmp.AllocateFilename("txt");
+        var formatter = new JsonFormatter();
+
+        using (var sink = new FileSink(path, formatter, null, null, true, null, LogEventLevel.Fatal))
+        {
+            sink.Emit(Some.LogEvent(level: LogEventLevel.Fatal));
+
+            var lines = ReadAllLinesShared(path);
+            Assert.Single(lines);
+        }
+
+        var savedLines = System.IO.File.ReadAllLines(path);
+        Assert.Single(savedLines);
+    }
+
+    [Fact]
+    public void WhenFlushAtMinimumLevelIsOffLineIsNotFlushed()
+    {
+        using var tmp = TempFolder.ForCaller();
+        var path = tmp.AllocateFilename("txt");
+        var formatter = new JsonFormatter();
+
+        using (var sink = new FileSink(path, formatter, null, null, true, null, LevelAlias.Off))
+        {
+            sink.Emit(Some.LogEvent(level: LogEventLevel.Fatal));
+
+            var lines = ReadAllLinesShared(path);
+            Assert.Empty(lines);
+        }
+
+        var savedLines = System.IO.File.ReadAllLines(path);
+        Assert.Single(savedLines);
+    }
+
+    [Fact]
+    public void WhenFlushAtMinimumLevelIsReachedMultipleLinesAreFlushed()
+    {
+        using var tmp = TempFolder.ForCaller();
+        var path = tmp.AllocateFilename("txt");
+        var formatter = new JsonFormatter();
+
+        using (var sink = new FileSink(path, formatter, null, null, true, null, LogEventLevel.Error))
+        {
+            sink.Emit(Some.LogEvent(level: LogEventLevel.Information));
+            sink.Emit(Some.LogEvent(level: LogEventLevel.Fatal));
+
+            var lines = ReadAllLinesShared(path);
+            Assert.Equal(2, lines.Length);
+        }
+
+        var savedLines = System.IO.File.ReadAllLines(path);
+        Assert.Equal(2, savedLines.Length);
     }
 
     static void WriteTwoEventsAndCheckOutputFileLength(long? maxBytes, Encoding encoding)
@@ -259,5 +337,22 @@ public class FileSinkTests
 
         size = new FileInfo(path).Length;
         Assert.Equal(encoding.GetPreamble().Length + eventOuputLength * 2, size);
+    }
+
+    private static string[] ReadAllLinesShared(string path)
+    {
+        // ReadAllLines cannot be used here, as it can't read files even if they are opened with FileShare.Read
+        using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var reader = new StreamReader(fs);
+
+        string? line;
+        List<string> lines = [];
+
+        while ((line = reader.ReadLine()) != null)
+        {
+            lines.Add(line);
+        }
+
+        return [.. lines];
     }
 }

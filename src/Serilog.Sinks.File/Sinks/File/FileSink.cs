@@ -32,6 +32,7 @@ public sealed class FileSink : IFileSink, IDisposable, ISetLoggingFailureListene
     readonly bool _buffered;
     readonly object _syncRoot = new();
     readonly WriteCountingStream? _countingStreamWrapper;
+    readonly LogEventLevel _flushAtMinimumLevel;
 
     ILoggingFailureListener _failureListener = SelfLog.FailureListener;
 
@@ -57,7 +58,7 @@ public sealed class FileSink : IFileSink, IDisposable, ISetLoggingFailureListene
     /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
     [Obsolete("This type and constructor will be removed from the public API in a future version; use `WriteTo.File()` instead.")]
     public FileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding? encoding = null, bool buffered = false)
-        : this(path, textFormatter, fileSizeLimitBytes, encoding, buffered, null)
+        : this(path, textFormatter, fileSizeLimitBytes, encoding, buffered, null, LevelAlias.Off)
     {
     }
 
@@ -68,13 +69,15 @@ public sealed class FileSink : IFileSink, IDisposable, ISetLoggingFailureListene
         long? fileSizeLimitBytes,
         Encoding? encoding,
         bool buffered,
-        FileLifecycleHooks? hooks)
+        FileLifecycleHooks? hooks,
+        LogEventLevel flushAtMinimumLevel)
     {
         if (path == null) throw new ArgumentNullException(nameof(path));
         if (fileSizeLimitBytes is < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
         _textFormatter = textFormatter ?? throw new ArgumentNullException(nameof(textFormatter));
         _fileSizeLimitBytes = fileSizeLimitBytes;
         _buffered = buffered;
+        _flushAtMinimumLevel = flushAtMinimumLevel;
 
         var directory = Path.GetDirectoryName(path);
         if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
@@ -124,6 +127,8 @@ public sealed class FileSink : IFileSink, IDisposable, ISetLoggingFailureListene
             _textFormatter.Format(logEvent, _output);
             if (!_buffered)
                 _output.Flush();
+            else if (logEvent.Level >= _flushAtMinimumLevel)
+                FlushToDisk();
 
             return true;
         }

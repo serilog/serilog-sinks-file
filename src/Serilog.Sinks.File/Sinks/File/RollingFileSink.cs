@@ -27,6 +27,7 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
     readonly long? _fileSizeLimitBytes;
     readonly int? _retainedFileCountLimit;
     readonly TimeSpan? _retainedFileTimeLimit;
+    readonly LogEventLevel _flushAtMinimumLevel;
     readonly Encoding? _encoding;
     readonly bool _buffered;
     readonly bool _shared;
@@ -51,7 +52,8 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
                           RollingInterval rollingInterval,
                           bool rollOnFileSizeLimit,
                           FileLifecycleHooks? hooks,
-                          TimeSpan? retainedFileTimeLimit)
+                          TimeSpan? retainedFileTimeLimit,
+                          LogEventLevel flushAtMinimumLevel)
     {
         if (path == null) throw new ArgumentNullException(nameof(path));
         if (fileSizeLimitBytes is < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
@@ -63,6 +65,7 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
         _fileSizeLimitBytes = fileSizeLimitBytes;
         _retainedFileCountLimit = retainedFileCountLimit;
         _retainedFileTimeLimit = retainedFileTimeLimit;
+        _flushAtMinimumLevel = flushAtMinimumLevel;
         _encoding = encoding;
         _buffered = buffered;
         _shared = shared;
@@ -176,7 +179,7 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
                         new SharedFileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding)
                         :
 #pragma warning restore 618
-                        new FileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding, _buffered, _hooks);
+                        new FileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding, _buffered, _hooks, _flushAtMinimumLevel);
 
                     _currentFileSequence = sequence;
 

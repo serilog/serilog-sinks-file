@@ -306,6 +306,7 @@ public static class FileLoggerConfigurationExtensions
     /// Must be greater than or equal to <see cref="TimeSpan.Zero"/>.
     /// Ignored if <paramref see="rollingInterval"/> is <see cref="RollingInterval.Infinite"/>.
     /// The default is to retain files indefinitely.</param>
+    /// <param name="flushAtMinimumLevel">The minimum level for events to flush the sink. The default is <see cref="LevelAlias.Off"/>.</param>
     /// <returns>Configuration object allowing method chaining.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="sinkConfiguration"/> is <code>null</code></exception>
     /// <exception cref="ArgumentNullException">When <paramref name="formatter"/> is <code>null</code></exception>
@@ -331,7 +332,8 @@ public static class FileLoggerConfigurationExtensions
         int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
         Encoding? encoding = null,
         FileLifecycleHooks? hooks = null,
-        TimeSpan? retainedFileTimeLimit = null)
+        TimeSpan? retainedFileTimeLimit = null,
+        LogEventLevel flushAtMinimumLevel = LevelAlias.Off)
     {
         if (sinkConfiguration == null) throw new ArgumentNullException(nameof(sinkConfiguration));
         if (formatter == null) throw new ArgumentNullException(nameof(formatter));
@@ -339,7 +341,7 @@ public static class FileLoggerConfigurationExtensions
 
         return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, levelSwitch,
             buffered, false, shared, flushToDiskInterval, encoding, rollingInterval, rollOnFileSizeLimit,
-            retainedFileCountLimit, hooks, retainedFileTimeLimit);
+            retainedFileCountLimit, hooks, retainedFileTimeLimit, flushAtMinimumLevel);
     }
 
     /// <summary>
@@ -494,7 +496,7 @@ public static class FileLoggerConfigurationExtensions
         if (path == null) throw new ArgumentNullException(nameof(path));
 
         return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, null, levelSwitch, false, true,
-            false, null, encoding, RollingInterval.Infinite, false, null, hooks, null);
+            false, null, encoding, RollingInterval.Infinite, false, null, hooks, null, LevelAlias.Off);
     }
 
     static LoggerConfiguration ConfigureFile(
@@ -513,7 +515,8 @@ public static class FileLoggerConfigurationExtensions
         bool rollOnFileSizeLimit,
         int? retainedFileCountLimit,
         FileLifecycleHooks? hooks,
-        TimeSpan? retainedFileTimeLimit)
+        TimeSpan? retainedFileTimeLimit,
+        LogEventLevel flushAtMinimumLevel)
     {
         if (addSink == null) throw new ArgumentNullException(nameof(addSink));
         if (formatter == null) throw new ArgumentNullException(nameof(formatter));
@@ -530,7 +533,7 @@ public static class FileLoggerConfigurationExtensions
         {
             if (rollOnFileSizeLimit || rollingInterval != RollingInterval.Infinite)
             {
-                sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks, retainedFileTimeLimit);
+                sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks, retainedFileTimeLimit, flushAtMinimumLevel);
             }
             else
             {
@@ -542,7 +545,7 @@ public static class FileLoggerConfigurationExtensions
                 }
                 else
                 {
-                    sink = new FileSink(path, formatter, fileSizeLimitBytes, encoding, buffered, hooks);
+                    sink = new FileSink(path, formatter, fileSizeLimitBytes, encoding, buffered, hooks, flushAtMinimumLevel);
                 }
 
             }
