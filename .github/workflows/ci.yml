@@ -39,3 +39,20 @@ jobs:
         shell: pwsh
         run: |
           ./Build.ps1
+
+  linux_test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - name: Build and Test
+        env:
+          DOTNET_CLI_TELEMETRY_OPTOUT: true
+        shell: pwsh
+        run: |
+          ./Build.ps1
