@@ -49,8 +49,8 @@ public static class FileLoggerConfigurationExtensions
     /// <param name="fileSizeLimitBytes">The approximate maximum size, in bytes, to which a log file will be allowed to grow.
     /// For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit
     /// will be written in full even if it exceeds the limit.</param>
-    /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
-    /// is false.</param>
+    /// <param name="buffered">Indicates if flushing of non-fatal <see cref="LogEventLevel.Fatal"/> events to the output file
+    /// can be buffered or not. The default is false.</param>
     /// <param name="shared">Allow the log file to be shared by multiple processes. The default is false.</param>
     /// <param name="flushToDiskInterval">If provided, a full disk flush will be performed periodically at the specified interval.</param>
     /// <returns>Configuration object allowing method chaining.</returns>
@@ -89,8 +89,8 @@ public static class FileLoggerConfigurationExtensions
     /// <param name="fileSizeLimitBytes">The approximate maximum size, in bytes, to which a log file will be allowed to grow.
     /// For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit
     /// will be written in full even if it exceeds the limit.</param>
-    /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
-    /// is false.</param>
+    /// <param name="buffered">Indicates if flushing of non-fatal <see cref="LogEventLevel.Fatal"/> events to the output file
+    /// can be buffered or not. The default is false.</param>
     /// <param name="shared">Allow the log file to be shared by multiple processes. The default is false.</param>
     /// <param name="flushToDiskInterval">If provided, a full disk flush will be performed periodically at the specified interval.</param>
     /// <returns>Configuration object allowing method chaining.</returns>
@@ -126,8 +126,8 @@ public static class FileLoggerConfigurationExtensions
     /// <param name="fileSizeLimitBytes">The approximate maximum size, in bytes, to which a log file will be allowed to grow.
     /// For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit
     /// will be written in full even if it exceeds the limit.</param>
-    /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
-    /// is false.</param>
+    /// <param name="buffered">Indicates if flushing of non-fatal <see cref="LogEventLevel.Fatal"/> events to the output file
+    /// can be buffered or not. The default is false.</param>
     /// <param name="shared">Allow the log file to be shared by multiple processes. The default is false.</param>
     /// <param name="flushToDiskInterval">If provided, a full disk flush will be performed periodically at the specified interval.</param>
     /// <param name="rollingInterval">The interval at which logging will roll over to a new file.</param>
@@ -175,8 +175,8 @@ public static class FileLoggerConfigurationExtensions
     /// <param name="fileSizeLimitBytes">The approximate maximum size, in bytes, to which a log file will be allowed to grow.
     /// For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit
     /// will be written in full even if it exceeds the limit.</param>
-    /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
-    /// is false.</param>
+    /// <param name="buffered">Indicates if flushing of non-fatal <see cref="LogEventLevel.Fatal"/> events to the output file
+    /// can be buffered or not. The default is false.</param>
     /// <param name="shared">Allow the log file to be shared by multiple processes. The default is false.</param>
     /// <param name="flushToDiskInterval">If provided, a full disk flush will be performed periodically at the specified interval.</param>
     /// <param name="rollingInterval">The interval at which logging will roll over to a new file.</param>
@@ -221,8 +221,8 @@ public static class FileLoggerConfigurationExtensions
     /// <param name="fileSizeLimitBytes">The approximate maximum size, in bytes, to which a log file will be allowed to grow.
     /// For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit
     /// will be written in full even if it exceeds the limit.</param>
-    /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
-    /// is false.</param>
+    /// <param name="buffered">Indicates if flushing of non-fatal <see cref="LogEventLevel.Fatal"/> events to the output file
+    /// can be buffered or not. The default is false.</param>
     /// <param name="shared">Allow the log file to be shared by multiple processes. The default is false.</param>
     /// <param name="flushToDiskInterval">If provided, a full disk flush will be performed periodically at the specified interval.</param>
     /// <param name="rollingInterval">The interval at which logging will roll over to a new file.</param>
@@ -291,8 +291,8 @@ public static class FileLoggerConfigurationExtensions
     /// <param name="fileSizeLimitBytes">The approximate maximum size, in bytes, to which a log file will be allowed to grow.
     /// For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit
     /// will be written in full even if it exceeds the limit.</param>
-    /// <param name="buffered">Indicates if flushing to the output file can be buffered or not. The default
-    /// is false.</param>
+    /// <param name="buffered">Indicates if flushing of non-fatal <see cref="LogEventLevel.Fatal"/> events to the output file
+    /// can be buffered or not. The default is false.</param>
     /// <param name="shared">Allow the log file to be shared by multiple processes. The default is false.</param>
     /// <param name="flushToDiskInterval">If provided, a full disk flush will be performed periodically at the specified interval.</param>
     /// <param name="rollingInterval">The interval at which logging will roll over to a new file.</param>

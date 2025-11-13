@@ -122,7 +122,10 @@ public sealed class FileSink : IFileSink, IDisposable, ISetLoggingFailureListene
             }
 
             _textFormatter.Format(logEvent, _output);
-            if (!_buffered)
+
+            if (logEvent.Level == LogEventLevel.Fatal)
+                FlushToDisk();
+            else if (!_buffered)
                 _output.Flush();
 
             return true;

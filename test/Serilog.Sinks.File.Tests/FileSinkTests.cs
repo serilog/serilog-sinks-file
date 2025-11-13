@@ -1,10 +1,11 @@
-﻿using System.IO.Compression;
-using System.Text;
 using Serilog.Core;
-using Xunit;
+using Serilog.Events;
 using Serilog.Formatting.Json;
 using Serilog.Sinks.File.Tests.Support;
 using Serilog.Tests.Support;
+using System.IO.Compression;
+using System.Text;
+using Xunit;
 
 #pragma warning disable 618
 
@@ -235,6 +236,28 @@ public class FileSinkTests
         Assert.Equal('{', lines[0][0]);
     }
 
+    [Fact]
+    public void WhenBufferedFatalEventFlushesAllPendingEvents()
+    {
+        using var tmp = TempFolder.ForCaller();
+        var path = tmp.AllocateFilename("txt");
+        var formatter = new JsonFormatter();
+
+        using (var sink = new FileSink(path, formatter, null, null, true))
+        {
+            sink.Emit(Some.LogEvent(level: LogEventLevel.Information));
+            sink.Emit(Some.LogEvent(level: LogEventLevel.Warning));
+
+            var lines = ReadAllLinesShared(path);
+            Assert.Empty(lines);
+
+            sink.Emit(Some.LogEvent(level: LogEventLevel.Fatal));
+
+            lines = ReadAllLinesShared(path);
+            Assert.Equal(3, lines.Length);
+        }
+    }
+
     static void WriteTwoEventsAndCheckOutputFileLength(long? maxBytes, Encoding encoding)
     {
         using var tmp = TempFolder.ForCaller();
@@ -259,5 +282,22 @@ public class FileSinkTests
 
         size = new FileInfo(path).Length;
         Assert.Equal(encoding.GetPreamble().Length + eventOuputLength * 2, size);
+    }
+
+    private static string[] ReadAllLinesShared(string path)
+    {
+        // ReadAllLines cannot be used here, as it can't read files even if they are opened with FileShare.Read
+        using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var reader = new StreamReader(fs);
+
+        string? line;
+        List<string> lines = [];
+
+        while ((line = reader.ReadLine()) != null)
+        {
+            lines.Add(line);
+        }
+
+        return [.. lines];
     }
 }
