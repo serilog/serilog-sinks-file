@@ -30,9 +30,9 @@ namespace Serilog;
 /// <summary>Extends <see cref="LoggerConfiguration"/> with methods to add file sinks.</summary>
 public static class FileLoggerConfigurationExtensions
 {
-    const int DefaultRetainedFileCountLimit = 31; // A long month of logs
-    const long DefaultFileSizeLimitBytes = 1L * 1024 * 1024 * 1024; // 1GB
-    const string DefaultOutputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
+    public const int DefaultRetainedFileCountLimit = 31; // A long month of logs
+    public const long DefaultFileSizeLimitBytes = 1L * 1024 * 1024 * 1024; // 1GB
+    public const string DefaultOutputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}";
 
     /// <summary>
     /// Write log events to the specified file.
