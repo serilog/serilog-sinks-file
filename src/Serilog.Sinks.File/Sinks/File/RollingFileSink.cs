@@ -70,6 +70,8 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
         _hooks = hooks;
     }
 
+    public bool AlwaysAddSequenceNumber { get; set; }
+
     public void Emit(LogEvent logEvent)
     {
         if (logEvent == null) throw new ArgumentNullException(nameof(logEvent));
@@ -157,6 +159,13 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
 #endif
 
             var sequence = latestForThisCheckpoint?.SequenceNumber;
+
+            if (minSequence == null && AlwaysAddSequenceNumber)
+            {
+                // Always generate a sequence number
+                minSequence = (sequence ?? 0) + 1;
+            }
+
             if (minSequence != null)
             {
                 if (sequence == null || sequence.Value < minSequence.Value)
