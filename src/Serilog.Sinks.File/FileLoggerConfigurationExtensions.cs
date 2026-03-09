@@ -38,7 +38,8 @@ public static class FileLoggerConfigurationExtensions
     /// Write log events to the specified file.
     /// </summary>
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
-    /// <param name="path">Path to the file.</param>
+    /// <param name="path">Path to the file. Absolute paths are recommended. Relative paths will be resolved
+    /// under the current working directory at runtime (i.e. <c>%WINDIR%\System32</c> for Windows services).</param>
     /// <param name="restrictedToMinimumLevel">The minimum level for
     /// events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
     /// <param name="levelSwitch">A switch allowing the pass-through minimum level
@@ -81,7 +82,8 @@ public static class FileLoggerConfigurationExtensions
     /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?)"/>
     /// and specify the outputTemplate parameter instead.
     /// </param>
-    /// <param name="path">Path to the file.</param>
+    /// <param name="path">Path to the file. Absolute paths are recommended. Relative paths will be resolved
+    /// under the current working directory at runtime (i.e. <c>%WINDIR%\System32</c> for Windows services).</param>
     /// <param name="restrictedToMinimumLevel">The minimum level for
     /// events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
     /// <param name="levelSwitch">A switch allowing the pass-through minimum level
@@ -115,7 +117,8 @@ public static class FileLoggerConfigurationExtensions
     /// Write log events to the specified file.
     /// </summary>
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
-    /// <param name="path">Path to the file.</param>
+    /// <param name="path">Path to the file. Absolute paths are recommended. Relative paths will be resolved
+    /// under the current working directory at runtime (i.e. <c>%WINDIR%\System32</c> for Windows services).</param>
     /// <param name="restrictedToMinimumLevel">The minimum level for
     /// events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
     /// <param name="levelSwitch">A switch allowing the pass-through minimum level
@@ -167,7 +170,8 @@ public static class FileLoggerConfigurationExtensions
     /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?)"/>
     /// and specify the outputTemplate parameter instead.
     /// </param>
-    /// <param name="path">Path to the file.</param>
+    /// <param name="path">Path to the file. Absolute paths are recommended. Relative paths will be resolved
+    /// under the current working directory at runtime (i.e. <c>%WINDIR%\System32</c> for Windows services).</param>
     /// <param name="restrictedToMinimumLevel">The minimum level for
     /// events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
     /// <param name="levelSwitch">A switch allowing the pass-through minimum level
@@ -210,7 +214,8 @@ public static class FileLoggerConfigurationExtensions
     /// Write log events to the specified file.
     /// </summary>
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
-    /// <param name="path">Path to the file.</param>
+    /// <param name="path">Path to the file. Absolute paths are recommended. Relative paths will be resolved
+    /// under the current working directory at runtime (i.e. <c>%WINDIR%\System32</c> for Windows services).</param>
     /// <param name="restrictedToMinimumLevel">The minimum level for
     /// events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
     /// <param name="levelSwitch">A switch allowing the pass-through minimum level
@@ -283,7 +288,8 @@ public static class FileLoggerConfigurationExtensions
     /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?)"/>
     /// and specify the outputTemplate parameter instead.
     /// </param>
-    /// <param name="path">Path to the file.</param>
+    /// <param name="path">Path to the file. Absolute paths are recommended. Relative paths will be resolved
+    /// under the current working directory at runtime (i.e. <c>%WINDIR%\System32</c> for Windows services).</param>
     /// <param name="restrictedToMinimumLevel">The minimum level for
     /// events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
     /// <param name="levelSwitch">A switch allowing the pass-through minimum level
@@ -346,7 +352,8 @@ public static class FileLoggerConfigurationExtensions
     /// Write log events to the specified file.
     /// </summary>
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
-    /// <param name="path">Path to the file.</param>
+    /// <param name="path">Path to the file. Absolute paths are recommended. Relative paths will be resolved
+    /// under the current working directory at runtime (i.e. <c>%WINDIR%\System32</c> for Windows services).</param>
     /// <param name="restrictedToMinimumLevel">The minimum level for
     /// events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
     /// <param name="levelSwitch">A switch allowing the pass-through minimum level
@@ -385,7 +392,8 @@ public static class FileLoggerConfigurationExtensions
     /// overload of <see cref="File(LoggerAuditSinkConfiguration, string, LogEventLevel, string, IFormatProvider, LoggingLevelSwitch)"/>
     /// and specify the outputTemplate parameter instead.
     /// </param>
-    /// <param name="path">Path to the file.</param>
+    /// <param name="path">Path to the file. Absolute paths are recommended. Relative paths will be resolved
+    /// under the current working directory at runtime (i.e. <c>%WINDIR%\System32</c> for Windows services).</param>
     /// <param name="restrictedToMinimumLevel">The minimum level for
     /// events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
     /// <param name="levelSwitch">A switch allowing the pass-through minimum level
@@ -416,7 +424,8 @@ public static class FileLoggerConfigurationExtensions
     /// Write audit log events to the specified file.
     /// </summary>
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
-    /// <param name="path">Path to the file.</param>
+    /// <param name="path">Path to the file. Absolute paths are recommended. Relative paths will be resolved
+    /// under the current working directory at runtime (i.e. <c>%WINDIR%\System32</c> for Windows services).</param>
     /// <param name="restrictedToMinimumLevel">The minimum level for
     /// events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
     /// <param name="levelSwitch">A switch allowing the pass-through minimum level
@@ -463,7 +472,8 @@ public static class FileLoggerConfigurationExtensions
     /// overload of <see cref="File(LoggerAuditSinkConfiguration, string, LogEventLevel, string, IFormatProvider, LoggingLevelSwitch, Encoding, FileLifecycleHooks)"/>
     /// and specify the outputTemplate parameter instead.
     /// </param>
-    /// <param name="path">Path to the file.</param>
+    /// <param name="path">Path to the file. Absolute paths are recommended. Relative paths will be resolved
+    /// under the current working directory at runtime (i.e. <c>%WINDIR%\System32</c> for Windows services).</param>
     /// <param name="restrictedToMinimumLevel">The minimum level for
     /// events passed through the sink. Ignored when <paramref name="levelSwitch"/> is specified.</param>
     /// <param name="levelSwitch">A switch allowing the pass-through minimum level
