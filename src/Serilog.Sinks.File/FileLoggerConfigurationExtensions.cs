@@ -70,7 +70,7 @@ public static class FileLoggerConfigurationExtensions
         TimeSpan? flushToDiskInterval)
     {
         return File(sinkConfiguration, path, restrictedToMinimumLevel, outputTemplate, formatProvider, fileSizeLimitBytes,
-            levelSwitch, buffered, shared, flushToDiskInterval, RollingInterval.Infinite, false, false, null, null, null);
+            levelSwitch, buffered, shared, flushToDiskInterval, RollingInterval.Infinite, false, false, true, null, null, null);
     }
 
     /// <summary>
@@ -110,7 +110,7 @@ public static class FileLoggerConfigurationExtensions
         TimeSpan? flushToDiskInterval)
     {
         return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, levelSwitch,
-            buffered, shared, flushToDiskInterval, RollingInterval.Infinite, false, false, null, null, null);
+            buffered, shared, flushToDiskInterval, RollingInterval.Infinite, false, false, true, null, null, null);
     }
 
     /// <summary>
@@ -158,7 +158,7 @@ public static class FileLoggerConfigurationExtensions
         Encoding encoding)
     {
         return File(sinkConfiguration, path, restrictedToMinimumLevel, outputTemplate, formatProvider, fileSizeLimitBytes, levelSwitch, buffered,
-            shared, flushToDiskInterval, rollingInterval, rollOnFileSizeLimit, false, retainedFileCountLimit, encoding, null);
+            shared, flushToDiskInterval, rollingInterval, rollOnFileSizeLimit, false, true, retainedFileCountLimit, encoding, null);
     }
 
     /// <summary>
@@ -167,7 +167,7 @@ public static class FileLoggerConfigurationExtensions
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
     /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into
     /// text for the file. If control of regular text formatting is required, use the other
-    /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?)"/>
+    /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, bool, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?)"/>
     /// and specify the outputTemplate parameter instead.
     /// </param>
     /// <param name="path">Path to the file. Absolute paths are recommended. Relative paths will be resolved
@@ -207,7 +207,7 @@ public static class FileLoggerConfigurationExtensions
         Encoding encoding)
     {
         return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, levelSwitch, buffered,
-            shared, flushToDiskInterval, rollingInterval, rollOnFileSizeLimit, false, retainedFileCountLimit, encoding, null);
+            shared, flushToDiskInterval, rollingInterval, rollOnFileSizeLimit, false, true, retainedFileCountLimit, encoding, null);
     }
 
     /// <summary>
@@ -233,7 +233,8 @@ public static class FileLoggerConfigurationExtensions
     /// <param name="rollingInterval">The interval at which logging will roll over to a new file.</param>
     /// <param name="rollOnFileSizeLimit">If <code>true</code>, a new file will be created when the file size limit is reached. Filenames
     /// will have a number appended in the format <code>_NNN</code>, with the first filename given no number.</param>
-    /// <param name="alwaysAddSequenceNumber">When set, a sequence number will always be appended to rolled files, even the first one. The format will be <code>_NNN</code>, with the first filename given <code>_001</code>. The default is false.</param>
+    /// <param name="alwaysAddSequenceNumber">When set, a sequence number will always be appended to file name, even the first one. The format will be <code>_NNN</code>, with the first filename given <code>_000</code>. The default is false.</param>
+    /// <param name="appendExistingFile">When set, the last file for the current date (if one exists) will be opened and appended. If not set, a new file will be created for each application start. The default is true.</param>
     /// <param name="retainedFileCountLimit">The maximum number of log files that will be retained,
     /// including the current log file. For unlimited retention, pass null. The default is 31.</param>
     /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
@@ -266,6 +267,7 @@ public static class FileLoggerConfigurationExtensions
         RollingInterval rollingInterval = RollingInterval.Infinite,
         bool rollOnFileSizeLimit = false,
         bool alwaysAddSequenceNumber = false,
+        bool appendExistingFile = true,
         int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
         Encoding? encoding = null,
         FileLifecycleHooks? hooks = null,
@@ -277,8 +279,8 @@ public static class FileLoggerConfigurationExtensions
 
         var formatter = new MessageTemplateTextFormatter(outputTemplate, formatProvider);
         return File(sinkConfiguration, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes,
-            levelSwitch, buffered, shared, flushToDiskInterval,
-            rollingInterval, rollOnFileSizeLimit, alwaysAddSequenceNumber, retainedFileCountLimit, encoding, hooks, retainedFileTimeLimit);
+            levelSwitch, buffered, shared, flushToDiskInterval, rollingInterval, rollOnFileSizeLimit,
+            alwaysAddSequenceNumber, appendExistingFile, retainedFileCountLimit, encoding, hooks, retainedFileTimeLimit);
     }
 
     /// <summary>
@@ -287,7 +289,7 @@ public static class FileLoggerConfigurationExtensions
     /// <param name="sinkConfiguration">Logger sink configuration.</param>
     /// <param name="formatter">A formatter, such as <see cref="JsonFormatter"/>, to convert the log events into
     /// text for the file. If control of regular text formatting is required, use the other
-    /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?)"/>
+    /// overload of <see cref="File(LoggerSinkConfiguration, string, LogEventLevel, string, IFormatProvider, long?, LoggingLevelSwitch, bool, bool, TimeSpan?, RollingInterval, bool, bool, bool, int?, Encoding, FileLifecycleHooks, TimeSpan?)"/>
     /// and specify the outputTemplate parameter instead.
     /// </param>
     /// <param name="path">Path to the file. Absolute paths are recommended. Relative paths will be resolved
@@ -306,7 +308,8 @@ public static class FileLoggerConfigurationExtensions
     /// <param name="rollingInterval">The interval at which logging will roll over to a new file.</param>
     /// <param name="rollOnFileSizeLimit">If <code>true</code>, a new file will be created when the file size limit is reached. Filenames
     /// will have a number appended in the format <code>_NNN</code>, with the first filename given no number.</param>
-    /// <param name="alwaysAddSequenceNumber">When set, a sequence number will always be appended to rolled files, even the first one. The format will be <code>_NNN</code>, with the first filename given <code>_001</code>. The default is false.</param>
+    /// <param name="alwaysAddSequenceNumber">When set, a sequence number will always be appended to file name, even the first one. The format will be <code>_NNN</code>, with the first filename given <code>_000</code>. The default is false.</param>
+    /// <param name="appendExistingFile">When set, the last file for the current date (if one exists) will be opened and appended. If not set, a new file will be created for each application start. The default is true.</param>
     /// <param name="retainedFileCountLimit">The maximum number of log files that will be retained,
     /// including the current log file. For unlimited retention, pass null. The default is 31.</param>
     /// <param name="encoding">Character encoding used to write the text file. The default is UTF-8 without BOM.</param>
@@ -338,6 +341,7 @@ public static class FileLoggerConfigurationExtensions
         RollingInterval rollingInterval = RollingInterval.Infinite,
         bool rollOnFileSizeLimit = false,
         bool alwaysAddSequenceNumber = false,
+        bool appendExistingFile = true,
         int? retainedFileCountLimit = DefaultRetainedFileCountLimit,
         Encoding? encoding = null,
         FileLifecycleHooks? hooks = null,
@@ -349,7 +353,7 @@ public static class FileLoggerConfigurationExtensions
 
         return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, fileSizeLimitBytes, levelSwitch,
             buffered, false, shared, flushToDiskInterval, encoding, rollingInterval, rollOnFileSizeLimit, alwaysAddSequenceNumber,
-            retainedFileCountLimit, hooks, retainedFileTimeLimit);
+            appendExistingFile, retainedFileCountLimit, hooks, retainedFileTimeLimit);
     }
 
     /// <summary>
@@ -508,7 +512,7 @@ public static class FileLoggerConfigurationExtensions
         if (path == null) throw new ArgumentNullException(nameof(path));
 
         return ConfigureFile(sinkConfiguration.Sink, formatter, path, restrictedToMinimumLevel, null, levelSwitch, false, true,
-            false, null, encoding, RollingInterval.Infinite, false, false, null, hooks, null);
+            false, null, encoding, RollingInterval.Infinite, false, false, true, null, hooks, null);
     }
 
     static LoggerConfiguration ConfigureFile(
@@ -526,6 +530,7 @@ public static class FileLoggerConfigurationExtensions
         RollingInterval rollingInterval,
         bool rollOnFileSizeLimit,
         bool alwaysAddSequenceNumber,
+        bool appendExistingFile,
         int? retainedFileCountLimit,
         FileLifecycleHooks? hooks,
         TimeSpan? retainedFileTimeLimit)
@@ -547,7 +552,8 @@ public static class FileLoggerConfigurationExtensions
             {
                 sink = new RollingFileSink(path, formatter, fileSizeLimitBytes, retainedFileCountLimit, encoding, buffered, shared, rollingInterval, rollOnFileSizeLimit, hooks, retainedFileTimeLimit)
                 {
-                    AlwaysAddSequenceNumber = alwaysAddSequenceNumber
+                    AlwaysAddSequenceNumber = alwaysAddSequenceNumber,
+                    AppendExistingFile = appendExistingFile
                 };
             }
             else

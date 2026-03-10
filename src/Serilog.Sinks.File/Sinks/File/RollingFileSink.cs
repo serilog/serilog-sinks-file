@@ -71,6 +71,7 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
     }
 
     public bool AlwaysAddSequenceNumber { get; set; }
+    public bool AppendExistingFile { get; set; } = true;
 
     public void Emit(LogEvent logEvent)
     {
@@ -160,10 +161,16 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
 
             var sequence = latestForThisCheckpoint?.SequenceNumber;
 
-            if (minSequence == null && AlwaysAddSequenceNumber)
+            if (!AppendExistingFile && sequence != null)
             {
-                // Always generate a sequence number
-                minSequence = (sequence ?? 0) + 1;
+                // Files already exist. Continue with the next sequence number.
+                sequence++;
+            }
+
+            if (AlwaysAddSequenceNumber && sequence == null)
+            {
+                // Always append a sequence number
+                sequence = 0; // Start with 0
             }
 
             if (minSequence != null)
