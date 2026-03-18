@@ -189,9 +189,7 @@ Only a limited subset of configuration options are currently available in this m
 
 ### Performance
 
-By default, the file sink will flush each event written through it to disk. To improve write performance, specifying `buffered: true` will permit the underlying stream to buffer writes. However, events with `LogEventLevel.Fatal` will always be flushed to disk immediately.
-
-The [Serilog.Sinks.Async](https://github.com/serilog/serilog-sinks-async) package can be used to wrap the file sink and perform all disk access on a background worker thread.
+By default, the file sink will flush each event written through it to disk. To reduce write latency, specifying `buffered: true` will permit the underlying stream to buffer writes, and specifying `flushToDiskInterval` will cause full flushes on a background thread. Events with `LogEventLevel.Fatal` will always be flushed to disk immediately, however.
 
 ### Extensibility
 [`FileLifecycleHooks`](https://github.com/serilog/serilog-sinks-file/blob/master/src/Serilog.Sinks.File/Sinks/File/FileLifecycleHooks.cs) provide an extensibility point that allows hooking into different parts of the life cycle of a log file.
