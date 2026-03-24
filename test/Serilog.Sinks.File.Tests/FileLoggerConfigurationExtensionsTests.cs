@@ -117,4 +117,75 @@ public class FileLoggerConfigurationExtensionsTests
         // Don't forget the two-byte BOM :-)
         Assert.Equal(22, System.IO.File.ReadAllBytes(filename).Length);
     }
+
+    [Theory]
+    [InlineData("yyyy-MM-dd_HH-mm-ss")]
+    [InlineData("dd-MM-yyyy_HH-mm-ss")]
+    [InlineData("yyyy_MM_dd-HH_mm_ss")]
+    [InlineData("dd_MM_yyyy_HH_mm_ss")]
+    [InlineData("yyyy-MM-dd-HH-mm-ss")]
+    [InlineData("dd-MM-yyyy_HHmmss")]
+    [InlineData("ddMMyyyy_HH-mm-ss")]
+    [InlineData("yyyyMMddHHmmss")]
+    public void SetValidDateTimeFormatWorksSuccessfully(string dateTimeStr)
+    {
+        string filename = "logging-.txt";
+
+        LoggerConfiguration logConfig = new LoggerConfiguration().
+            WriteTo.File(filename, outputTemplate: "{Message}", encoding: Encoding.Unicode, fileSizeLimitBytes: 1024,
+                rollOnFileSizeLimit: true, dateTimeFormatFileName: dateTimeStr);
+
+        Assert.NotNull(logConfig);
+    }
+
+    [Theory]
+    [InlineData(false, 1024, RollingInterval.Infinite, "yyyyMMddHHmmss")]
+    [InlineData(true, 1024, RollingInterval.Infinite, "yyyyMMddHHmmss")]
+    public void SetValidConfigurationWorksSuccessfully(bool rollOnFileSizeLimit, long fileSizeLimit, RollingInterval rollingInterval, string dateTimeStr)
+    {
+        string filename = "logging-.txt";
+
+        LoggerConfiguration logConfig = new LoggerConfiguration().
+            WriteTo.File(filename, outputTemplate: "{Message}", encoding: Encoding.Unicode, fileSizeLimitBytes: fileSizeLimit,
+                rollOnFileSizeLimit: rollOnFileSizeLimit, dateTimeFormatFileName: dateTimeStr, rollingInterval: rollingInterval);
+
+        Assert.NotNull(logConfig);
+    }
+
+    [Theory]
+    [InlineData("yy-MM-dd_HH-mm-ss")]
+    [InlineData("dd-MM-yyyy_HH-mm-s")]
+    [InlineData("-yyyy_MM_dd-HH_mm_ss")]
+    [InlineData("dd_MM_yyyy_HH_mm_ss_")]
+    [InlineData("yyyy-MM-dd-HH-mm-s")]
+    [InlineData("dd-MM-yyyy_Hmmss")]
+    [InlineData("ddMMyyyy+HH-mm-ss")]
+    [InlineData("-yyyyMMddHHmmss-")]
+    public void SetInvalidDateTimeFormatThrowException(string dateTimeStr)
+    {
+        using var tmp = TempFolder.ForCaller();
+        var filename = tmp.AllocateFilename("txt");
+
+        Assert.Throws<ArgumentException>(() =>
+            new LoggerConfiguration().WriteTo.File(filename, outputTemplate: "{Message}", encoding: Encoding.Unicode,
+                fileSizeLimitBytes: 1024, rollOnFileSizeLimit: true, dateTimeFormatFileName: dateTimeStr));
+    }
+
+    [Theory]
+    [InlineData(false, 0, RollingInterval.Infinite, "yyyyMMddHHmmss")]
+    [InlineData(true, 1024, RollingInterval.Hour, "yyyyMMddHHmmss")]
+    public void SetInvalidConfigurationWorksThrowException(bool rollOnFileSizeLimit, long fileSizeLimit, RollingInterval rollingInterval, string dateTimeStr)
+    {
+        string filename = "logging-.txt";
+
+        // tiny hack, because the InlineData could not have a nullable value.
+        long? tmpFileSizeLimit = null;
+        if (fileSizeLimit > 0)
+            tmpFileSizeLimit = fileSizeLimit;
+
+        Assert.Throws<ArgumentException>(() =>
+            new LoggerConfiguration().
+                WriteTo.File(filename, outputTemplate: "{Message}", encoding: Encoding.Unicode, fileSizeLimitBytes: tmpFileSizeLimit,
+                    rollOnFileSizeLimit: rollOnFileSizeLimit, dateTimeFormatFileName: dateTimeStr, rollingInterval: rollingInterval));
+    }
 }

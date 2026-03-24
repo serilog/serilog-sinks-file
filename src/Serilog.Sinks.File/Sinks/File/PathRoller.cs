@@ -1,4 +1,4 @@
-﻿// Copyright 2013-2016 Serilog Contributors
+// Copyright 2013-2016 Serilog Contributors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,16 +21,19 @@ sealed class PathRoller
 {
     const string PeriodMatchGroup = "period";
     const string SequenceNumberMatchGroup = "sequence";
+    const string DateTimeMatchGroup = "datetime";
 
     readonly string _directory;
     readonly string _filenamePrefix;
     readonly string _filenameSuffix;
-    readonly Regex _filenameMatcher;
+    readonly Regex _filenameMatcher = null!;
 
     readonly RollingInterval _interval;
     readonly string _periodFormat;
+    string _dateTimeFormat = String.Empty;
+    public bool UseDateTimeFormat => !String.IsNullOrEmpty(_dateTimeFormat);
 
-    public PathRoller(string path, RollingInterval interval)
+    public PathRoller(string path, RollingInterval interval, string? dateTimeFormatFileName = null)
     {
         if (path == null) throw new ArgumentNullException(nameof(path));
         _interval = interval;
@@ -43,14 +46,29 @@ sealed class PathRoller
         _directory = Path.GetFullPath(pathDirectory);
         _filenamePrefix = Path.GetFileNameWithoutExtension(path);
         _filenameSuffix = Path.GetExtension(path);
-        _filenameMatcher = new Regex(
-            "^" +
-            Regex.Escape(_filenamePrefix) +
-            "(?<" + PeriodMatchGroup + ">\\d{" + _periodFormat.Length + "})" +
-            "(?<" + SequenceNumberMatchGroup + ">_[0-9]{3,}){0,1}" +
-            Regex.Escape(_filenameSuffix) +
-            "$",
-            RegexOptions.Compiled);
+
+        if (dateTimeFormatFileName != null)
+        {
+            Regex dateTimeFormatCheck = new Regex(@"^([_\-a-zA-Z]{14,19})$");
+            Match match = dateTimeFormatCheck.Match(dateTimeFormatFileName);
+            if (match.Groups.Count == 2)
+            {
+                _dateTimeFormat = match.Groups[1].Value;
+                _filenameMatcher = new Regex($@"^{Regex.Escape(_filenamePrefix)}(?<{DateTimeMatchGroup}>[\-_0-9]{{14,19}})(?<{SequenceNumberMatchGroup}>_[0-9]{{3,}})?{Regex.Escape(_filenameSuffix)}$", RegexOptions.Compiled);
+            }
+        }
+
+        if (!UseDateTimeFormat)
+        {
+            _filenameMatcher = new Regex(
+                "^" +
+                Regex.Escape(_filenamePrefix) +
+                "(?<" + PeriodMatchGroup + ">\\d{" + _periodFormat.Length + "})" +
+                "(?<" + SequenceNumberMatchGroup + ">_[0-9]{3,}){0,1}" +
+                Regex.Escape(_filenameSuffix) +
+                "$",
+                RegexOptions.Compiled);
+        }
 
         DirectorySearchPattern = $"{_filenamePrefix}*{_filenameSuffix}";
     }
@@ -61,6 +79,16 @@ sealed class PathRoller
 
     public void GetLogFilePath(DateTime date, int? sequenceNumber, out string path)
     {
+        if (UseDateTimeFormat)
+        {
+            string seqNo = sequenceNumber != null
+                ? $"_{sequenceNumber.Value.ToString("000", CultureInfo.InvariantCulture)}"
+                : String.Empty;
+
+            path = Path.Combine(_directory, $"{_filenamePrefix}{date.ToString(_dateTimeFormat)}{seqNo}{_filenameSuffix}");
+            return;
+        }
+
         var currentCheckpoint = GetCurrentCheckpoint(date);
 
         var tok = currentCheckpoint?.ToString(_periodFormat, CultureInfo.InvariantCulture) ?? "";
@@ -88,16 +116,21 @@ sealed class PathRoller
             }
 
             DateTime? period = null;
-            var periodGroup = match.Groups[PeriodMatchGroup];
-            if (periodGroup.Captures.Count != 0)
+            Group? periodGroup = null; 
+            if (UseDateTimeFormat)
+                periodGroup = match.Groups[DateTimeMatchGroup];
+            else
+                periodGroup = match.Groups[PeriodMatchGroup];
+
+            if (periodGroup != null && periodGroup.Captures.Count != 0)
             {
                 var dateTimePart = periodGroup.Captures[0].Value;
                 if (DateTime.TryParseExact(
-                    dateTimePart,
-                    _periodFormat,
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.None,
-                    out var dateTime))
+                        dateTimePart,
+                        _periodFormat,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.None,
+                        out var dateTime))
                 {
                     period = dateTime;
                 }

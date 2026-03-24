@@ -38,6 +38,7 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
     readonly object _syncRoot = new();
     bool _isDisposed;
     DateTime? _nextCheckpoint;
+    private DateTime? _lastNow;
     IFileSink? _currentFile;
     int? _currentFileSequence;
 
@@ -51,14 +52,15 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
                           RollingInterval rollingInterval,
                           bool rollOnFileSizeLimit,
                           FileLifecycleHooks? hooks,
-                          TimeSpan? retainedFileTimeLimit)
+                          TimeSpan? retainedFileTimeLimit,
+                          string? dateTimeFormatFileName)
     {
         if (path == null) throw new ArgumentNullException(nameof(path));
         if (fileSizeLimitBytes is < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
         if (retainedFileCountLimit is < 1) throw new ArgumentException("Zero or negative value provided; retained file count limit must be at least 1.");
         if (retainedFileTimeLimit.HasValue && retainedFileTimeLimit < TimeSpan.Zero) throw new ArgumentException("Negative value provided; retained file time limit must be non-negative.", nameof(retainedFileTimeLimit));
 
-        _roller = new PathRoller(path, rollingInterval);
+        _roller = new PathRoller(path, rollingInterval, dateTimeFormatFileName);
         _textFormatter = textFormatter;
         _fileSizeLimitBytes = fileSizeLimitBytes;
         _retainedFileCountLimit = retainedFileCountLimit;
@@ -126,8 +128,7 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
 
     void OpenFile(DateTime now, int? minSequence = null)
     {
-        var currentCheckpoint = _roller.GetCurrentCheckpoint(now);
-
+        DateTime? currentCheckpoint = _roller.GetCurrentCheckpoint(now);
         _nextCheckpoint = _roller.GetNextCheckpoint(now);
 
         try
@@ -146,17 +147,24 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
             {
             }
 
-            var latestForThisCheckpoint = _roller
-                .SelectMatches(existingFiles)
-                .Where(m => m.DateTime == currentCheckpoint)
-#if ENUMERABLE_MAXBY
-            .MaxBy(m => m.SequenceNumber);
-#else
-                .OrderByDescending(m => m.SequenceNumber)
-                .FirstOrDefault();
-#endif
+            int? sequence = GetSequenceForCurrentCheckpint(currentCheckpoint, existingFiles);
+            if (_roller.UseDateTimeFormat)
+            {
+                if (IsLastNowEqualNow(now, _lastNow))
+                {
+                    sequence = GetSequenceForDateTimeFormat(now, existingFiles);
+                    if (minSequence == null)
+                        minSequence = 1;
+                }
+                else
+                {
+                    sequence = null;
+                    minSequence = null;
+                }
 
-            var sequence = latestForThisCheckpoint?.SequenceNumber;
+                _lastNow = now;
+            }
+
             if (minSequence != null)
             {
                 if (sequence == null || sequence.Value < minSequence.Value)
@@ -278,6 +286,46 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
         }
 
         return true;
+    }
+
+    int? GetSequenceForDateTimeFormat(DateTime now, IEnumerable<string> existingFiles)
+    {
+        var match = _roller
+            .SelectMatches(existingFiles).
+            Where(m => m.DateTime == now)
+#if ENUMERABLE_MAXBY
+            .MaxBy(m => m.SequenceNumber);
+#else
+            .OrderByDescending(m => m.SequenceNumber)
+            .FirstOrDefault();
+#endif
+        return match?.SequenceNumber;
+    }
+
+    int? GetSequenceForCurrentCheckpint(DateTime? currentCheckpoint, IEnumerable<string> existingFiles)
+    {
+        var latestForThisCheckpoint = _roller
+            .SelectMatches(existingFiles)
+            .Where(m => m.DateTime == currentCheckpoint)
+#if ENUMERABLE_MAXBY
+            .MaxBy(m => m.SequenceNumber);
+#else
+            .OrderByDescending(m => m.SequenceNumber)
+            .FirstOrDefault();
+#endif
+
+        return latestForThisCheckpoint?.SequenceNumber;
+    }
+
+    bool IsLastNowEqualNow(DateTime now, DateTime? lastNow)
+    {
+        if (lastNow == null)
+            return false;
+
+        DateTime ln = lastNow.Value;
+
+        return now.Year == ln.Year && now.Month == ln.Month && now.Day == ln.Day &&
+               now.Hour == ln.Hour && now.Minute == ln.Minute && now.Second == ln.Second;
     }
 
     public void Dispose()

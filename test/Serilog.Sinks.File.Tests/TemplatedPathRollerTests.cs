@@ -1,4 +1,4 @@
-﻿using Xunit;
+using Xunit;
 
 namespace Serilog.Sinks.File.Tests;
 
@@ -91,6 +91,50 @@ public class PathRollerTests
         var roller = new PathRoller(template, interval);
         var matched = roller.SelectMatches(new[] { older, newer }).OrderByDescending(m => m.DateTime).Select(m => m.Filename).ToArray();
         Assert.Equal(new[] { newer, older }, matched);
+    }
+
+    [Fact]
+    public void MatchingSelectsFilesDateTime()
+    {
+        var roller = new PathRoller("log-.txt", RollingInterval.Infinite, "yyyy_MM_dd-HH_mm_ss");
+        var matched = roller.SelectMatches(new[] { "log-2025_06_17-10_05_23.txt" }).ToArray();
+        Assert.Single(matched);
+        Assert.Null(matched[0].SequenceNumber);
+        Assert.Null(matched[0].DateTime);
+    }
+
+    [Fact]
+    public void TheDirectorSearchPatternUsesWildcardInPlaceOfDateTime()
+    {
+        var roller = new PathRoller("log-.txt", RollingInterval.Infinite, "yyyy_MM_dd-HH_mm_ss");
+        Assert.Equal("log-*.txt", roller.DirectorySearchPattern);
+    }
+
+    [Fact]
+    public void GetNewFilePathWithDateTimeInTheFileName()
+    {
+        var roller = new PathRoller(Path.Combine("Logs", "log-.txt"), RollingInterval.Infinite, "yyyy_MM_dd-HH_mm_ss");
+        var now = new DateTime(2013, 7, 14, 3, 24, 9);
+        roller.GetLogFilePath(now, null, out var path);
+        AssertEqualAbsolute(Path.Combine("Logs", "log-2013_07_14-03_24_09.txt"), path);
+    }
+
+    [Fact]
+    public void GetNewFilePathWithDateTimeInTheFileNameWithoutSeparator()
+    {
+        var roller = new PathRoller(Path.Combine("Logs", "log-.txt"), RollingInterval.Infinite, "yyyyMMddHHmmss");
+        var now = new DateTime(2025, 6, 18, 3, 24, 9);
+        roller.GetLogFilePath(now, null, out var path);
+        AssertEqualAbsolute(Path.Combine("Logs", "log-20250618032409.txt"), path);
+    }
+
+    [Fact]
+    public void GetNewFilePathWithDateTimeAndSequenceInTheFileNameWithoutSeparator()
+    {
+        var roller = new PathRoller(Path.Combine("Logs", "log-.txt"), RollingInterval.Infinite, "yyyyMMddHHmmss");
+        var now = new DateTime(2025, 6, 18, 3, 24, 9);
+        roller.GetLogFilePath(now, 3, out var path);
+        AssertEqualAbsolute(Path.Combine("Logs", "log-20250618032409_003.txt"), path);
     }
 }
 
