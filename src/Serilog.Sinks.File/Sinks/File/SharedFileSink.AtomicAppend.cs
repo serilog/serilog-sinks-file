@@ -110,7 +110,23 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
                         _path,
                         FileMode.Append,
                         FileSystemRights.AppendData,
-                        FileShare.ReadWrite,
+                        FileShare.ReadWrite | FileShare.Delete,
+                            length,
+                            FileOptions.None);
+                        _fileStreamBufferLength = length;
+
+                        oldOutput.Dispose();
+                    }
+
+                    if (!System.IO.File.Exists(_path))
+                    {
+                        var oldOutput = _fileOutput;
+
+                        _fileOutput = new FileStream(
+                            _path,
+                            FileMode.Append,
+                            FileSystemRights.AppendData,
+                            FileShare.ReadWrite | FileShare.Delete,
                         length,
                         FileOptions.None);
                     _fileStreamBufferLength = length;

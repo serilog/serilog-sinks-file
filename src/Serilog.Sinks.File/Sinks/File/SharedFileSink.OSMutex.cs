@@ -1,4 +1,4 @@
-// Copyright 2013-2019 Serilog Contributors
+﻿// Copyright 2013-2019 Serilog Contributors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,8 +28,9 @@ namespace Serilog.Sinks.File;
 [Obsolete("This type will be removed from the public API in a future version; use `WriteTo.File(shared: true)` instead.")]
 public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureListener
 {
-    readonly TextWriter _output;
-    readonly FileStream _underlyingStream;
+    TextWriter _output;
+    FileStream _underlyingStream;
+    readonly string _path;
     readonly ITextFormatter _textFormatter;
     readonly long? _fileSizeLimitBytes;
     readonly object _syncRoot = new();
@@ -59,7 +60,7 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
     /// <exception cref="ArgumentException">Invalid <paramref name="path"/></exception>
     public SharedFileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding? encoding = null)
     {
-        if (path == null) throw new ArgumentNullException(nameof(path));
+        _path = path ?? throw new ArgumentNullException(nameof(path));
         if (fileSizeLimitBytes is < 1)
             throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
         _textFormatter = textFormatter ?? throw new ArgumentNullException(nameof(textFormatter));
@@ -73,7 +74,7 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
 
         var mutexName = Path.GetFullPath(path).Replace(Path.DirectorySeparatorChar, ':') + MutexNameSuffix;
         _mutex = new Mutex(false, mutexName);
-        _underlyingStream = System.IO.File.Open(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+        _underlyingStream = System.IO.File.Open(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
         _output = new StreamWriter(_underlyingStream, encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
     }
 
@@ -92,6 +93,13 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
 
             try
             {
+                if (!System.IO.File.Exists(_path))
+                {
+                    _underlyingStream.Dispose();
+                    _underlyingStream = System.IO.File.Open(_path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
+                    _output = new StreamWriter(_underlyingStream,  new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                }
+
                 _underlyingStream.Seek(0, SeekOrigin.End);
                 if (_fileSizeLimitBytes != null)
                 {

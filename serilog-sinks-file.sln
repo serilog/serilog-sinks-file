@@ -34,6 +34,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 		.github\workflows\ci.yml = .github\workflows\ci.yml
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample-SharedFile", "example\Sample-SharedFile\Sample-SharedFile.csproj", "{6E2FBAB9-A71F-40BF-8F6E-9CF4A8D50AE7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,6 +54,10 @@ Global
 		{A34235A2-A717-4A1C-BF5C-F4A9E06E1260}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A34235A2-A717-4A1C-BF5C-F4A9E06E1260}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A34235A2-A717-4A1C-BF5C-F4A9E06E1260}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E2FBAB9-A71F-40BF-8F6E-9CF4A8D50AE7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E2FBAB9-A71F-40BF-8F6E-9CF4A8D50AE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E2FBAB9-A71F-40BF-8F6E-9CF4A8D50AE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E2FBAB9-A71F-40BF-8F6E-9CF4A8D50AE7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -61,6 +67,7 @@ Global
 		{3C2D8E01-5580-426A-BDD9-EC59CD98E618} = {7B927378-9F16-4F6F-B3F6-156395136646}
 		{A34235A2-A717-4A1C-BF5C-F4A9E06E1260} = {196B1544-C617-4D7C-96D1-628713BDD52A}
 		{E5028523-6E46-4A86-AAB9-BF4B1FA5D41D} = {3827A9BD-6D28-4A12-B1C0-32A9BD246EA6}
+		{6E2FBAB9-A71F-40BF-8F6E-9CF4A8D50AE7} = {196B1544-C617-4D7C-96D1-628713BDD52A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {EA0197B4-FCA8-4DF2-BF34-274FA41333D1}
