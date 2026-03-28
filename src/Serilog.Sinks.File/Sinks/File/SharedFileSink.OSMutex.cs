@@ -97,6 +97,7 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
             {
                 if (!System.IO.File.Exists(_path))
                 {
+                    _output.Dispose();
                     _underlyingStream.Dispose();
                     _underlyingStream = System.IO.File.Open(_path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
                     _output = new StreamWriter(_underlyingStream, _encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
