@@ -222,4 +222,100 @@ public class SharedFileSinkTests
         Assert.Contains("Second event ç", text);
         Assert.DoesNotContain("First event", text);
     }
+
+    [Fact]
+    public void FileDeletionDuringWriteOperationIsHandledGracefully()
+    {
+        // Test that when a file is deleted between checking its existence and writing to it,
+        // the sink gracefully reopens the file and retries the write operation.
+        using var tmp = TempFolder.ForCaller();
+        var path = tmp.AllocateFilename("txt");
+
+        using (var sink = new SharedFileSink(path, new JsonFormatter(), null))
+        {
+            var evt1 = Some.LogEvent("Event 1");
+            sink.Emit(evt1);
+            Assert.True(System.IO.File.Exists(path));
+
+            // Delete the file while the sink is still open
+            System.IO.File.Delete(path);
+            Assert.False(System.IO.File.Exists(path));
+
+            // Emit another event - this should trigger ReopenOutputStream and succeed
+            var evt2 = Some.LogEvent("Event 2");
+            sink.Emit(evt2);
+            Assert.True(System.IO.File.Exists(path));
+        }
+
+        // Verify the second event was written to the recreated file
+        var lines = System.IO.File.ReadAllLines(path);
+        Assert.Single(lines);
+        Assert.Contains("Event 2", lines[0]);
+    }
+
+    [Fact]
+    public void FileEncodingIsPreservedAfterDeletionAndRecreation()
+    {
+        // Test that encoding is preserved when a file is deleted and recreated during write operations.
+        using var tmp = TempFolder.ForCaller();
+        var path = tmp.AllocateFilename("txt");
+        var encoding = Encoding.Unicode;
+
+        using (var sink = new SharedFileSink(path, new JsonFormatter(), null, encoding))
+        {
+            var evt1 = Some.LogEvent("Event with special chars: é à ç");
+            sink.Emit(evt1);
+            sink.FlushToDisk();
+            Assert.True(System.IO.File.Exists(path));
+
+            // Delete the file
+            System.IO.File.Delete(path);
+            Assert.False(System.IO.File.Exists(path));
+
+            // Emit another event with special characters - encoding should be preserved
+            var evt2 = Some.LogEvent("Second event with ñ");
+            sink.Emit(evt2);
+            sink.FlushToDisk();
+            Assert.True(System.IO.File.Exists(path));
+        }
+
+        // Read after sink is disposed
+        var bytes = System.IO.File.ReadAllBytes(path);
+        Assert.True(bytes.AsSpan().StartsWith(encoding.GetPreamble()), "Encoding preamble should be present after recreation");
+
+        var text = encoding.GetString(bytes);
+        Assert.Contains("Second event with ñ", text);
+    }
+
+    [Fact]
+    public void MultipleDeletionAndRecreationCyclesAreHandled()
+    {
+        // Test that multiple file deletion/recreation cycles don't cause resource leaks.
+        using var tmp = TempFolder.ForCaller();
+        var path = tmp.AllocateFilename("txt");
+
+        using (var sink = new SharedFileSink(path, new JsonFormatter(), null))
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                var evt = Some.LogEvent($"Event {i + 1}");
+                sink.Emit(evt);
+                Assert.True(System.IO.File.Exists(path));
+
+                // Delete and recreate cycle
+                System.IO.File.Delete(path);
+                Assert.False(System.IO.File.Exists(path));
+            }
+
+            // Final emit after multiple cycles
+            var finalEvt = Some.LogEvent("Final event");
+            sink.Emit(finalEvt);
+            Assert.True(System.IO.File.Exists(path));
+        }
+
+        // Verify the final event was written
+        var lines = System.IO.File.ReadAllLines(path);
+        Assert.Single(lines);
+        Assert.Contains("Final event", lines[0]);
+    }
 }

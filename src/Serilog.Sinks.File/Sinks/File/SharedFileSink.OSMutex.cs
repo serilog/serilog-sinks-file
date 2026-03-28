@@ -100,24 +100,38 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
                     ReopenOutputStream();
                 }
 
-                _underlyingStream.Seek(0, SeekOrigin.End);
-                if (_fileSizeLimitBytes != null)
+                try
                 {
-                    try
+                    _underlyingStream.Seek(0, SeekOrigin.End);
+                    if (_fileSizeLimitBytes != null)
                     {
                         if (_underlyingStream.Length >= _fileSizeLimitBytes.Value)
                             return false;
                     }
-                    catch (FileNotFoundException)
-                    {
-                        ReopenOutputStream();
-                    }
-                }
 
-                _textFormatter.Format(logEvent, _output);
-                _output.Flush();
-                _underlyingStream.Flush();
-                return true;
+                    _textFormatter.Format(logEvent, _output);
+                    _output.Flush();
+                    _underlyingStream.Flush();
+                    return true;
+                }
+                catch (FileNotFoundException)
+                {
+                    // File was deleted between the existence check and the write operation.
+                    // Reopen the stream and retry the operation.
+                    ReopenOutputStream();
+
+                    _underlyingStream.Seek(0, SeekOrigin.End);
+                    if (_fileSizeLimitBytes != null)
+                    {
+                        if (_underlyingStream.Length >= _fileSizeLimitBytes.Value)
+                            return false;
+                    }
+
+                    _textFormatter.Format(logEvent, _output);
+                    _output.Flush();
+                    _underlyingStream.Flush();
+                    return true;
+                }
             }
             finally
             {
