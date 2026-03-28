@@ -199,7 +199,6 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
     void ReopenOutputStream()
     {
         var oldOutput = _output;
-        var oldStream = _underlyingStream;
 
         _underlyingStream = System.IO.File.Open(_path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
         _output = new StreamWriter(_underlyingStream, _encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
@@ -207,7 +206,6 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
         try
         {
             oldOutput.Dispose();
-            oldStream.Dispose();
         }
         catch (Exception ex) when (ex is IOException or ObjectDisposedException)
         {

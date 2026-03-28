@@ -265,13 +265,13 @@ public class FileSinkTests
         var nonexistent = tmp.AllocateFilename("txt");
         var evt = Some.LogEvent("Hello, world!");
 
-        void Emmit()
+        void Emit()
         {
             using var sink = new FileSink(nonexistent, new JsonFormatter(), null);
             sink.Emit(evt);
         }
 
-        Emmit();
+        Emit();
         var lines = System.IO.File.ReadAllLines(nonexistent);
         Assert.Contains("Hello, world!", lines[0]);
         Assert.Single(lines);
@@ -280,7 +280,7 @@ public class FileSinkTests
         Assert.False(System.IO.File.Exists(nonexistent));
         Assert.Throws<FileNotFoundException>(() => System.IO.File.ReadAllLines(nonexistent));
 
-        Emmit();
+        Emit();
         lines = System.IO.File.ReadAllLines(nonexistent);
         Assert.True(System.IO.File.Exists(nonexistent));
         Assert.Contains("Hello, world!", lines[0]);

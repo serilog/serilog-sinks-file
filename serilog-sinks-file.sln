@@ -27,14 +27,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Serilog.Sinks.File.Tests", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sample", "example\Sample\Sample.csproj", "{A34235A2-A717-4A1C-BF5C-F4A9E06E1260}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sample-SharedFile", "example\Sample-SharedFile\Sample-SharedFile.csproj", "{6E2FBAB9-A71F-40BF-8F6E-9CF4A8D50AE7}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{3827A9BD-6D28-4A12-B1C0-32A9BD246EA6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{E5028523-6E46-4A86-AAB9-BF4B1FA5D41D}"
 	ProjectSection(SolutionItems) = preProject
 		.github\workflows\ci.yml = .github\workflows\ci.yml
 	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample-SharedFile", "example\Sample-SharedFile\Sample-SharedFile.csproj", "{6E2FBAB9-A71F-40BF-8F6E-9CF4A8D50AE7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
