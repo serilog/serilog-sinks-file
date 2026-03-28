@@ -30,6 +30,7 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
 {
     TextWriter _output;
     FileStream _underlyingStream;
+    Encoding? _encoding;
     readonly string _path;
     readonly ITextFormatter _textFormatter;
     readonly long? _fileSizeLimitBytes;
@@ -61,6 +62,7 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
     public SharedFileSink(string path, ITextFormatter textFormatter, long? fileSizeLimitBytes, Encoding? encoding = null)
     {
         _path = path ?? throw new ArgumentNullException(nameof(path));
+        _encoding = encoding;
         if (fileSizeLimitBytes is < 1)
             throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
         _textFormatter = textFormatter ?? throw new ArgumentNullException(nameof(textFormatter));
@@ -75,7 +77,7 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
         var mutexName = Path.GetFullPath(path).Replace(Path.DirectorySeparatorChar, ':') + MutexNameSuffix;
         _mutex = new Mutex(false, mutexName);
         _underlyingStream = System.IO.File.Open(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
-        _output = new StreamWriter(_underlyingStream, encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        _output = new StreamWriter(_underlyingStream, _encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
     }
 
     bool IFileSink.EmitOrOverflow(LogEvent logEvent)
@@ -97,7 +99,7 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
                 {
                     _underlyingStream.Dispose();
                     _underlyingStream = System.IO.File.Open(_path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
-                    _output = new StreamWriter(_underlyingStream,  new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                    _output = new StreamWriter(_underlyingStream, _encoding ?? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
                 }
 
                 _underlyingStream.Seek(0, SeekOrigin.End);

@@ -81,7 +81,7 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
             path,
             FileMode.Append,
             FileSystemRights.AppendData,
-            FileShare.ReadWrite,
+            FileShare.ReadWrite | FileShare.Delete,
             _fileStreamBufferLength,
             FileOptions.None);
 

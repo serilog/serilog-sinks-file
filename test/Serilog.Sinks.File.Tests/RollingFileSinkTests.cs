@@ -396,6 +396,8 @@ public class RollingFileSinkTests : IDisposable
                 System.IO.File.Delete(createdFile);
                 Assert.False(System.IO.File.Exists(createdFile));
 
+                log.Dispose();
+
                 log = new LoggerConfiguration()
                     .WriteTo.File(pathFormat, rollingInterval: RollingInterval.Day, shared: true)
                     .CreateLogger();
@@ -439,6 +441,45 @@ public class RollingFileSinkTests : IDisposable
                 log?.Dispose();
                 Directory.Delete(temp, true);
             }
+        }
+
+        [Fact]
+        public void ShouldReCreateDeletedFilesWithoutRecreatingLogger()
+        {
+            var fileName = Some.String() + "-{Date}.txt";
+            var temp = Some.TempFolderPath();
+            var folder = Path.Combine(temp, Guid.NewGuid().ToString());
+            var pathFormat = Path.Combine(folder, fileName);
+
+            Logger? log = null;
+
+            try
+            {
+                log = new LoggerConfiguration()
+                    .WriteTo.File(pathFormat, rollingInterval: RollingInterval.Day, shared: true, buffered: false)
+                    .CreateLogger();
+
+                log.Write(Some.LogEvent("first"));
+
+                var createdFile = Directory.GetFiles(folder)[0];
+                System.IO.File.Delete(createdFile);
+                Assert.False(System.IO.File.Exists(createdFile));
+
+                log.Write(Some.LogEvent("second"));
+
+                Assert.True(System.IO.File.Exists(createdFile));
+            }
+            finally
+            {
+                log?.Dispose();
+            }
+
+            var recreatedFile = Directory.GetFiles(folder)[0];
+            var lines = System.IO.File.ReadAllLines(recreatedFile);
+            Assert.Single(lines);
+            Assert.Contains("second", lines[0]);
+
+            Directory.Delete(temp, true);
         }
 
     static void TestRollingEventSequence(params LogEvent[] events)
