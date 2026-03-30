@@ -66,6 +66,24 @@ Specifying both `rollingInterval` and `rollOnFileSizeLimit` will cause both poli
 
 Old files will be cleaned up as per `retainedFileCountLimit` - the default is 31.
 
+You can also clean up rolling files by age using `retainedFileTimeLimit`:
+
+```csharp
+    .WriteTo.File("log.txt", rollingInterval: RollingInterval.Day, retainedFileTimeLimit: TimeSpan.FromDays(14))
+```
+
+`retainedFileTimeLimit` applies to rolled files (for example daily files when `rollingInterval` is set), and is ignored when no time-based rolling is configured.
+
+Setting `retainedFileCountLimit` and `retainedFileTimeLimit`, both limits are applied together. A file is retained while it is within the count limit **_and_** within the time limit.
+
+```csharp
+    .WriteTo.File(
+        "log.txt",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 31,
+        retainedFileTimeLimit: TimeSpan.FromDays(14))
+```
+
 ### XML `<appSettings>` configuration
 
 To use the file sink with the [Serilog.Settings.AppSettings](https://github.com/serilog/serilog-settings-appsettings) package, first install that package if you haven't already done so:
