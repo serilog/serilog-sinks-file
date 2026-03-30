@@ -74,7 +74,7 @@ You can also clean up rolling files by age using `retainedFileTimeLimit`:
 
 `retainedFileTimeLimit` applies to rolled files (for example daily files when `rollingInterval` is set), and is ignored when no time-based rolling is configured.
 
-Setting `retainedFileCountLimit` and `retainedFileTimeLimit`, both limits are applied together. A file is retained while it is within the count limit **_and_** within the time limit.
+When both `retainedFileCountLimit` and `retainedFileTimeLimit` are set, both limits are applied together: a file is retained while it is within the count limit **_and_** within the time limit.
 
 ```csharp
     .WriteTo.File(
