@@ -76,7 +76,7 @@ public sealed class PeriodicFlushToDiskSink : ILogEventSink, IDisposable, ISetLo
         (_sink as IDisposable)?.Dispose();
     }
 
-    void FlushToDisk(IFlushableFileSink flushable)
+    internal void FlushToDisk(IFlushableFileSink flushable)
     {
         try
         {
@@ -86,6 +86,13 @@ public sealed class PeriodicFlushToDiskSink : ILogEventSink, IDisposable, ISetLo
                 // anything here in the wrapper.
                 flushable.FlushToDisk();
             }
+        }
+        catch (ObjectDisposedException)
+        {
+            // Expected race against rolling/shutdown: the underlying sink was disposed between
+            // the timer firing and the flush call. Not an I/O failure; suppress to avoid spamming
+            // the failure listener (default: SelfLog). The next timer tick will flush the
+            // replacement sink cleanly.
         }
         catch (Exception ex)
         {
