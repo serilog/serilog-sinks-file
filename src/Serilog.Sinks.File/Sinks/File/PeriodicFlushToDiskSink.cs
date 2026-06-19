@@ -89,10 +89,7 @@ public sealed class PeriodicFlushToDiskSink : ILogEventSink, IDisposable, ISetLo
         }
         catch (ObjectDisposedException)
         {
-            // Expected race against rolling/shutdown: the underlying sink was disposed between
-            // the timer firing and the flush call. Not an I/O failure; suppress to avoid spamming
-            // the failure listener (default: SelfLog). The next timer tick will flush the
-            // replacement sink cleanly.
+            // Avoid spamming failure listeners when rolling to a new file.
         }
         catch (Exception ex)
         {
