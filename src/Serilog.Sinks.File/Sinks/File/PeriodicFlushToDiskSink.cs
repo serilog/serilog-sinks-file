@@ -76,7 +76,7 @@ public sealed class PeriodicFlushToDiskSink : ILogEventSink, IDisposable, ISetLo
         (_sink as IDisposable)?.Dispose();
     }
 
-    void FlushToDisk(IFlushableFileSink flushable)
+    internal void FlushToDisk(IFlushableFileSink flushable)
     {
         try
         {
@@ -86,6 +86,10 @@ public sealed class PeriodicFlushToDiskSink : ILogEventSink, IDisposable, ISetLo
                 // anything here in the wrapper.
                 flushable.FlushToDisk();
             }
+        }
+        catch (ObjectDisposedException)
+        {
+            // Avoid spamming failure listeners when rolling to a new file.
         }
         catch (Exception ex)
         {
