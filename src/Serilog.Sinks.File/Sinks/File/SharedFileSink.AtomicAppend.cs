@@ -1,4 +1,4 @@
-﻿// Copyright 2013-2019 Serilog Contributors
+// Copyright 2013-2019 Serilog Contributors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,6 +14,9 @@
 
 #if ATOMIC_APPEND
 
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.AccessControl;
 using System.Text;
 using Serilog.Core;
@@ -77,13 +80,20 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
 
         // FileSystemRights.AppendData sets the Win32 FILE_APPEND_DATA flag. On Linux this is O_APPEND, but that API is not yet
         // exposed by .NET Core.
-        _fileOutput = new FileStream(
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            _fileOutput = CreateFile(
             path,
             FileMode.Append,
             FileSystemRights.AppendData,
             FileShare.ReadWrite,
             _fileStreamBufferLength,
             FileOptions.None);
+        }
+        else
+        {
+            throw new NotSupportedException();
+        }
 
         _writeBuffer = new MemoryStream();
         _output = new StreamWriter(_writeBuffer,
@@ -105,8 +115,9 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
                 if (length > _fileStreamBufferLength)
                 {
                     var oldOutput = _fileOutput;
-
-                    _fileOutput = new FileStream(
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        _fileOutput = CreateFile(
                         _path,
                         FileMode.Append,
                         FileSystemRights.AppendData,
@@ -114,6 +125,11 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
                         length,
                         FileOptions.None);
                     _fileStreamBufferLength = length;
+                    }
+                    else
+                    {
+                        throw new NotSupportedException();
+                    }
 
                     oldOutput.Dispose();
                 }
@@ -187,6 +203,31 @@ public sealed class SharedFileSink : IFileSink, IDisposable, ISetLoggingFailureL
     void ISetLoggingFailureListener.SetFailureListener(ILoggingFailureListener failureListener)
     {
         _failureListener = failureListener ?? throw new ArgumentNullException(nameof(failureListener));
+    }
+
+    private static FileStream CreateFile(string path, FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options)
+    {
+        // FileSystemRights.AppendData sets the Win32 FILE_APPEND_DATA flag. On Linux this is O_APPEND
+#if NET48
+            _fileOutput = new FileStream(path, mode, rights, share, bufferSize, options);
+#else
+        // In .NET 7 for Windows it's exposed with FileSystemAclExtensions.Create API
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            var _fileOutput = FileSystemAclExtensions.Create(new FileInfo(path), mode, rights, share, bufferSize, options, new FileSecurity());
+
+            // Inherit ACL from container
+            var security = new FileSecurity();
+            security.SetAccessRuleProtection(false, false);
+            FileSystemAclExtensions.SetAccessControl(new FileInfo(path), security);
+
+            return _fileOutput;
+        }
+        else
+        {
+            throw new NotSupportedException();
+        }
+#endif
     }
 }
 
