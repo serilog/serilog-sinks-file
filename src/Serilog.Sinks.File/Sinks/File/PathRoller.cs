@@ -21,6 +21,9 @@ sealed class PathRoller
 {
     const string PeriodMatchGroup = "period";
     const string SequenceNumberMatchGroup = "sequence";
+    const string IntervalPathPatternMatcher = @"{interval}";
+    const string SequenceNumberPathPatternMatcher = @"{sequence_number}";
+
 
     readonly string _directory;
     readonly string _filenamePrefix;
@@ -29,11 +32,12 @@ sealed class PathRoller
 
     readonly RollingInterval _interval;
     readonly string _periodFormat;
+    readonly string _originalPath;
 
     public PathRoller(string path, RollingInterval interval)
     {
-        if (path == null) throw new ArgumentNullException(nameof(path));
         _interval = interval;
+        _originalPath = path ?? throw new ArgumentNullException(nameof(path));
         _periodFormat = interval.GetFormat();
 
         var pathDirectory = Path.GetDirectoryName(path);
@@ -64,9 +68,17 @@ sealed class PathRoller
         var currentCheckpoint = GetCurrentCheckpoint(date);
 
         var tok = currentCheckpoint?.ToString(_periodFormat, CultureInfo.InvariantCulture) ?? "";
+        var sequenceNumberFormatted = sequenceNumber.HasValue
+            ? sequenceNumber.Value.ToString("000", CultureInfo.InvariantCulture)
+            : null;
+        if (sequenceNumberFormatted != null)
+            tok += "_" + sequenceNumberFormatted;
 
-        if (sequenceNumber != null)
-            tok += "_" + sequenceNumber.Value.ToString("000", CultureInfo.InvariantCulture);
+        if (TryGetPatternMatch(_originalPath, out var pattern))
+        {
+            path = GetPathForPattern(tok, sequenceNumberFormatted ?? "");
+            return;
+        }
 
         path = Path.Combine(_directory, _filenamePrefix + tok + _filenameSuffix);
     }
@@ -93,11 +105,11 @@ sealed class PathRoller
             {
                 var dateTimePart = periodGroup.Captures[0].Value;
                 if (DateTime.TryParseExact(
-                    dateTimePart,
-                    _periodFormat,
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.None,
-                    out var dateTime))
+                        dateTimePart,
+                        _periodFormat,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.None,
+                        out var dateTime))
                 {
                     period = dateTime;
                 }
@@ -110,4 +122,38 @@ sealed class PathRoller
     public DateTime? GetCurrentCheckpoint(DateTime instant) => _interval.GetCurrentCheckpoint(instant);
 
     public DateTime? GetNextCheckpoint(DateTime instant) => _interval.GetNextCheckpoint(instant);
+
+    public bool TryGetPatternMatch(string path, out PathPatternType? patternType)
+    {
+        patternType = null;
+        if (path.Contains(IntervalPathPatternMatcher) && path.Contains(SequenceNumberPathPatternMatcher))
+        {
+            patternType = PathPatternType.Both;
+            return true;
+        }
+
+        if (path.Contains(IntervalPathPatternMatcher))
+        {
+            patternType = PathPatternType.Interval;
+            return true;
+        }
+
+        if (path.Contains(SequenceNumberPathPatternMatcher))
+        {
+            patternType = PathPatternType.SequenceNumber;
+            return true;
+        }
+
+        return false;
+    }
+
+    private string GetPathForPattern(string intervalToken,
+        string sequenceNumber)
+    {
+        var newPrefix = _filenamePrefix.Replace(IntervalPathPatternMatcher, intervalToken).Replace(
+            SequenceNumberPathPatternMatcher,
+            sequenceNumber);
+
+        return Path.Combine(_directory, newPrefix + _filenameSuffix);
+    }
 }
