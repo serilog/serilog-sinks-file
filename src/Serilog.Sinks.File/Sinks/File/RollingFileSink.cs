@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Globalization;
 using System.Text;
 using Serilog.Core;
 using Serilog.Debugging;
@@ -31,7 +32,9 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
     readonly bool _buffered;
     readonly bool _shared;
     readonly bool _rollOnFileSizeLimit;
+    readonly bool _keepPathAsStaticFile;
     readonly FileLifecycleHooks? _hooks;
+    readonly Func<DateTime?, string>? _customFormatFunc;
 
     ILoggingFailureListener _failureListener = SelfLog.FailureListener;
 
@@ -51,14 +54,18 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
                           RollingInterval rollingInterval,
                           bool rollOnFileSizeLimit,
                           FileLifecycleHooks? hooks,
-                          TimeSpan? retainedFileTimeLimit)
+                          TimeSpan? retainedFileTimeLimit,
+                          bool keepPathAsStaticFile,
+                          Func<DateTime?, string>? customFormatFunc,
+                          string? customRollPattern)
     {
         if (path == null) throw new ArgumentNullException(nameof(path));
         if (fileSizeLimitBytes is < 1) throw new ArgumentException("Invalid value provided; file size limit must be at least 1 byte, or null.");
         if (retainedFileCountLimit is < 1) throw new ArgumentException("Zero or negative value provided; retained file count limit must be at least 1.");
         if (retainedFileTimeLimit.HasValue && retainedFileTimeLimit < TimeSpan.Zero) throw new ArgumentException("Negative value provided; retained file time limit must be non-negative.", nameof(retainedFileTimeLimit));
+        if(customFormatFunc != null && customRollPattern == null) throw new ArgumentException("When Supplying a Custom Format Function, a Custom Roll Pattern must also be supplied.");
 
-        _roller = new PathRoller(path, rollingInterval);
+        _roller = new PathRoller(path, rollingInterval, keepPathAsStaticFile, customFormatFunc, customRollPattern);
         _textFormatter = textFormatter;
         _fileSizeLimitBytes = fileSizeLimitBytes;
         _retainedFileCountLimit = retainedFileCountLimit;
@@ -68,6 +75,8 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
         _shared = shared;
         _rollOnFileSizeLimit = rollOnFileSizeLimit;
         _hooks = hooks;
+        _keepPathAsStaticFile = keepPathAsStaticFile;
+        _customFormatFunc = customFormatFunc;
     }
 
     public void Emit(LogEvent logEvent)
@@ -163,10 +172,37 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
                     sequence = minSequence;
             }
 
+            if (sequence != null)
+            {
+                _roller.GetLogFilePath(now, sequence, out var p, out var c);
+                switch (_keepPathAsStaticFile)
+                {
+                    // var path = Path.Combine(_roller.LogFileDirectory, $"{_roller.PathRollerPrefix}{_customFormatFunc?.Invoke()}_{sequence.Value.ToString("000", CultureInfo.InvariantCulture)}{_roller.DirectorySearchPattern}");
+                    case true when System.IO.File.Exists(c):
+                        sequence++;
+                        break;
+                    case false when _customFormatFunc != null && !System.IO.File.Exists(p):
+                        sequence = 1;
+                        break;
+                }
+            }
+
             const int maxAttempts = 3;
             for (var attempt = 0; attempt < maxAttempts; attempt++)
             {
-                _roller.GetLogFilePath(now, sequence, out var path);
+                string path;
+                if (_keepPathAsStaticFile)
+                {
+                    _roller.GetLogFilePath(now, sequence, out path, out var copyPath);
+                    if (copyPath != null && System.IO.File.Exists(path))
+                    {
+                        System.IO.File.Move(path, copyPath);
+                    }
+                }
+                else
+                {
+                    _roller.GetLogFilePath(now, sequence, out path);
+                }
 
                 try
                 {
@@ -176,7 +212,7 @@ sealed class RollingFileSink : ILogEventSink, IFlushableFileSink, IDisposable, I
                         new SharedFileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding)
                         :
 #pragma warning restore 618
-                        new FileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding, _buffered, _hooks);
+                        new FileSink(path, _textFormatter, _fileSizeLimitBytes, _encoding, _buffered, _hooks, _keepPathAsStaticFile);
 
                     _currentFileSequence = sequence;
 
